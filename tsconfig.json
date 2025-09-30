@@ -11,6 +11,8 @@
       "@components/*": ["components/*"],
       "@views/*": ["view/*"],
       "@layouts/*": ["Layout/*"]
-    }
+    },
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   }
 }
