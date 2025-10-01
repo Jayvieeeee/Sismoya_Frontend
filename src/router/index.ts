@@ -20,13 +20,20 @@ const routes: Array<RouteRecordRaw> = [
     path: "/customerDashboard",
     name: "CustomerDashboard",
     component: CustomerDashboard,
+    meta: { requiresAuth: true },
   },
   {
     path: "/customerContainer",
     name: "CustomerContainer",
     component: ContainerPage,
+    meta: { requiresAuth: true },
   },
-  { path: "/customerCart", name: "CustomerCart", component: AddToCartPage },
+  {
+    path: "/customerCart",
+    name: "CustomerCart",
+    component: AddToCartPage,
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({
@@ -34,13 +41,23 @@ const router = createRouter({
   routes,
   scrollBehavior(to) {
     if (to.hash) {
-      return {
-        el: to.hash,
-        behavior: "smooth", // Optional: adds smooth scrolling
-      };
+      return { el: to.hash, behavior: "smooth" };
     }
     return { top: 0 };
   },
+});
+
+// Navigation Guard
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem("token");
+
+  if (to.meta.requiresAuth && !token) {
+    next("/login");
+  } else if ((to.path === "/login" || to.path === "/register") && token) {
+    next("/customerDashboard");
+  } else {
+    next();
+  }
 });
 
 export default router;
