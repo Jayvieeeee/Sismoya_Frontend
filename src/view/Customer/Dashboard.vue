@@ -41,7 +41,7 @@ onMounted(async () => {
 
       <!-- Welcome message -->
       <p class="text-lg mb-6 font-semibold">
-        Welcomeee,
+        Welcome,
         <span v-if="user"> {{ user.first_name }} {{ user.last_name }} </span>
         <span v-else> </span>
       </p>
