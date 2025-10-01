@@ -1,25 +1,5 @@
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-
-# Protect sensitive files (industry standard)
-
-<FilesMatch "\.(env|json|config|md|lock|gitignore|htaccess|xml|yml|log)$">
-Order allow,deny
-Deny from all
-</FilesMatch>
-
-# Serve existing files (built assets)
-
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^ - [L]
-
-# Serve existing directories
-
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# All other requests → index.html (Vue handles routing)
-
+RewriteEngine On
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]
-</IfModule>
