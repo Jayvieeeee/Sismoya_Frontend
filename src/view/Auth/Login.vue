@@ -50,8 +50,12 @@ function goToForgotPass() {
 <template>
   <Navbar />
 
-  <section class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center px-4 py-12">
-    <div class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl gap-12 mt-12">
+  <section
+    class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center px-4 py-12"
+  >
+    <div
+      class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl gap-12 mt-12"
+    >
       <!-- Left side: Text + Image -->
       <div class="flex-1 text-center md:text-left">
         <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
