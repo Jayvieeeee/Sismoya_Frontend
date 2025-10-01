@@ -33,3 +33,4 @@ jobs:
           port: ${{ secrets.HOSTINGER_PORT }}
           local-dir: ./dist/
           server-dir: ${{ secrets.HOSTINGER_PATH }}
+          clean: true
