@@ -20,13 +20,20 @@ const routes: Array<RouteRecordRaw> = [
     path: "/customerDashboard",
     name: "CustomerDashboard",
     component: CustomerDashboard,
+    meta: { requiresAuth: true }, // Add this line
   },
   {
     path: "/customerContainer",
     name: "CustomerContainer",
     component: ContainerPage,
+    meta: { requiresAuth: true }, // Add this line
   },
-  { path: "/customerCart", name: "CustomerCart", component: AddToCartPage },
+  {
+    path: "/customerCart",
+    name: "CustomerCart",
+    component: AddToCartPage,
+    meta: { requiresAuth: true }, // Add this line
+  },
 ];
 
 const router = createRouter({
@@ -41,6 +48,25 @@ const router = createRouter({
     }
     return { top: 0 };
   },
+});
+
+router.beforeEach((to, from, next) => {
+  // Check if the target route requires authentication
+  if (to.meta.requiresAuth) {
+    // Implement your authentication check logic here
+    const isAuthenticated = localStorage.getItem("authToken"); // Example check
+
+    if (isAuthenticated) {
+      // User is authenticated, allow navigation
+      next();
+    } else {
+      // User is not authenticated, redirect to login
+      next({ name: "Login" });
+    }
+  } else {
+    // Route doesn't require auth, allow navigation
+    next();
+  }
 });
 
 export default router;
