@@ -20,20 +20,13 @@ const routes: Array<RouteRecordRaw> = [
     path: "/customerDashboard",
     name: "CustomerDashboard",
     component: CustomerDashboard,
-    meta: { requiresAuth: true },
   },
   {
     path: "/customerContainer",
     name: "CustomerContainer",
     component: ContainerPage,
-    meta: { requiresAuth: true },
   },
-  {
-    path: "/customerCart",
-    name: "CustomerCart",
-    component: AddToCartPage,
-    meta: { requiresAuth: true },
-  },
+  { path: "/customerCart", name: "CustomerCart", component: AddToCartPage },
 ];
 
 const router = createRouter({
@@ -41,56 +34,13 @@ const router = createRouter({
   routes,
   scrollBehavior(to) {
     if (to.hash) {
-      return { el: to.hash, behavior: "smooth" };
+      return {
+        el: to.hash,
+        behavior: "smooth", // Optional: adds smooth scrolling
+      };
     }
     return { top: 0 };
   },
-});
-
-async function checkAuth() {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-
-  try {
-    const res = await fetch("https://sismoya.com/api/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      localStorage.setItem("user", JSON.stringify(data.user));
-      return data.user;
-    } else {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      return null;
-    }
-  } catch (err) {
-    console.error("Auth check failed:", err);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    return null;
-  }
-}
-
-router.beforeEach(async (to, from, next) => {
-  const user = await checkAuth();
-
-  if (to.meta.requiresAuth && !user) {
-    return next("/login");
-  }
-
-  if (
-    (to.path === "/login" ||
-      to.path === "/register" ||
-      to.path === "/forgotpass") &&
-    user
-  ) {
-    return next("/customerDashboard");
-  }
-
-  next();
 });
 
 export default router;
