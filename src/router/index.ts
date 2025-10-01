@@ -52,7 +52,7 @@ async function checkAuth() {
   if (!token) return null;
 
   try {
-    const res = await fetch("https://sismoya.com/api", {
+    const res = await fetch("https://sismoya.com/api/profile", {
       headers: { Authorization: `Bearer ${token}` },
     });
 
