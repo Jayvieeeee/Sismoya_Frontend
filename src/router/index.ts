@@ -13,7 +13,12 @@ import AddToCartPage from "@/view/Customer/AddToCartPage.vue";
 
 const routes: Array<RouteRecordRaw> = [
   { path: "/", name: "Landing", component: LandingPage },
-  { path: "/login", name: "Login", component: Login },
+  {
+    path: "/login",
+    name: "Login",
+    component: Login,
+    meta: { requiresGuest: true }, // 👈 ADD THIS LINE
+  },
   { path: "/register", name: "Register", component: Register },
   { path: "/forgotpass", name: "ForgotPass", component: ForgotPassword },
   {
