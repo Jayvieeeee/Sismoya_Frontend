@@ -47,17 +47,43 @@ const router = createRouter({
   },
 });
 
-// Navigation Guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem("token");
 
-  if (to.meta.requiresAuth && !token) {
-    next("/login");
-  } else if ((to.path === "/login" || to.path === "/register") && token) {
-    next("/customerDashboard");
-  } else {
-    next();
+  if (token) {
+    try {
+      const res = await fetch("https://sismoya.com/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        localStorage.removeItem("token");
+        if (to.meta.requiresAuth) {
+          return next("/login");
+        }
+      }
+    } catch (e) {
+      console.error("Auth check failed", e);
+      localStorage.removeItem("token");
+      if (to.meta.requiresAuth) {
+        return next("/login");
+      }
+    }
   }
+
+  if (to.meta.requiresAuth && !token) {
+    return next("/login");
+  }
+
+  if ((to.path === "/login" || to.path === "/register") && token) {
+    return next("/customerDashboard");
+  }
+
+  next();
 });
 
 export default router;
