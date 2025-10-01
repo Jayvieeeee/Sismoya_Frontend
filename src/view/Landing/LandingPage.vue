@@ -18,7 +18,7 @@ function goToLogin(){
   <section id="home" class="pt-20 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary">
   <div class="pt-20 flex flex-col items-center h-full text-center relative z-10">
     <h1 class="text-4xl text-primary font-medium leading-snug">
-      Clean, cold, and refreshing water delivered <br>
+      Clean, hot, and refreshing water delivered <br>
       to you
     </h1>
     <p class="mt-4 text-lg my-5">
