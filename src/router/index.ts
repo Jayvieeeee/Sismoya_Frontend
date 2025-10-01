@@ -56,20 +56,18 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  // Check if the target route requires authentication
-  if (to.meta.requiresAuth) {
-    // Implement your authentication check logic here
-    const isAuthenticated = localStorage.getItem("authToken"); // Example check
+  const token = localStorage.getItem("authToken");
 
-    if (isAuthenticated) {
-      // User is authenticated, allow navigation
-      next();
-    } else {
-      // User is not authenticated, redirect to login
-      next({ name: "Login" });
-    }
-  } else {
-    // Route doesn't require auth, allow navigation
+  // If route requires auth BUT no token → redirect to login
+  if (to.meta.requiresAuth && !token) {
+    next({ name: "Login" });
+  }
+  // If route requires guest (login) BUT user has token → redirect to dashboard
+  else if (to.meta.requiresGuest && token) {
+    next({ name: "CustomerDashboard" });
+  }
+  // All other cases → allow navigation
+  else {
     next();
   }
 });
