@@ -47,39 +47,46 @@ const router = createRouter({
   },
 });
 
-router.beforeEach(async (to, from, next) => {
+async function checkAuth() {
   const token = localStorage.getItem("token");
+  if (!token) return null;
 
-  if (token) {
-    try {
-      const res = await fetch("https://sismoya.com/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  try {
+    const res = await fetch("https://sismoya.com/api", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        localStorage.removeItem("token");
-        if (to.meta.requiresAuth) {
-          return next("/login");
-        }
-      }
-    } catch (e) {
-      console.error("Auth check failed", e);
+    if (res.ok && data.success) {
+      localStorage.setItem("user", JSON.stringify(data.user));
+      return data.user;
+    } else {
       localStorage.removeItem("token");
-      if (to.meta.requiresAuth) {
-        return next("/login");
-      }
+      localStorage.removeItem("user");
+      return null;
     }
+  } catch (err) {
+    console.error("Auth check failed:", err);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    return null;
   }
+}
 
-  if (to.meta.requiresAuth && !token) {
+router.beforeEach(async (to, from, next) => {
+  const user = await checkAuth();
+
+  if (to.meta.requiresAuth && !user) {
     return next("/login");
   }
 
-  if ((to.path === "/login" || to.path === "/register") && token) {
+  if (
+    (to.path === "/login" ||
+      to.path === "/register" ||
+      to.path === "/forgotpass") &&
+    user
+  ) {
     return next("/customerDashboard");
   }
 
