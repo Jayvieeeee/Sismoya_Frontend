@@ -28,7 +28,7 @@ function navigateTo(route: string) {
 
 <template>
   <nav
-    class="fixed top-0 left-0 w-full z-50 font-montserrat bg-primary shadow-md px-6 flex justify-between items-center"
+    class="fixed top-0 left-0 w-full z-50 font-montserrat bg-black shadow-md px-6 flex justify-between items-center"
   >
     <!-- Logo -->
     <div class="ml-8 flex items-center h-14">
