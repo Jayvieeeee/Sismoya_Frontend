@@ -163,7 +163,7 @@ function goToLogin() {
       id="download-app"
       class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary py-16"
     >
-      <div class="container mx-auto px-6 lg:px-20">
+      <div class="container mx-auto px-6 lg:px-16 py-20">
         <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-10">
           <div>
             <h2
