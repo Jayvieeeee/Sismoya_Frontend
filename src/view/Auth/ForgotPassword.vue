@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { requestPasswordReset, resetPassword } from "@/api/forgotPassApi";
+import { requestPasswordReset} from "@/api/forgotPassApi";
 
 import Navbar from "@components/LandingNavbar.vue";
 import Footer from "@components/LandingFooter.vue";
@@ -68,11 +68,10 @@ function handleCodeVerified(code: string) {
       </div>
 
       <div class="flex-1 flex justify-center ml-[200px] pt-10">
-        <div class="bg-white shadow-lg rounded-xl p-10 w-7xl max-w-md">
+        <div class="bg-white shadow-lg rounded-xl p-10 w-10/12 max-w-md">
           <h2 class="text-2xl font-semibold text-center mb-8">Forgot Password</h2>
           <div class="mb-4 relative">
-            <img :src="emailIcon" alt="Email" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"/>
-            <input v-model="email" type="email" placeholder="Email" class="w-full pl-12 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+            <input v-model="email" type="email" placeholder="Email" class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"/>
           </div>
 
           <button 

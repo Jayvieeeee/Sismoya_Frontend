@@ -48,9 +48,15 @@ function closeModal() {
 
 // Add to cart
 function handleAddMore(item: ModalProduct) {
-  cartStore.addItem(item)
+  cartStore.addToCart({
+    id: item.id,
+    type: item.type,
+    liters: item.liters,
+    price: item.price,
+    qty: item.qty,
+    image_url: item.image_url || "" // Provide fallback for undefined
+  })
   showModal.value = false
-  router.push("/customerCart")
 }
 
 // Direct order
