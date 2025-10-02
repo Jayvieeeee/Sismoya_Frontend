@@ -50,15 +50,21 @@ const router = createRouter({
 // 🔐 Guard
 router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
-    const isValid = await validateToken();
-
+    const isValid = await validateToken()
     if (!isValid) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      return next("/login");
+      return next("/login")
     }
   }
-  next();
-});
+
+  // 🚀 If already logged in and tries to access /login, redirect to dashboard
+  if (to.path === "/login") {
+    const isValid = await validateToken()
+    if (isValid) {
+      return next("/customerDashboard")
+    }
+  }
+
+  next()
+})
 
 export default router;

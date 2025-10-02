@@ -15,6 +15,7 @@ export async function logout() {
     const res = await axiosInstance.post("/logout")
     if (res.data && !res.data.error) {
       localStorage.removeItem("token")
+      localStorage.removeItem("user")
       return { success: true, message: "Logged out successfully!" }
     }
     return { success: false, message: res.data.message || "Logout failed" }
@@ -24,3 +25,14 @@ export async function logout() {
   }
 }
 
+// ✅ Token validator using /profile
+export async function validateToken(): Promise<boolean> {
+  try {
+    await getProfile() // if this works, token is valid
+    return true
+  } catch {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    return false
+  }
+}
