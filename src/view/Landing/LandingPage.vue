@@ -14,14 +14,10 @@ function goToLogin() {
     <!-- HOME PAGE -->
     <section
       id="home"
-      class="pt-20 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary"
+      class=" pb-24 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary"
     >
-      <div
-        class="pt-20 flex flex-col items-center justify-center h-full text-center relative z-10 px-6"
-      >
-        <h1
-          class="text-3xl md:text-4xl lg:text-5xl text-primary font-medium leading-snug"
-        >
+      <div class="pt-20 flex flex-col items-center justify-center h-full text-center relative z-10 px-6">
+        <h1 class="text-3xl md:text-4xl lg:text-5xl text-primary font-medium leading-snug">
           Clean, cold, and refreshing water delivered <br />
           to you
         </h1>
