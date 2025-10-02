@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import { validateToken } from "@/api/validateToken";
 
+
 import LandingPage from "@views/Landing/LandingPage.vue";
 import Login from "@views/Auth/Login.vue";
 import Register from "@views/Auth/Register.vue";

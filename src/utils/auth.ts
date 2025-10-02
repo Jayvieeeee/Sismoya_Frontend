@@ -3,7 +3,7 @@ import axiosInstance from "@/utils/axios"
 
 export async function getProfile() {
   try {
-    const res = await axiosInstance.get("/profile") 
+    const res = await axiosInstance.get("/profile")
     return res.data.user
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch profile")
@@ -25,10 +25,10 @@ export async function logout() {
   }
 }
 
-// ✅ Token validator using /profile
+// ✅ Only keep ONE validator
 export async function validateToken(): Promise<boolean> {
   try {
-    await getProfile() // if this works, token is valid
+    await getProfile() // if profile fetch works, token is valid
     return true
   } catch {
     localStorage.removeItem("token")
