@@ -33,11 +33,11 @@
             </li>
             <li class="flex items-center space-x-5">
               <img src="/icons/mail_white.png" alt="Email" class="h-[25px]" />
-              <span>abc@gmail.com</span>
+              <span>sismoya@gmail.com</span>
             </li>
             <li class="flex items-center space-x-5">
               <img src="/icons/location_white.png" alt="Location" class="h-[25px]" />
-              <span>abc st. caloocan city</span>
+              <span>34 Katarungan St. Barangay 149 <br/> Bagong Barrio Caloocan City</span>
             </li>
           </ul>
         </div>

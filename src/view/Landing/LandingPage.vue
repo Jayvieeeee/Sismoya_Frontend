@@ -224,7 +224,7 @@ function goToLogin() {
               class="h-[80px] md:h-[100px] mx-auto mb-4"
             />
             <p class="text-sm font-semibold mb-2">
-              Katarungan St. Bagong Barrio, Caloocan City
+              34 Katarungan St. Barangay 149 Bagong Barrio Caloocan City
             </p>
             <p class="text-sm md:text-base leading-relaxed">
               Drop by our water station to place orders, ask questions, or get
@@ -257,7 +257,7 @@ function goToLogin() {
               alt="Email"
               class="h-[80px] md:h-[100px] mx-auto mb-4"
             />
-            <p class="text-sm font-semibold mb-2">info@sismoya.com</p>
+            <p class="text-sm font-semibold mb-2">sismoya@gmail.com</p>
             <p class="text-sm md:text-base leading-relaxed">
               Send us an email for detailed inquiries, feedback, or support, and
               we'll respond as soon as possible.

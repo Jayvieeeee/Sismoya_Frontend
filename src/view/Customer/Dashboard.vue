@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import Sidebar from "@/components/CustomerSidebar.vue";
 import gallonImg from "@/assets/images/Dashboard_img.png";
 import { getProfile } from "@/utils/auth";
+import CustomerLayout from "@/Layout/CustomerLayout.vue";
 
 // Store the whole user object
 interface User {
@@ -28,11 +28,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div
-    class="flex h-screen font-montserrat bg-gradient-to-b from-white to-secondary"
-  >
-    <!-- Sidebar -->
-    <Sidebar />
+   <CustomerLayout>
+  <div class="flex h-screen font-montserrat bg-gradient-to-b from-white to-secondary">
 
     <!-- Main Content -->
     <div class="flex-1 p-6 mx-12">
@@ -122,4 +119,5 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+</CustomerLayout>
 </template>

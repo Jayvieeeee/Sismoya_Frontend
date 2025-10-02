@@ -2,12 +2,11 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
-import Navbar from "@components/LandingNavbar.vue";
-import Footer from "@components/LandingFooter.vue";
-
 import gallonImg from "@/assets/images/gallon.png";
 import emailIcon from "@/assets/icons/email_icon.png";
 import lockIcon from "@/assets/icons/lock_icon.png";
+
+import LandingPageLayout from '@/Layout/LandingPageLayout.vue'
 
 import { loginUser } from "@/api/loginApi";
 
@@ -48,7 +47,7 @@ function goToForgotPass() {
 </script>
 
 <template>
-  <Navbar />
+  <LandingPageLayout>
 
   <section
     class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center px-4 py-12"
@@ -202,5 +201,5 @@ function goToForgotPass() {
     </div>
   </section>
 
-  <Footer />
+</LandingPageLayout>
 </template>
