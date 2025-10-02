@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const isOpen = ref(false) // for mobile menu toggle
 
 const navItems = [
   { name: 'Home', route: '/' },
@@ -12,9 +14,10 @@ const navItems = [
 ]
 
 function navigateTo(route: string) {
+  isOpen.value = false // close mobile menu after navigation
   if (route.includes('#')) {
-    const [path, hash] = route.split('#')
-    router.push(path || '/').then(() => {
+    router.push(route).then(() => {
+      const hash = route.split('#')[1]
       const el = document.getElementById(hash)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' })
@@ -24,35 +27,98 @@ function navigateTo(route: string) {
     router.push(route)
   }
 }
+
+function isActive(item: { route: string; isButton?: boolean }) {
+  if (item.isButton) {
+    return router.currentRoute.value.path === item.route
+  }
+  if (item.route.includes('#')) {
+    return router.currentRoute.value.hash === '#' + item.route.split('#')[1]
+  }
+  return router.currentRoute.value.fullPath === item.route
+}
 </script>
 
+
 <template>
-  <nav
-    class="fixed top-0 left-0 w-full z-50 font-montserrat bg-black shadow-md px-6 flex justify-between items-center"
-  >
-    <!-- Logo -->
-    <div class="ml-8 flex items-center h-14">
-      <img src="/images/Sismoya_Logo.png" alt="Sismoya Logo" class="h-10 w-auto" />
+  <nav class="fixed top-0 left-0 w-full z-50 font-montserrat bg-primary shadow-md px-6">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="ml-4 flex items-center">
+        <img src="/images/Sismoya_Logo.png" alt="Sismoya Logo" class="h-12 w-auto" />
+      </div>
+
+      <!-- Desktop Menu -->
+      <ul class="hidden md:flex space-x-8 text-white font-medium text-sm items-center pr-5">
+        <li v-for="item in navItems" :key="item.name">
+          <button
+            @click="navigateTo(item.route)"
+            :class="[
+              item.isButton
+                ? isActive(item)
+                  ? 'bg-white text-black font-semibold px-5 py-2 rounded-full'
+                  : 'border-2 border-white mr-4 px-5 py-2 rounded-full hover:bg-white hover:text-black transition'
+                : isActive(item)
+                  ? 'bg-white text-black font-semibold px-3 py-2 rounded-full'
+                  : 'px-3 py-2 rounded-full hover:bg-white hover:text-black transition'
+            ]"
+          >
+            {{ item.name }}
+          </button>
+        </li>
+      </ul>
+
+      <!-- Mobile Hamburger -->
+      <button
+        @click="isOpen = !isOpen"
+        class="md:hidden text-white focus:outline-none pr-2"
+      >
+        <svg
+          v-if="!isOpen"
+          class="w-8 h-8"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg
+          v-else
+          class="w-8 h-8"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
 
-    <!-- Navigation Items -->
-    <ul class="flex space-x-12 text-white font-medium text-sm items-center pr-5">
-      <li v-for="item in navItems" :key="item.name">
-        <button
-          @click="navigateTo(item.route)"
-          :class="[
-            item.isButton
-              ? router.currentRoute.value.path === item.route
-                ? 'bg-white text-black font-semibold px-5 py-2 rounded-full'
-                : 'border-2 border-white px-6 py-2 rounded-full hover:bg-white hover:text-black transition'
-              : router.currentRoute.value.fullPath === item.route
-                ? 'bg-white text-black font-semibold px-3 py-2 rounded-full'
-                : 'px-3 py-2 rounded-full hover:bg-white hover:text-black transition'
-          ]"
-        >
-          {{ item.name }}
-        </button>
-      </li>
-    </ul>
+    <!-- Mobile Dropdown -->
+    <transition name="slide-fade">
+      <ul
+        v-if="isOpen"
+        class="md:hidden flex flex-col bg-primary text-white font-medium text-sm p-4 space-y-4"
+      >
+        <li v-for="item in navItems" :key="item.name">
+          <button
+            @click="navigateTo(item.route)"
+            :class="[
+              item.isButton
+                ? isActive(item)
+                  ? 'bg-white text-black font-semibold w-full py-2 rounded-full'
+                  : 'border-2 border-white w-full py-2 rounded-full hover:bg-white hover:text-black transition'
+                : isActive(item)
+                  ? 'bg-white text-black font-semibold w-full py-2 rounded-full'
+                  : 'w-full py-2 rounded-full hover:bg-white hover:text-black transition'
+            ]"
+          >
+            {{ item.name }}
+          </button>
+        </li>
+      </ul>
+    </transition>
   </nav>
 </template>
