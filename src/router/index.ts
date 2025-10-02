@@ -10,6 +10,7 @@ import ForgotPassword from "@views/Auth/ForgotPassword.vue";
 import CustomerDashboard from "@views/Customer/Dashboard.vue";
 import ContainerPage from "@views/Customer/ContainerPage.vue";
 import AddToCartPage from "@views/Customer/AddToCartPage.vue";
+import OrderHistory from "@/view/Customer/OrderHistory.vue";
 
 const routes: Array<RouteRecordRaw> = [
   { path: "/", name: "Landing", component: LandingPage },
@@ -33,6 +34,12 @@ const routes: Array<RouteRecordRaw> = [
     path: "/customerCart",
     name: "CustomerCart",
     component: AddToCartPage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/orderHistory",
+    name: "OrderHistory",
+    component: OrderHistory,
     meta: { requiresAuth: true },
   },
 ];

@@ -22,7 +22,7 @@ const router = useRouter()
 const menuItems: MenuItem[] = [
   { name: "Dashboard", icon: dashboardIcon, route: "/customerDashboard" },
   { name: "Gallon", icon: containerIcon, route: "/customerContainer" },
-  { name: "Orders", icon: orderHistoryIcon, route: "/orders" },
+  { name: "Orders", icon: orderHistoryIcon, route: "/orderHistory" },
   { name: "Account Settings", icon: accountSettingsIcon, route: "/settings" },
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
 ]
