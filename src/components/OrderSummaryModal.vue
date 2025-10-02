@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axiosInstance from "../utils/axios";
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed, watch } from "vue"
 import type { ModalProduct } from "@/types"
 import AddressSelectionModal from "@/components/AddressSelectionModal.vue"
 import AddNewAddressModal from "@/components/AddNewAddressModal.vue"
@@ -49,6 +49,39 @@ const showAddAddressModal = ref(false)
 const showDateTimeModal = ref(false)
 const orderPlacedModal = ref(false)
 
+// Computed property for image URL with proper formatting
+const productImageUrl = computed(() => {
+  if (!props.product?.image_url) return ''
+  
+  let url = props.product.image_url
+  
+  // Ensure the URL is properly formatted
+  if (url.startsWith('/')) {
+    // If it's a relative path, construct full URL
+    url = `https://sismoya.com/api${url}`
+  }
+  
+  return url
+})
+
+// Function to automatically select the best address
+const autoSelectAddress = (addressList: Address[]) => {
+  if (addressList.length === 0) {
+    selectedAddress.value = null
+    return
+  }
+
+  // Priority 1: Find address marked as default
+  const defaultAddress = addressList.find(a => a.isDefault)
+  if (defaultAddress) {
+    selectedAddress.value = defaultAddress
+    return
+  }
+
+  // Priority 2: Select the first address if no default is set
+  selectedAddress.value = addressList[0]
+}
+
 // Function to refresh addresses
 const refreshAddresses = async () => {
   try {
@@ -63,16 +96,20 @@ const refreshAddresses = async () => {
         }))
       : []
 
-    if (addresses.value.length > 0) {
-      selectedAddress.value = addresses.value.find(a => a.isDefault) || addresses.value[0]
-    } else {
-      selectedAddress.value = null
-    }
+    // Automatically select the best address
+    autoSelectAddress(addresses.value)
   } catch (err) {
     console.error("Failed to load addresses:", err)
     selectedAddress.value = null
   }
 }
+
+// Watch for address changes and auto-select
+watch(addresses, (newAddresses) => {
+  if (newAddresses.length > 0 && !selectedAddress.value) {
+    autoSelectAddress(newAddresses)
+  }
+})
 
 onMounted(async () => {
   try {
@@ -96,9 +133,15 @@ function handleAddNewAddress() {
 }
 
 // Handle when new address is added
-async function handleAddressAdded() {
+async function handleAddressAdded(newAddress?: Address) {
   console.log("🔄 New address added, refreshing addresses...")
   await refreshAddresses() // This will reload all addresses including the new one
+  
+  // If a new address was provided and it's the first one, select it automatically
+  if (newAddress && addresses.value.length === 1) {
+    selectedAddress.value = addresses.value[0]
+  }
+  
   showAddAddressModal.value = false
 }
 
@@ -106,8 +149,22 @@ async function handleAddressAdded() {
 const pickUpTime = ref("")
 const paymentMethod = ref("Paypal")
 
+// Image error handler
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  target.style.display = 'none'
+  // You could show a fallback image here if needed
+}
+
 async function handlePlaceOrder() {
   if (!customer.value || !props.product) return
+
+  // Validate that an address is selected
+  if (!selectedAddress.value) {
+    alert("Please select an address before placing your order.")
+    showAddressModal.value = true
+    return
+  }
 
   // Calculate total price
   const totalPrice = props.product.price * props.product.qty
@@ -186,8 +243,8 @@ async function handlePlaceOrder() {
         @click="showAddressModal = true"
         class="relative p-2 my-3 border border-black rounded-lg cursor-pointer hover:bg-gray-100"
       >
-        <p class="text-sm text-center truncate">
-          {{ selectedAddress ? selectedAddress.full : "Add New Address" }}
+        <p class="text-sm text-left ml-2 truncate">
+        <span class="font-medium">Address:</span> {{ selectedAddress ? selectedAddress.full : "Add New Address" }}
         </p>
         <span class="absolute right-2 top-1/2 -translate-y-1/2 text-sm">&#11166;</span>
       </div>
@@ -204,25 +261,40 @@ async function handlePlaceOrder() {
         </div>
       </div>
 
-      <!-- Product -->
-      <p class="font-medium text-sm">Gallon:</p>
-      <div class="flex items-center gap-4 my-3">
-        <img
-          :src="product.image_url"
-          alt="Container"
-          class="w-14 h-14 object-contain"
-        />
-        <span>{{ product.type }} x{{ product.qty }}</span>
-        <span>{{ product.price.toFixed(2) }}</span>
+      <!-- Product Section -->
+      <p class="font-medium text-sm mb-2">Gallon:</p>
+      <div class="flex items-center gap-4 my-3 p-3 ">
+        <!-- Product Image with Error Handling -->
+        <div class="flex-shrink-0 w-16 h-16 bg-white  flex items-center justify-center">
+          <img
+            :src="productImageUrl"
+            :alt="product.type"
+            class="w-12 h-12 object-contain"
+            @error="handleImageError"
+          />
+        </div>
+        
+        <!-- Product Details -->
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-semibold text-sm truncate">{{ product.type }}</p>
+              <p class="text-xs">Quantity: {{ product.qty }}</p>
+            </div>
+            <p class="font-semibold text-sm whitespace-nowrap ml-2">
+              ₱{{ (product.price * product.qty).toFixed(2) }}
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- Total -->
-      <p class="text-sm font-semibold mb-4">
-        Total Amount:
-        <span class="ml-20 font-medium">{{
-          (product.price * product.qty).toFixed(2)
-        }}</span>
-      </p>
+      <div class="flex justify-between items-center mt-4 mb-4 pt-3 border-t border-gray-200">
+        <span class="text-sm font-semibold text-gray-800">Total Amount:</span>
+        <span class="text-lg font-bold">
+          ₱{{ (product.price * product.qty).toFixed(2) }}
+        </span>
+      </div>
 
       <!-- Payment Method -->
       <div class="flex items-center justify-between mb-6">
@@ -247,13 +319,13 @@ async function handlePlaceOrder() {
       <div class="flex justify-between gap-4">
         <button
           @click="emit('close')"
-          class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary"
+          class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-gray-400 transition-colors font-medium"
         >
           Back
         </button>
         <button
           @click="handlePlaceOrder"
-          class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary"
+          class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition-colors font-medium"
         >
           Place Order
         </button>
@@ -265,6 +337,7 @@ async function handlePlaceOrder() {
   <AddressSelectionModal
     :isOpen="showAddressModal"
     :addresses="addresses"
+    :selectedAddress="selectedAddress"
     @close="showAddressModal = false"
     @select="handleSelectAddress"
     @add-new="handleAddNewAddress"
