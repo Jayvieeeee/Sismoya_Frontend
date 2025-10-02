@@ -9,12 +9,10 @@ import { getContainers } from "@/api/getContainer"
 import type { ModalProduct } from "@/types" 
 import OrderSummaryModal from "@/components/OrderSummaryModal.vue"
 
-
 const modalAction = ref<"cart" | "order">("cart")
 const router = useRouter()
 const cartStore = useCartStore()
 const showSummaryModal = ref(false)
-
 
 const containers = ref<ModalProduct[]>([])
 const showModal = ref(false)
@@ -27,7 +25,7 @@ const selectedProduct = ref<ModalProduct>({
   image_url: "",
 })
 
-// Fetch containers
+// ✅ Fetch containers from backend
 onMounted(async () => {
   containers.value = await getContainers()
 })
@@ -57,19 +55,16 @@ function handleAddMore(item: ModalProduct) {
 
 // Direct order
 function handleOrderNow(item: ModalProduct) {
-  selectedProduct.value = { ...item } // ensure data is set
-  showModal.value = false             // close qty modal
-  showSummaryModal.value = true       // open summary modal
+  selectedProduct.value = { ...item }
+  showModal.value = false
+  showSummaryModal.value = true
 }
 
 function handlePlaceOrder(orderData: any) {
   console.log("✅ Final order placed:", orderData)
   showSummaryModal.value = false
-  // Later: call API or save to database here
 }
-
 </script>
-
 
 <template>
   <div class="font-Montserrat flex bg-gradient-to-b from-white to-secondary">
@@ -78,33 +73,35 @@ function handlePlaceOrder(orderData: any) {
     <div class="flex-1 p-6">
       <!-- Header -->
       <div class="flex items-center justify-between mb-6 p-12">
-       <h2 class="text-4xl font-medium text-primary">Gallon</h2>
+        <h2 class="text-4xl font-medium text-primary">Gallon</h2>
         <img
           :src="Cart"
           @click="goToAddToCartPage"
           alt="Cart"
-           class="w-10 h-10 cursor-pointer  transition-transform -scale-x-100"
+          class="w-10 h-10 cursor-pointer transition-transform -scale-x-100"
         />
       </div>
 
-      <!-- Container Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- ✅ Container Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div
           v-for="container in containers"
           :key="container.id"
           class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center max-w-xs mx-auto"
         >
+          <!-- ✅ Image from backend -->
           <img
-            :src="container.image_url"
+            :src="`https://sismoya.com/api${container.image_url}`"
             :alt="container.type"
             class="w-40 h-40 object-contain mb-4"
           />
+
           <p class="font-medium">Type: {{ container.type }}</p>
           <p>Liters: {{ container.liters }} liters</p>
-          <p>Price: {{ container.price.toFixed(2) }}</p>
+          <p>Price: ₱{{ container.price.toFixed(2) }}</p>
 
           <div class="flex gap-3 mt-4">
-           <button
+            <button
               @click="openModal(container, 'cart')"
               class="bg-primary text-white px-4 py-2 rounded-full hover:bg-secondary transition"
             >
@@ -117,30 +114,27 @@ function handlePlaceOrder(orderData: any) {
             >
               Order Now
             </button>
-
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
   <!-- Modal -->
-<OrderModal
-  :isOpen="showModal"
-  :product="selectedProduct"
-  :action="modalAction"
-  @close="closeModal"
-  @add-more="handleAddMore"
-  @order-now="handleOrderNow"
-/>
+  <OrderModal
+    :isOpen="showModal"
+    :product="selectedProduct"
+    :action="modalAction"
+    @close="closeModal"
+    @add-more="handleAddMore"
+    @order-now="handleOrderNow"
+  />
 
-<!-- Order Summary Modal -->
-<OrderSummaryModal
-  :isOpen="showSummaryModal"
-  :product="selectedProduct"
-  @close="showSummaryModal = false"
-  @place-order="handlePlaceOrder"
-/>
-
+  <!-- Order Summary Modal -->
+  <OrderSummaryModal
+    :isOpen="showSummaryModal"
+    :product="selectedProduct"
+    @close="showSummaryModal = false"
+    @place-order="handlePlaceOrder"
+  />
 </template>

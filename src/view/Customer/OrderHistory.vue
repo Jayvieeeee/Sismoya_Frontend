@@ -6,7 +6,6 @@ import CustomerLayout from "@/Layout/CustomerLayout.vue"
 const orders = ref<any[]>([])
 const loading = ref(true)
 const search = ref("")
-const filterStatus = ref("All")
 
 function formatDate(dateString: string) {
   const d = new Date(dateString)
@@ -16,7 +15,6 @@ function formatDate(dateString: string) {
   })
 }
 
-// fetch orders
 onMounted(async () => {
   try {
     const res = await axiosInstance.get("/orders/user")
@@ -30,72 +28,57 @@ onMounted(async () => {
   }
 })
 
-// filter + search
 const filteredOrders = computed(() => {
   return orders.value.filter((o) => {
-    const matchSearch =
+    return (
       search.value === "" ||
       o.order_id.toString().includes(search.value) ||
-      (o.items?.[0]?.gallon_name || "").toLowerCase().includes(search.value.toLowerCase())
-
-    const matchStatus =
-      filterStatus.value === "All" || o.status?.toLowerCase() === filterStatus.value.toLowerCase()
-
-    return matchSearch && matchStatus
+      "Round Gallon".toLowerCase().includes(search.value.toLowerCase())
+    )
   })
 })
 </script>
 
+
 <template>
   <CustomerLayout>
     <div class="max-w-6xl mx-auto p-6">
-      <h1 class="text-3xl font-bold mb-6 text-blue-800">Orders</h1>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-blue-800">Orders</h1>
 
-      <!-- Search -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+      <div class="mb-4">
         <input
           v-model="search"
           type="text"
           placeholder="Search"
-          class="w-full sm:w-1/3 px-4 py-2 border rounded-lg"
+          class="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-
-        <!-- Filters -->
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="status in ['All', 'Pending', 'To Pick Up', 'To Deliver', 'Cancelled', 'Completed']"
-            :key="status"
-            @click="filterStatus = status"
-            class="px-4 py-2 rounded-md text-sm font-medium"
-            :class="filterStatus === status
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
-          >
-            {{ status }}
-          </button>
-        </div>
       </div>
 
-      <!-- Table -->
+      <!-- 📋 Orders Table -->
       <div class="bg-white shadow-md rounded-xl overflow-x-auto">
-        <table class="w-full text-sm border-collapse">
+        <table class="w-full text-sm">
           <thead>
-            <tr class="bg-gray-100 text-left">
-              <th class="py-3 px-4">Order ID</th>
-              <th class="py-3 px-4">Order</th>
-              <th class="py-3 px-4">Total Amount</th>
-              <th class="py-3 px-4">DateTime</th>
-              <th class="py-3 px-4">Status</th>
-              <th class="py-3 px-4">Action</th>
+            <tr class="text-center border-b">
+              <th class="py-3 px-4 font-semibold">Order ID</th>
+              <th class="py-3 px-4 font-semibold">Order</th>
+              <th class="py-3 px-4 font-semibold">Total Amount</th>
+              <th class="py-3 px-4 font-semibold">Date</th>
+              <th class="py-3 px-4 font-semibold">Status</th>
+              <th class="py-3 px-4 font-semibold">Action</th>
             </tr>
           </thead>
           <tbody>
+            <!-- Loading -->
             <tr v-if="loading">
               <td colspan="6" class="text-center py-6">Loading orders...</td>
             </tr>
+
+            <!-- Empty -->
             <tr v-else-if="filteredOrders.length === 0">
               <td colspan="6" class="text-center py-6 text-gray-500">No orders found.</td>
             </tr>
+
+            <!-- Data -->
             <tr
               v-else
               v-for="order in filteredOrders"
@@ -103,22 +86,24 @@ const filteredOrders = computed(() => {
               class="border-t hover:bg-gray-50"
             >
               <td class="py-3 px-4">{{ order.order_id }}</td>
-              <td class="py-3 px-4">
-                {{ order.items?.map(i => i.gallon_name || 'Gallon').join(', ') }}
-              </td>
-              <td class="py-3 px-4">₱{{ order.total_price }}</td>
+              <td class="py-3 px-4">Round Gallon</td>
+              <td class="py-3 px-4">₱{{ order.total_price.toFixed(2) }}</td>
               <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
-              <td class="py-3 px-4 font-medium"
-                  :class="{
-                    'text-yellow-600': order.status === 'Pending',
-                    'text-green-600': order.status === 'Completed',
-                    'text-red-600': order.status === 'Cancelled',
-                    'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
-                  }">
+              <td
+                class="py-3 px-4 font-medium"
+                :class="{
+                  'text-yellow-500': order.status === 'Pending',
+                  'text-green-600': order.status === 'Completed',
+                  'text-red-600': order.status === 'Cancelled',
+                  'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
+                }"
+              >
                 {{ order.status }}
               </td>
               <td class="py-3 px-4">
-                <a href="#" class="text-blue-600 hover:underline">View Details</a>
+                <button class="text-blue-600 underline hover:text-blue-800">
+                  View Details
+                </button>
               </td>
             </tr>
           </tbody>
@@ -127,3 +112,5 @@ const filteredOrders = computed(() => {
     </div>
   </CustomerLayout>
 </template>
+
+
