@@ -1,9 +1,6 @@
-// src/router/index.ts
-import {
-  createRouter,
-  createWebHistory,
-  type RouteRecordRaw,
-} from "vue-router";
+// router/index.ts
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
+import { validateToken } from "@/api/validateToken";
 
 import LandingPage from "@views/Landing/LandingPage.vue";
 import Login from "@views/Auth/Login.vue";
@@ -19,7 +16,6 @@ const routes: Array<RouteRecordRaw> = [
   { path: "/register", name: "Register", component: Register },
   { path: "/forgotpass", name: "ForgotPass", component: ForgotPassword },
 
-  // 🔒 Protected routes
   {
     path: "/customerDashboard",
     name: "CustomerDashboard",
@@ -45,25 +41,24 @@ const router = createRouter({
   routes,
   scrollBehavior(to) {
     if (to.hash) {
-      return {
-        el: to.hash,
-        behavior: "smooth", // smooth scrolling
-      };
+      return { el: to.hash, behavior: "smooth" };
     }
     return { top: 0 };
   },
 });
 
-// 🔐 Global navigation guard
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!localStorage.getItem("user"); // simple check
+// 🔐 Guard
+router.beforeEach(async (to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const isValid = await validateToken();
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    // redirect to login if not authenticated
-    next("/login");
-  } else {
-    next();
+    if (!isValid) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      return next("/login");
+    }
   }
+  next();
 });
 
 export default router;
