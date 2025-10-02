@@ -25,13 +25,14 @@ async function handleLogin() {
   }
 
   try {
-    const user = await loginUser(identifier.value, password.value);
-    localStorage.setItem("user", JSON.stringify(user));
+    const res = await loginUser(identifier.value, password.value);
+
     router.push("/customerDashboard");
   } catch (err: any) {
-    errorMessage.value = "Login failed.";
+    errorMessage.value = err.message || "Login failed.";
   }
 }
+
 
 function goToRegister() {
   router.push("/register");
