@@ -3,11 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import gallonImg from "@/assets/images/gallon.png";
-import emailIcon from "@/assets/icons/email_icon.png";
-import lockIcon from "@/assets/icons/lock_icon.png";
-
 import LandingPageLayout from '@/Layout/LandingPageLayout.vue'
-
 import { loginUser } from "@/api/loginApi";
 
 const router = useRouter();
@@ -33,7 +29,7 @@ async function handleLogin() {
     localStorage.setItem("user", JSON.stringify(user));
     router.push("/customerDashboard");
   } catch (err: any) {
-    errorMessage.value = "Login failed. Please check your credentials.";
+    errorMessage.value = "Login failed.";
   }
 }
 
@@ -49,43 +45,33 @@ function goToForgotPass() {
 <template>
   <LandingPageLayout>
 
-  <section
-    class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center px-4 py-12"
-  >
-    <div
-      class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl gap-12 mt-12"
-    >
+  <section class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center px-4 py-12">
+    <div class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl gap-12 mt-12">
       <!-- Left side: Text + Image -->
       <div class="flex-1 text-center md:text-left">
-        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
+        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-10">
           WELCOME TO <br />
           SISMOYA WATER!
         </h1>
-        <img
-          :src="gallonImg"
-          alt="Water Jugs"
-          class="w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto md:mx-0"
-        />
+       <img
+        :src="gallonImg"
+        alt="Water Jugs"
+        class="w-full max-w-xs md:max-w-sm lg:max-w-sm mx-auto md:mx-0"
+      />
       </div>
 
       <!-- Right side: Login Form -->
       <div class="flex-1 flex justify-center">
-        <div class="bg-white shadow-lg rounded-xl p-8 sm:p-10 w-full max-w-sm">
-          <h2 class="text-2xl font-semibold text-center mb-6">Login</h2>
+        <div class="bg-white shadow-lg rounded-xl ml-40 p-8 sm:p-14 w-3/4  max-w-sm">
+          <h2 class="text-3xl font-medium text-center mb-6">Login</h2>
 
           <!-- identifier -->
           <div class="mb-4 relative">
-            <img
-              :src="emailIcon"
-              alt="EMAIL"
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-            />
             <input
               v-model="identifier"
               type="text"
               placeholder="Email or Username"
-              class="w-full pl-12 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+              class="w-full pl-4 pr-4 py-4 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
             <p
               v-if="!identifier && errorMessage"
               class="text-red-500 text-xs mt-1"
@@ -96,17 +82,11 @@ function goToForgotPass() {
 
           <!-- password -->
           <div class="mb-4 relative">
-            <img
-              :src="lockIcon"
-              alt="PASSWORD"
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-            />
             <input
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
               placeholder="Password"
-              class="w-full pl-12 pr-10 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+               class="w-full pl-4 pr-4 py-4 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"/>
 
             <!-- toggle button -->
             <button
@@ -176,19 +156,18 @@ function goToForgotPass() {
 
           <p
             @click="goToForgotPass"
-            class="text-xs text-right text-gray-500 mb-6 cursor-pointer hover:underline"
+            class="text-xs text-right font-medium mb-6 cursor-pointer hover:underline"
           >
             Forgot Password?
           </p>
 
           <button
             @click="handleLogin"
-            class="w-full bg-primary text-white py-2 rounded-lg font-medium mb-4 hover:bg-secondary transition"
-          >
-            Sign In
+            class="w-full bg-primary text-white py-3 rounded-lg font-medium mb-4 hover:bg-secondary transition">
+            Login
           </button>
 
-          <p class="text-xs text-center md:text-right text-gray-500">
+          <p class="text-xs text-center md:text-right">
             Don't have an account yet?
             <span
               @click="goToRegister"

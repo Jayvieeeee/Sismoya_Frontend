@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import Navbar from '@components/LandingNavbar.vue';
-import Footer from '@components/LandingFooter.vue';
+import { useRouter } from "vue-router";
 import { registerUser } from "@/api/registerApi";
+import LandingPageLayout from '@/Layout/LandingPageLayout.vue'
 
 import gallonImg from '@/assets/images/gallon.png';
-import emailIcon from '@/assets/icons/email_icon.png';
-import lockIcon from '@/assets/icons/lock_icon.png';
-import phoneIcon from '@/assets/icons/phone_icon.png';
-import usernameIcon from '@/assets/icons/username.png';
+
+
+const router = useRouter();
 
 // Form state
 const firstName = ref("");
@@ -49,39 +48,38 @@ const handleRegister = async () => {
     }
   }
 };
+
+function goToLogin() {
+  router.push("/login");
+}
 </script>
 
 <template>
-  <Navbar />
-
+  <LandingPageLayout>
   <section
     class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center py-10"
   >
-    <div
-      class="flex flex-col lg:flex-row items-center justify-center w-full max-w-6xl px-6 gap-10"
-    >
+    <div class="flex flex-col lg:flex-row items-center justify-center w-full max-w-6xl px-6 gap-10">
       <!-- Left section -->
-      <div class="flex-1 text-center lg:text-left">
-        <h1
-          class="text-3xl md:text-5xl font-semibold text-primary mb-6 leading-tight"
-        >
+      <div class="flex-1 text-center md:text-left">
+        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-10">
           WELCOME TO <br />
           SISMOYA WATER!
         </h1>
-        <img
-          :src="gallonImg"
-          alt="Water Jugs"
-          class="w-64 sm:w-80 md:w-[400px] lg:w-[500px] mx-auto lg:mx-0"
-        />
+       <img
+        :src="gallonImg"
+        alt="Water Jugs"
+        class="w-full max-w-xs md:max-w-sm lg:max-w-sm mx-auto md:mx-0"
+      />
       </div>
 
       <!-- Right section -->
-      <div class="flex-1 flex justify-center">
-        <div class="bg-white shadow-lg rounded-xl p-8 sm:p-10 w-full max-w-sm">
-          <h2 class="text-2xl font-semibold text-center mb-6">Register</h2>
+      <div class="flex-1 flex justify-center mt-12">
+        <div class="bg-white shadow-lg rounded-xl ml-36  p-8 sm:p-12 w-full max-w-sm">
+          <h2 class="text-2xl font-medium text-center mb-6">Register</h2>
 
           <!-- name -->
-          <div class="flex flex-col sm:flex-row gap-4 mb-4">
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
             <div class="w-full sm:w-1/2">
               <input
                 v-model="firstName"
@@ -110,66 +108,46 @@ const handleRegister = async () => {
 
           <!-- email -->
           <div class="mb-4 relative">
-            <img
-              :src="emailIcon"
-              alt="EMAIL"
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-            />
             <input
               v-model="email"
               type="email"
               placeholder="Email"
-              class="w-full pl-12 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <p v-if="errors.email" class="text-red-500 text-sm mt-1">{{ errors.email }}</p>
           </div>
 
+          <!-- contact -->
+          <div class="mb-4 relative">
+            <input
+              v-model="contactNo"
+              type="text"
+              placeholder="Contact No"
+              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <p v-if="errors.contact_no" class="text-red-500 text-sm mt-1">{{ errors.contact_no }}</p>
+          </div>
+
           <!-- username -->
           <div class="mb-4 relative">
-            <img
-              :src="usernameIcon"
-              alt="USERNAME"
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-            />
             <input
               v-model="username"
               type="text"
               placeholder="Username"
-              class="w-full pl-12 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <p v-if="errors.username" class="text-red-500 text-sm mt-1">{{ errors.username }}</p>
           </div>
 
           <!-- password -->
           <div class="mb-4 relative">
-            <img
-              :src="lockIcon"
-              alt="PASSWORD"
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-            />
             <input
               v-model="password"
               type="password"
               placeholder="Password"
-              class="w-full pl-12 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <p v-if="errors.password" class="text-red-500 text-sm mt-1">{{ errors.password }}</p>
-          </div>
-
-          <!-- contact -->
-          <div class="mb-4 relative">
-            <img
-              :src="phoneIcon"
-              alt="CONTACT"
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-            />
-            <input
-              v-model="contactNo"
-              type="text"
-              placeholder="Contact No"
-              class="w-full pl-12 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <p v-if="errors.contact_no" class="text-red-500 text-sm mt-1">{{ errors.contact_no }}</p>
           </div>
 
           <!-- general error -->
@@ -181,11 +159,20 @@ const handleRegister = async () => {
           >
             Register
           </button>
+
+            <p class="text-sm text-center md:text-right mt-4">
+             Already have an account yet?
+            <span
+              @click="goToLogin"
+              class="text-primary cursor-pointer hover:underline"
+              >Login here</span
+            >
+          </p>
         </div>
       </div>
     </div>
   </section>
 
-  <Footer />
+</LandingPageLayout>
 </template>
 
