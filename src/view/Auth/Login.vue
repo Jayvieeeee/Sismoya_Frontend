@@ -74,7 +74,7 @@ function goToForgotPass() {
               class="w-full pl-4 pr-4 py-4 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
             <p
               v-if="!identifier && errorMessage"
-              class="text-red-500 text-xs mt-1 text-right"
+              class="text-red-500 text-xs mt-1"
             >
               Please enter your email or username.
             </p>

@@ -14,9 +14,8 @@ function goToLogin() {
     <!-- HOME PAGE -->
     <section
       id="home"
-      class=" pb-24 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary"
-    >
-      <div class="pt-20 flex flex-col items-center justify-center h-full text-center relative z-10 px-6">
+      class=" pb-24 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary">
+      <div class="pt-4 flex flex-col items-center justify-center h-full text-center relative z-10 px-6">
         <h1 class="text-3xl md:text-4xl lg:text-5xl text-primary font-medium leading-snug">
           Clean, cold, and refreshing water delivered <br />
           to you
@@ -158,43 +157,42 @@ function goToLogin() {
       </div>
     </section>
 
-    <!-- DOWNLOAD APP -->
-    <section
-      id="download-app"
-      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary py-16"
-    >
-      <div class="container mx-auto px-6 lg:px-16 py-20">
-        <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-10">
-          <div>
-            <h2
-              class="text-3xl md:text-4xl lg:text-5xl font-semibold text-primary mb-10"
-            >
-              Download App
-            </h2>
-            <p class="text-base md:text-lg leading-relaxed mb-6">
-              Download the Sismoya Water App today and experience hassle-free
-              hydration—order refills, schedule deliveries or pick-ups, and
-              track your water anytime, anywhere.
-            </p>
-            <a
-              href="#"
-              class="inline-block bg-button text-white font-semibold px-6 py-4 rounded-full shadow-md hover:bg-[#d54f14] transition"
-            >
-              Download
-            </a>
-          </div>
-          <div
-            class="flex justify-center md:justify-end"
-          >
-            <img
-              src="/images/phone.png"
-              alt="Phone"
-              class="h-[280px] md:h-[400px] lg:h-[500px]"
-            />
-          </div>
-        </div>
+<!-- DOWNLOAD APP -->
+<section
+  id="download-app"
+  class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary py-16"
+>
+  <div class="container mx-auto px-6 lg:px-16 py-20">
+    <!-- change items-center -> items-start -->
+    <div class="grid grid-cols-1 md:grid-cols-2 items-start gap-10 mt-10">
+      <div>
+        <h2 class="text-3xl md:text-4xl lg:text-5xl font-semibold text-primary mb-10">
+          Download App
+        </h2>
+        <p class="text-base md:text-lg !leading-loose mb-10">
+          Download the Sismoya Water app today and experience hassle-free
+          hydration—order refills, schedule deliveries or pick-ups, and track
+          your water anytime, anywhere. Stay refreshed with safe and clean
+          drinking water right at your fingertips.
+        </p>
+        <a
+          href="#"
+          class="inline-block bg-button text-white font-semibold px-6 py-4 rounded-full shadow-md hover:bg-[#d54f14] transition"
+        >
+          Download
+        </a>
       </div>
-    </section>
+      <div class="flex justify-center md:justify-end">
+        <img
+          src="/images/phone.png"
+          alt="Phone"
+          class="h-[280px] md:h-[400px] lg:h-[500px]"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
 
     <!-- CONTACT US -->
     <section
