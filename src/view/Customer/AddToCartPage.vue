@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { useCartStore } from "@/stores/cart"
 import Cart from '@/assets/icons/cart.png'
 import plusIcon from '@/assets/icons/plus.png'
 import minusIcon from '@/assets/icons/minus.png'
 import CustomerLayout from "@/Layout/CustomerLayout.vue"
-import OrderSummaryModal from "@/components/OrderSummaryModal.vue" // Import the modal
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -17,7 +16,6 @@ onMounted(() => {
 })
 
 const cartItems = computed(() => cartStore.items)
-const showOrderSummary = ref(false) // Control modal visibility
 
 function toggleSelect(item: any) {
   cartStore.toggleSelect(item.id)
@@ -29,9 +27,8 @@ function checkout() {
     alert("Please select at least one item to checkout")
     return
   }
-  
-  // Show the order summary modal instead of alert
-  showOrderSummary.value = true
+  alert(`✅ Proceeding to checkout with ${selectedItems.length} items...`)
+  // You can add your checkout logic here
 }
 
 function increaseQty(item: any) {
@@ -42,6 +39,7 @@ function decreaseQty(item: any) {
   if (item.qty > 1) {
     cartStore.updateQuantity(item.id, item.qty - 1)
   } else {
+    // Automatically remove item when quantity reaches 0
     if (confirm(`Remove ${item.type} from cart?`)) {
       cartStore.removeFromCart(item.id)
     }
@@ -58,11 +56,6 @@ const selectedCount = computed(() =>
   cartItems.value.filter(item => item.selected).length
 )
 
-// Get selected items for the modal
-const selectedItems = computed(() => 
-  cartItems.value.filter(item => item.selected)
-)
-
 function goBack() {
   router.back()
 }
@@ -76,13 +69,15 @@ function getImageUrl(imageUrl: string) {
   return imageUrl
 }
 
-// Handle order placement success
-function handleOrderPlaced() {
-  // Remove selected items from cart after successful order
-  selectedItems.value.forEach(item => {
-    cartStore.removeFromCart(item.id)
-  })
-  showOrderSummary.value = false
+// Properly typed image error handler
+function handleImageError(event: Event) {
+  const target = event.target as HTMLImageElement
+  const fallbackElement = target.nextElementSibling as HTMLElement
+  
+  if (target && fallbackElement) {
+    target.style.display = 'none'
+    fallbackElement.style.display = 'block'
+  }
 }
 </script>
 
@@ -175,7 +170,11 @@ function handleOrderPlaced() {
                       :src="getImageUrl(item.image_url)"
                       :alt="item.type"
                       class="w-20 h-20 object-contain"
+                      @error="handleImageError"
                     />
+                    <div class="hidden text-gray-400 text-xs text-center">
+                      No image
+                    </div>
                   </div>
                 </div>
               </div>
@@ -205,13 +204,5 @@ function handleOrderPlaced() {
         </div>
       </div>
     </div>
-
-    <!-- Order Summary Modal -->
-    <OrderSummaryModal
-      :isOpen="showOrderSummary"
-      :products="selectedItems"
-      @close="showOrderSummary = false"
-      @place-order="handleOrderPlaced"
-    />
   </CustomerLayout>
 </template>

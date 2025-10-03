@@ -55,24 +55,33 @@ const router = createRouter({
   },
 });
 
-// 🔐 Guard
+// 🔐 Improved Guard with better error handling
 router.beforeEach(async (to, from, next) => {
-  if (to.meta.requiresAuth) {
-    const isValid = await validateToken()
-    if (!isValid) {
-      return next("/login")
+  try {
+    if (to.meta.requiresAuth) {
+      const isValid = await validateToken();
+      if (!isValid) {
+        console.log('🛑 Auth required but token invalid, redirecting to login');
+        return next("/login");
+      }
     }
-  }
 
-  // 🚀 If already logged in and tries to access /login, redirect to dashboard
-  if (to.path === "/login") {
-    const isValid = await validateToken()
-    if (isValid) {
-      return next("/customerDashboard")
+    // 🚀 If already logged in and tries to access /login, redirect to dashboard
+    if (to.path === "/login") {
+      const isValid = await validateToken();
+      if (isValid) {
+        console.log('✅ User already logged in, redirecting to dashboard');
+        return next("/customerDashboard");
+      }
     }
-  }
 
-  next()
-})
+    next();
+  } catch (error) {
+    console.error('🚨 Router guard error:', error);
+    // In case of unexpected errors, proceed to the route
+    // This prevents the app from getting stuck
+    next();
+  }
+});
 
 export default router;

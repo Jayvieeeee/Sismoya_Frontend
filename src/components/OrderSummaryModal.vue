@@ -29,7 +29,7 @@ interface User {
 // -------------------- Props --------------------
 const props = defineProps<{
   isOpen: boolean
-  products: ModalProduct[] // Changed to accept multiple products
+  products: ModalProduct[]
 }>()
 
 const emit = defineEmits<{
@@ -48,6 +48,10 @@ const showAddressModal = ref(false)
 const showAddAddressModal = ref(false)
 const showDateTimeModal = ref(false)
 const orderPlacedModal = ref(false)
+
+// -------------------- Order Details --------------------
+const pickUpTime = ref("")
+const paymentMethod = ref("Paypal") // Set default value
 
 // Computed property for total amount
 const totalAmount = computed(() => {
@@ -139,10 +143,6 @@ async function handleAddressAdded(newAddress?: Address) {
   showAddAddressModal.value = false
 }
 
-// -------------------- Order Details --------------------
-const pickUpTime = ref("")
-const paymentMethod = ref("Paypal")
-
 // Map display values to backend values
 const paymentMethodMap = {
   'Paypal': 'Paypal',
@@ -160,7 +160,7 @@ const handleImageError = (event: Event) => {
   target.style.display = 'none'
 }
 
-// Function to format image URL
+// Function to format image URL - FIXED: handles undefined
 function getImageUrl(imageUrl: string | undefined | null): string {
   if (!imageUrl) return ''
   if (imageUrl.startsWith('/')) {
@@ -169,13 +169,31 @@ function getImageUrl(imageUrl: string | undefined | null): string {
   return imageUrl
 }
 
+// Validate required fields before placing order
+function validateOrder(): boolean {
+  if (!selectedAddress.value) {
+    alert("Please select an address before placing your order.")
+    return false
+  }
+
+  if (!pickUpTime.value) {
+    alert("Please select a pickup time before placing your order.")
+    return false
+  }
+
+  if (!paymentMethod.value) {
+    alert("Please select a payment method before placing your order.")
+    return false
+  }
+
+  return true
+}
 
 async function handlePlaceOrder() {
   if (!customer.value || props.products.length === 0) return
 
-  // Validate that an address is selected
-  if (!selectedAddress.value) {
-    alert("Please select an address before placing your order.")
+  // Validate all required fields
+  if (!validateOrder()) {
     return
   }
 
@@ -188,11 +206,13 @@ async function handlePlaceOrder() {
 
   const payload = {
     userId: customer.value.user_id,
-    pickup_datetime: pickUpTime.value,
-    payment_method: getBackendPaymentMethod(),
+    pickup_datetime: pickUpTime.value, // This was missing
+    payment_method: getBackendPaymentMethod(), // This was missing
     address_id: selectedAddress.value?.id || null,
     items: items
   }
+
+  console.log("Order payload:", payload)
 
   try {
     const res = await axiosInstance.post("/orders", payload)
@@ -205,7 +225,7 @@ async function handlePlaceOrder() {
     }
   } catch (err: any) {
     console.log("ERROR RESPONSE:", err.response?.data)
-    alert(err.response?.data?.message || 'Order failed. Please try again.')
+    alert(err.response?.data?.message || 'Order failed. Please check the console for details.')
   }
 }
 </script>

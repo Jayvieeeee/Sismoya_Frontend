@@ -46,17 +46,31 @@ function closeModal() {
   showModal.value = false
 }
 
-// Add to cart
-function handleAddMore(item: ModalProduct) {
-  cartStore.addToCart({
-    id: item.id,
-    type: item.type,
-    liters: item.liters,
-    price: item.price,
-    qty: item.qty,
-    image_url: item.image_url || "" // Provide fallback for undefined
-  })
-  showModal.value = false
+// Add to cart - with better feedback
+async function handleAddMore(item: ModalProduct) {
+  try {
+    await cartStore.addToCart({
+      id: item.id,
+      type: item.type,
+      liters: item.liters,
+      price: item.price,
+      qty: item.qty,
+      image_url: item.image_url || ""
+    })
+    
+    // Show success message
+    console.log('Item added to cart successfully!')
+    
+    // Optional: Show a toast notification
+    // You can add a toast library or use alert for now
+    alert(`${item.type} added to cart!`)
+    
+    showModal.value = false
+    
+  } catch (error) {
+    console.error('Failed to add item to cart:', error)
+    alert('Failed to add item to cart. Please try again.')
+  }
 }
 
 // Direct order
