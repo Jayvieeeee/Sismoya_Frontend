@@ -10,15 +10,16 @@ import CustomerLayout from "@/Layout/CustomerLayout.vue"
 const router = useRouter()
 const cartStore = useCartStore()
 
-// Initialize cart from localStorage on component mount
-onMounted(() => {
-  cartStore.loadFromStorage()
+// Load cart from BACKEND instead of localStorage
+onMounted(async () => {
+  await cartStore.loadFromBackend()
 })
 
 const cartItems = computed(() => cartStore.items)
 
 function toggleSelect(item: any) {
-  cartStore.toggleSelect(item.id)
+  // Use cart_item_id from backend instead of id
+  cartStore.toggleSelect(item.cart_item_id || item.id)
 }
 
 function checkout() {
@@ -31,25 +32,34 @@ function checkout() {
   // You can add your checkout logic here
 }
 
-function increaseQty(item: any) {
-  cartStore.updateQuantity(item.id, item.qty + 1)
+// Updated to use backend functions - FIXED: Only pass cartItemId
+async function increaseQty(item: any) {
+  await cartStore.updateQuantity(
+    item.cart_item_id || item.id, 
+    item.quantity + 1
+  )
 }
 
-function decreaseQty(item: any) {
-  if (item.qty > 1) {
-    cartStore.updateQuantity(item.id, item.qty - 1)
+// Updated to use backend functions - FIXED: Only pass cartItemId
+async function decreaseQty(item: any) {
+  const currentQty = item.quantity || item.qty
+  if (currentQty > 1) {
+    await cartStore.updateQuantity(
+      item.cart_item_id || item.id,
+      currentQty - 1
+    )
   } else {
-    // Automatically remove item when quantity reaches 0
     if (confirm(`Remove ${item.type} from cart?`)) {
-      cartStore.removeFromCart(item.id)
+      await cartStore.removeFromCart([item.cart_item_id || item.id])
     }
   }
 }
 
+// Use quantity instead of qty
 const total = computed(() =>
   cartItems.value
     .filter(item => item.selected)
-    .reduce((sum, item) => sum + item.price * item.qty, 0)
+    .reduce((sum, item) => sum + (item.price || 0) * (item.quantity || item.qty || 0), 0)
 )
 
 const selectedCount = computed(() =>
@@ -60,8 +70,8 @@ function goBack() {
   router.back()
 }
 
-// Function to format image URL
-function getImageUrl(imageUrl: string) {
+// Function to format image URL - FIXED: Handle undefined
+function getImageUrl(imageUrl: string | undefined): string {
   if (!imageUrl) return ''
   if (imageUrl.startsWith('/')) {
     return `https://sismoya.com/api${imageUrl}`
@@ -121,7 +131,7 @@ function handleImageError(event: Event) {
           <div v-else>
             <div
               v-for="item in cartItems"
-              :key="item.id"
+              :key="item.cart_item_id || item.id"
               class="flex justify-between items-center border-b py-6 hover:bg-gray-50 transition-colors"
             >
               <!-- Left Info -->
@@ -140,7 +150,7 @@ function handleImageError(event: Event) {
                   <div class="flex-1">
                     <p class="text-medium"><span class="font-semibold">Type: </span>{{ item.type }}</p>
                     <p class="text-medium"><span class="font-semibold">Liters:</span> {{ item.liters }}</p>
-                    <p class="text-medium"><span class="font-semibold">Price: </span> ₱{{ item.price.toFixed(2) }}</p>
+                    <p class="text-medium"><span class="font-semibold">Price: </span> ₱{{ (item.price || 0).toFixed(2) }}</p>
 
                     <!-- Qty controls -->
                     <div class="flex items-center gap-3 mt-3">
@@ -150,7 +160,8 @@ function handleImageError(event: Event) {
                       >
                         <img :src="minusIcon" alt="minus" class="w-3 h-3" />
                       </button>
-                      <span class="font-semibold w-8 text-center">{{ item.qty }}</span>
+                      <!-- Use quantity from backend -->
+                      <span class="font-semibold w-8 text-center">{{ item.quantity || item.qty }}</span>
                       <button
                         @click="increaseQty(item)"
                         class="w-8 h-8 flex items-center justify-center rounded-full  hover:bg-gray-300 transition"
@@ -161,7 +172,8 @@ function handleImageError(event: Event) {
 
                     <!-- Item Total -->
                     <p class="text-sm mt-2">
-                      Item Total: ₱{{ (item.price * item.qty).toFixed(2) }}
+                      <!-- Use quantity from backend -->
+                      Item Total: ₱{{ ((item.price || 0) * (item.quantity || item.qty || 0)).toFixed(2) }}
                     </p>
                   </div>
 

@@ -46,23 +46,14 @@ function closeModal() {
   showModal.value = false
 }
 
-// Add to cart - with better feedback
+// Add to cart - FIXED: Pass only gallonId and quantity
 async function handleAddMore(item: ModalProduct) {
   try {
-    await cartStore.addToCart({
-      id: item.id,
-      type: item.type,
-      liters: item.liters,
-      price: item.price,
-      qty: item.qty,
-      image_url: item.image_url || ""
-    })
+    await cartStore.addToCart(item.id, item.qty)
     
     // Show success message
     console.log('Item added to cart successfully!')
     
-    // Optional: Show a toast notification
-    // You can add a toast library or use alert for now
     alert(`${item.type} added to cart!`)
     
     showModal.value = false
@@ -83,10 +74,8 @@ function handleOrderNow(item: ModalProduct) {
 // Handle order success
 function handleOrderSuccess() {
   showSummaryModal.value = false
-  // Add any success logic here, like showing a success message
   console.log("Order placed successfully!")
 }
-
 </script>
 
 <template>

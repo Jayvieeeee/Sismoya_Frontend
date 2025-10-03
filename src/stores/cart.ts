@@ -1,95 +1,107 @@
-// stores/cart.ts
+// stores/cart.ts - SIMPLE VERSION
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { getUserCart, addToCartBackend, removeFromCartBackend } from '@/api/cartApi'
 
 export interface CartItem {
-  id: number
-  type: string
-  liters: number
-  price: number
-  qty: number
-  image_url: string
+  cart_item_id?: number
+  gallon_id: number
+  id?: number
+  type?: string
+  liters?: number
+  price?: number
+  quantity: number
+  qty?: number
+  total_price?: number
+  image_url?: string
   selected?: boolean
 }
-
-
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
 
-  // Load cart from localStorage
-  const loadFromStorage = () => {
-    const saved = localStorage.getItem('cart')
-    if (saved) {
-      try {
-        items.value = JSON.parse(saved)
-      } catch (error) {
-        console.error('Failed to load cart from storage:', error)
-        items.value = []
+  // Load cart from BACKEND
+  const loadFromBackend = async () => {
+    try {
+      const backendItems = await getUserCart()
+      items.value = backendItems.map(item => ({
+        ...item,
+        selected: false
+      }))
+    } catch (error) {
+      console.error('Failed to load cart from backend:', error)
+      items.value = []
+    }
+  }
+
+  // SIMPLE VERSION: Only accept gallonId and quantity
+  const addToCart = async (gallonId: number, quantity: number = 1) => {
+    try {
+      const result = await addToCartBackend(gallonId, quantity)
+      await loadFromBackend()
+      return result
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+      throw error
+    }
+  }
+
+  // Remove from cart via BACKEND
+  const removeFromCart = async (cartItemIds: number[]) => {
+    try {
+      await removeFromCartBackend(cartItemIds)
+      await loadFromBackend()
+    } catch (error) {
+      console.error('Failed to remove from cart:', error)
+      throw error
+    }
+  }
+
+  // Update quantity via backend
+  const updateQuantity = async (cartItemId: number, newQuantity: number) => {
+    try {
+      if (newQuantity <= 0) {
+        await removeFromCart([cartItemId])
+      } else {
+        const item = items.value.find(item => (item.cart_item_id || item.id) === cartItemId)
+        if (item) {
+          await removeFromCart([cartItemId])
+          await addToCart(item.gallon_id, newQuantity)
+        }
       }
+    } catch (error) {
+      console.error('Failed to update quantity:', error)
+      throw error
     }
   }
 
-  // Save cart to localStorage
-  const saveToStorage = () => {
-    localStorage.setItem('cart', JSON.stringify(items.value))
-  }
-  
-
-  // Add to cart
-  const addToCart = (product: CartItem) => {
-    const existing = items.value.find(item => item.id === product.id)
-    if (existing) {
-      existing.qty += product.qty
-    } else {
-      items.value.push({ ...product, selected: true })
-    }
-    saveToStorage()
-  }
-
-  const addItem = (product: CartItem) => {
-  addToCart(product)
-}
-
-  // Remove from cart
-  const removeFromCart = (id: number) => {
-    const index = items.value.findIndex(item => item.id === id)
-    if (index !== -1) {
-      items.value.splice(index, 1)
-      saveToStorage()
-    }
-  }
-
-  // Update quantity
-  const updateQuantity = (id: number, newQty: number) => {
-    const item = items.value.find(item => item.id === id)
-    if (item && newQty > 0) {
-      item.qty = newQty
-      saveToStorage()
-    }
-  }
-
-  // Toggle selection
-  const toggleSelect = (id: number) => {
-    const item = items.value.find(item => item.id === id)
+  // Toggle selection (frontend only)
+  const toggleSelect = (cartItemId: number) => {
+    const item = items.value.find(item => (item.cart_item_id || item.id) === cartItemId)
     if (item) {
       item.selected = !item.selected
-      saveToStorage()
     }
   }
 
   // Clear cart
-  const clearCart = () => {
-    items.value = []
-    localStorage.removeItem('cart')
+  const clearCart = async () => {
+    try {
+      const allItemIds = items.value.map(item => item.cart_item_id!).filter(Boolean)
+      if (allItemIds.length > 0) {
+        await removeFromCartBackend(allItemIds)
+      }
+      items.value = []
+    } catch (error) {
+      console.error('Failed to clear cart:', error)
+      throw error
+    }
   }
 
-  // Select all / deselect all
+  // Select all / deselect all (frontend only)
   const toggleSelectAll = (select: boolean) => {
     items.value.forEach(item => {
       item.selected = select
     })
-    saveToStorage()
   }
 
   // Get selected items
@@ -99,32 +111,37 @@ export const useCartStore = defineStore('cart', () => {
 
   // Total items count
   const totalItems = computed(() => 
-    items.value.reduce((sum, item) => sum + item.qty, 0)
+    items.value.reduce((sum, item) => sum + (item.quantity || item.qty || 0), 0)
   )
 
   // Total price
   const totalPrice = computed(() =>
-    items.value.reduce((sum, item) => sum + (item.price * item.qty), 0)
+    items.value.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || item.qty || 0)), 0)
   )
 
   // Selected total price
   const selectedTotalPrice = computed(() =>
-    selectedItems.value.reduce((sum, item) => sum + (item.price * item.qty), 0)
+    selectedItems.value.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || item.qty || 0)), 0)
   )
 
-return {
-  items,
-  loadFromStorage,
-  addToCart,
-  addItem, // Add this line
-  removeFromCart,
-  updateQuantity,
-  toggleSelect,
-  toggleSelectAll,
-  clearCart,
-  selectedItems,
-  totalItems,
-  totalPrice,
-  selectedTotalPrice
-}
+  // Selected count
+  const selectedCount = computed(() =>
+    selectedItems.value.length
+  )
+
+  return {
+    items,
+    loadFromBackend,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    toggleSelect,
+    toggleSelectAll,
+    clearCart,
+    selectedItems,
+    totalItems,
+    totalPrice,
+    selectedTotalPrice,
+    selectedCount
+  }
 })
