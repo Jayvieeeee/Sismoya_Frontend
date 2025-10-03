@@ -66,10 +66,13 @@ function handleOrderNow(item: ModalProduct) {
   showSummaryModal.value = true
 }
 
-function handlePlaceOrder(orderData: any) {
-  console.log("✅ Final order placed:", orderData)
+// Handle order success
+function handleOrderSuccess() {
   showSummaryModal.value = false
+  // Add any success logic here, like showing a success message
+  console.log("Order placed successfully!")
 }
+
 </script>
 
 <template>
@@ -139,8 +142,8 @@ function handlePlaceOrder(orderData: any) {
   <!-- Order Summary Modal -->
   <OrderSummaryModal
     :isOpen="showSummaryModal"
-    :product="selectedProduct"
+    :products="[selectedProduct]" 
     @close="showSummaryModal = false"
-    @place-order="handlePlaceOrder"
+    @place-order="handleOrderSuccess"
   />
 </template>

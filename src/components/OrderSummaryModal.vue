@@ -29,7 +29,7 @@ interface User {
 // -------------------- Props --------------------
 const props = defineProps<{
   isOpen: boolean
-  product: ModalProduct
+  products: ModalProduct[] // Changed to accept multiple products
 }>()
 
 const emit = defineEmits<{
@@ -49,19 +49,14 @@ const showAddAddressModal = ref(false)
 const showDateTimeModal = ref(false)
 const orderPlacedModal = ref(false)
 
-// Computed property for image URL with proper formatting
-const productImageUrl = computed(() => {
-  if (!props.product?.image_url) return ''
-  
-  let url = props.product.image_url
-  
-  // Ensure the URL is properly formatted
-  if (url.startsWith('/')) {
-    // If it's a relative path, construct full URL
-    url = `https://sismoya.com/api${url}`
-  }
-  
-  return url
+// Computed property for total amount
+const totalAmount = computed(() => {
+  return props.products.reduce((sum, product) => sum + (product.price * product.qty), 0)
+})
+
+// Computed property for total quantity
+const totalQuantity = computed(() => {
+  return props.products.reduce((sum, product) => sum + product.qty, 0)
 })
 
 // Function to automatically select the best address
@@ -89,10 +84,10 @@ const refreshAddresses = async () => {
 
     addresses.value = Array.isArray(fetched)
       ? fetched.map(a => ({
-          id: a.address_id || a.id, // Backend might return 'address_id'
+          id: a.address_id || a.id,
           label: a.label,
-          full: a.address, // Backend returns 'address' field
-          isDefault: a.is_default // Backend returns snake_case
+          full: a.address,
+          isDefault: a.is_default
         }))
       : []
 
@@ -135,9 +130,8 @@ function handleAddNewAddress() {
 // Handle when new address is added
 async function handleAddressAdded(newAddress?: Address) {
   console.log("🔄 New address added, refreshing addresses...")
-  await refreshAddresses() // This will reload all addresses including the new one
+  await refreshAddresses()
   
-  // If a new address was provided and it's the first one, select it automatically
   if (newAddress && addresses.value.length === 1) {
     selectedAddress.value = addresses.value[0]
   }
@@ -164,11 +158,20 @@ const getBackendPaymentMethod = () => {
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   target.style.display = 'none'
-  // You could show a fallback image here if needed
 }
 
+// Function to format image URL
+function getImageUrl(imageUrl: string | undefined | null): string {
+  if (!imageUrl) return ''
+  if (imageUrl.startsWith('/')) {
+    return `https://sismoya.com/api${imageUrl}`
+  }
+  return imageUrl
+}
+
+
 async function handlePlaceOrder() {
-  if (!customer.value || !props.product) return
+  if (!customer.value || props.products.length === 0) return
 
   // Validate that an address is selected
   if (!selectedAddress.value) {
@@ -176,21 +179,19 @@ async function handlePlaceOrder() {
     return
   }
 
-  // Calculate total price
-  const totalPrice = props.product.price * props.product.qty
+  // Create items array for all products
+  const items = props.products.map(product => ({
+    gallon_id: product.id,
+    quantity: product.qty,
+    total_price: product.price * product.qty
+  }))
 
   const payload = {
     userId: customer.value.user_id,
     pickup_datetime: pickUpTime.value,
-    payment_method: getBackendPaymentMethod(), // Use mapped value
+    payment_method: getBackendPaymentMethod(),
     address_id: selectedAddress.value?.id || null,
-    items: [
-      {
-        gallon_id: props.product.id,
-        quantity: props.product.qty,
-        total_price: totalPrice
-      }
-    ]
+    items: items
   }
 
   try {
@@ -204,7 +205,7 @@ async function handlePlaceOrder() {
     }
   } catch (err: any) {
     console.log("ERROR RESPONSE:", err.response?.data)
-    
+    alert(err.response?.data?.message || 'Order failed. Please try again.')
   }
 }
 </script>
@@ -215,7 +216,7 @@ async function handlePlaceOrder() {
     class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 font-montserrat"
   >
     <div
-      class="bg-white rounded-2xl px-12 py-5 shadow-lg w-full max-w-md relative"
+      class="bg-white rounded-2xl px-12 py-5 shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative"
     >
       <!-- Close -->
       <button
@@ -263,13 +264,17 @@ async function handlePlaceOrder() {
         </div>
       </div>
 
-      <!-- Product Section -->
-      <p class="font-medium text-sm mb-2">Gallon:</p>
-      <div class="flex items-center gap-4 my-3 p-3 ">
+      <!-- Products Section -->
+      <p class="font-medium text-sm mb-2">Gallons ({{ totalQuantity }}):</p>
+      <div 
+        v-for="product in products" 
+        :key="product.id"
+        class="flex items-center gap-4 my-3 p-3 border-b"
+      >
         <!-- Product Image with Error Handling -->
-        <div class="flex-shrink-0 w-16 h-16 bg-white  flex items-center justify-center">
+        <div class="flex-shrink-0 w-16 h-16 bg-white flex items-center justify-center">
           <img
-            :src="productImageUrl"
+            :src="getImageUrl(product.image_url)"
             :alt="product.type"
             class="w-12 h-12 object-contain"
             @error="handleImageError"
@@ -282,6 +287,7 @@ async function handlePlaceOrder() {
             <div>
               <p class="font-semibold text-sm truncate">{{ product.type }}</p>
               <p class="text-xs">Quantity: {{ product.qty }}</p>
+              <p class="text-xs">Price: ₱{{ product.price.toFixed(2) }}</p>
             </div>
             <p class="font-semibold text-sm whitespace-nowrap ml-2">
               ₱{{ (product.price * product.qty).toFixed(2) }}
@@ -294,7 +300,7 @@ async function handlePlaceOrder() {
       <div class="flex justify-between items-center mt-4 mb-4 pt-3 border-t border-gray-200">
         <span class="text-sm font-semibold text-gray-800">Total Amount:</span>
         <span class="text-lg font-bold">
-          ₱{{ (product.price * product.qty).toFixed(2) }}
+          ₱{{ totalAmount.toFixed(2) }}
         </span>
       </div>
 
