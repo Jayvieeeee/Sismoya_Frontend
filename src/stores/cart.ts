@@ -1,147 +1,132 @@
-// stores/cart.ts - SIMPLE VERSION
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { getUserCart, addToCartBackend, removeFromCartBackend } from '@/api/cartApi'
+import { defineStore } from 'pinia';
+import type { CartItem } from '@/api/cartApi';
+import { getUserCart, addToCartBackend, removeFromCartBackend, updateCartItemBackend } from '@/api/cartApi';
 
-export interface CartItem {
-  cart_item_id?: number
-  gallon_id: number
-  id?: number
-  type?: string
-  liters?: number
-  price?: number
-  quantity: number
-  qty?: number
-  total_price?: number
-  image_url?: string
-  selected?: boolean
-}
+export const useCartStore = defineStore('cart', {
+  state: () => ({
+    items: [] as CartItem[],
+    loading: false,
+    error: null as string | null,
+  }),
 
-export const useCartStore = defineStore('cart', () => {
-  const items = ref<CartItem[]>([])
-
-  // Load cart from BACKEND
-  const loadFromBackend = async () => {
-    try {
-      const backendItems = await getUserCart()
-      items.value = backendItems.map(item => ({
+  getters: {
+    totalItems: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
+    totalPrice: (state) => state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    isEmpty: (state) => state.items.length === 0,
+    
+    // Get items with frontend-compatible field names
+    itemsForDisplay: (state) => {
+      return state.items.map(item => ({
         ...item,
-        selected: false
-      }))
-    } catch (error) {
-      console.error('Failed to load cart from backend:', error)
-      items.value = []
+        // Map backend fields to frontend expected fields
+        type: item.name,        // Map 'name' to 'type'
+        liters: parseFloat(item.size) || 0, // Map 'size' to 'liters' and convert to number
+        qty: item.quantity,     // Add 'qty' alias for compatibility
+        selected: item.selected || false
+      }));
     }
-  }
+  },
 
-  // SIMPLE VERSION: Only accept gallonId and quantity
-  const addToCart = async (gallonId: number, quantity: number = 1) => {
-    try {
-      const result = await addToCartBackend(gallonId, quantity)
-      await loadFromBackend()
-      return result
-    } catch (error) {
-      console.error('Failed to add to cart:', error)
-      throw error
-    }
-  }
-
-  // Remove from cart via BACKEND
-  const removeFromCart = async (cartItemIds: number[]) => {
-    try {
-      await removeFromCartBackend(cartItemIds)
-      await loadFromBackend()
-    } catch (error) {
-      console.error('Failed to remove from cart:', error)
-      throw error
-    }
-  }
-
-  // Update quantity via backend
-  const updateQuantity = async (cartItemId: number, newQuantity: number) => {
-    try {
-      if (newQuantity <= 0) {
-        await removeFromCart([cartItemId])
-      } else {
-        const item = items.value.find(item => (item.cart_item_id || item.id) === cartItemId)
-        if (item) {
-          await removeFromCart([cartItemId])
-          await addToCart(item.gallon_id, newQuantity)
-        }
+  actions: {
+    async loadFromBackend() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        console.log('🔄 Loading cart from backend...');
+        const backendItems = await getUserCart();
+        console.log('📦 Backend items received:', backendItems);
+        
+        // Ensure backendItems is always treated as an array
+        const safeItems = Array.isArray(backendItems) ? backendItems : [];
+        
+        this.items = safeItems.map(item => ({
+          ...item,
+          // Ensure all required fields are present with correct types
+          cart_item_id: item.cart_item_id || 0,
+          gallon_id: item.gallon_id || 0,
+          quantity: item.quantity || 0,
+          price: Number(item.price) || 0, // Ensure price is a number
+          total_price: Number(item.total_price) || (Number(item.price) || 0) * (item.quantity || 0)
+        }));
+        
+        console.log(`✅ Loaded ${this.items.length} items into cart`);
+      } catch (error: any) {
+        console.error('❌ Failed to load cart from backend:', error);
+        this.error = error.message;
+        this.items = []; // Reset to empty array on error
+      } finally {
+        this.loading = false;
       }
-    } catch (error) {
-      console.error('Failed to update quantity:', error)
-      throw error
-    }
-  }
+    },
 
-  // Toggle selection (frontend only)
-  const toggleSelect = (cartItemId: number) => {
-    const item = items.value.find(item => (item.cart_item_id || item.id) === cartItemId)
-    if (item) {
-      item.selected = !item.selected
-    }
-  }
-
-  // Clear cart
-  const clearCart = async () => {
-    try {
-      const allItemIds = items.value.map(item => item.cart_item_id!).filter(Boolean)
-      if (allItemIds.length > 0) {
-        await removeFromCartBackend(allItemIds)
+    async addToCart(gallonId: number, quantity: number = 1) {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        console.log(`🛒 Adding item ${gallonId} with quantity ${quantity}`);
+        const updatedCart = await addToCartBackend(gallonId, quantity);
+        
+        // Ensure we have an array
+        const safeItems = Array.isArray(updatedCart) ? updatedCart : [];
+        this.items = safeItems.map(item => ({
+          ...item,
+          price: Number(item.price) || 0,
+          total_price: Number(item.total_price) || 0
+        }));
+        
+        console.log(`✅ Cart updated with ${safeItems.length} items`);
+      } catch (error: any) {
+        console.error('❌ Failed to add to cart:', error);
+        this.error = error.message;
+      } finally {
+        this.loading = false;
       }
-      items.value = []
-    } catch (error) {
-      console.error('Failed to clear cart:', error)
-      throw error
-    }
-  }
+    },
 
-  // Select all / deselect all (frontend only)
-  const toggleSelectAll = (select: boolean) => {
-    items.value.forEach(item => {
-      item.selected = select
-    })
-  }
+    async removeFromCart(cartItemIds: number[]) {
+      this.loading = true;
+      try {
+        await removeFromCartBackend(cartItemIds);
+        // Reload the cart to get updated state
+        await this.loadFromBackend();
+      } catch (error: any) {
+        console.error('❌ Failed to remove from cart:', error);
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
 
-  // Get selected items
-  const selectedItems = computed(() => 
-    items.value.filter(item => item.selected)
-  )
+    async updateQuantity(cartItemId: number, quantity: number) {
+      this.loading = true;
+      try {
+        const updatedCart = await updateCartItemBackend(cartItemId, quantity);
+        this.items = Array.isArray(updatedCart) ? updatedCart.map(item => ({
+          ...item,
+          price: Number(item.price) || 0,
+          total_price: Number(item.total_price) || 0
+        })) : [];
+      } catch (error: any) {
+        console.error('❌ Failed to update quantity:', error);
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
 
-  // Total items count
-  const totalItems = computed(() => 
-    items.value.reduce((sum, item) => sum + (item.quantity || item.qty || 0), 0)
-  )
+    toggleSelect(cartItemId: number) {
+      const item = this.items.find(item => item.cart_item_id === cartItemId);
+      if (item) {
+        item.selected = !item.selected;
+      }
+    },
 
-  // Total price
-  const totalPrice = computed(() =>
-    items.value.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || item.qty || 0)), 0)
-  )
-
-  // Selected total price
-  const selectedTotalPrice = computed(() =>
-    selectedItems.value.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || item.qty || 0)), 0)
-  )
-
-  // Selected count
-  const selectedCount = computed(() =>
-    selectedItems.value.length
-  )
-
-  return {
-    items,
-    loadFromBackend,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    toggleSelect,
-    toggleSelectAll,
-    clearCart,
-    selectedItems,
-    totalItems,
-    totalPrice,
-    selectedTotalPrice,
-    selectedCount
-  }
-})
+    clearError() {
+      this.error = null;
+    },
+  },
+});

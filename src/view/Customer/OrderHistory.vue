@@ -142,7 +142,7 @@ const filteredOrders = computed(() => {
               v-else
               v-for="order in filteredOrders"
               :key="order.order_id"
-              class="border-t hover:bg-gray-50"
+              class="border-t hover:bg-gray-50 text-center"
             >
               <td class="py-3 px-4">{{ order.order_id }}</td>
               <td class="py-3 px-4">Round Gallon</td>
