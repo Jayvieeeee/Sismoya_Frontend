@@ -119,11 +119,6 @@ function handleImageError(event: Event) {
 
           <!-- Cart Items -->
           <div v-else>
-            <div class="mb-4 flex justify-between items-center">
-              <p class="text-gray-600">{{ cartItems.length }} item(s) in cart</p>
-              <p class="text-sm text-gray-500">{{ selectedCount }} selected</p>
-            </div>
-
             <div
               v-for="item in cartItems"
               :key="item.id"

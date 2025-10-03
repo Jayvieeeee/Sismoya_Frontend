@@ -48,4 +48,3 @@ export async function resendResetCode(email: string) {
     throw error;
   }
 }
-
