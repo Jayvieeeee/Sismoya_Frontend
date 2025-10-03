@@ -35,7 +35,6 @@ export const useCartStore = defineStore('cart', {
       try {
         console.log('🔄 Loading cart from backend...');
         const backendItems = await getUserCart();
-        console.log('📦 Backend items received:', backendItems);
         
         // Ensure backendItems is always treated as an array
         const safeItems = Array.isArray(backendItems) ? backendItems : [];
@@ -52,7 +51,6 @@ export const useCartStore = defineStore('cart', {
         
         console.log(`✅ Loaded ${this.items.length} items into cart`);
       } catch (error: any) {
-        console.error('❌ Failed to load cart from backend:', error);
         this.error = error.message;
         this.items = []; // Reset to empty array on error
       } finally {
@@ -65,7 +63,6 @@ export const useCartStore = defineStore('cart', {
       this.error = null;
       
       try {
-        console.log(`🛒 Adding item ${gallonId} with quantity ${quantity}`);
         const updatedCart = await addToCartBackend(gallonId, quantity);
         
         // Ensure we have an array
@@ -78,7 +75,6 @@ export const useCartStore = defineStore('cart', {
         
         console.log(`✅ Cart updated with ${safeItems.length} items`);
       } catch (error: any) {
-        console.error('❌ Failed to add to cart:', error);
         this.error = error.message;
       } finally {
         this.loading = false;
@@ -92,7 +88,6 @@ export const useCartStore = defineStore('cart', {
         // Reload the cart to get updated state
         await this.loadFromBackend();
       } catch (error: any) {
-        console.error('❌ Failed to remove from cart:', error);
         this.error = error.message;
         throw error;
       } finally {
@@ -110,7 +105,6 @@ export const useCartStore = defineStore('cart', {
           total_price: Number(item.total_price) || 0
         })) : [];
       } catch (error: any) {
-        console.error('❌ Failed to update quantity:', error);
         this.error = error.message;
         throw error;
       } finally {
