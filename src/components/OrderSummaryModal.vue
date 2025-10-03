@@ -149,6 +149,17 @@ async function handleAddressAdded(newAddress?: Address) {
 const pickUpTime = ref("")
 const paymentMethod = ref("Paypal")
 
+// Map display values to backend values
+const paymentMethodMap = {
+  'Paypal': 'Paypal',
+  'Cash on Pickup': 'CASH'
+}
+
+// Get the backend payment method value
+const getBackendPaymentMethod = () => {
+  return paymentMethodMap[paymentMethod.value as keyof typeof paymentMethodMap] || paymentMethod.value
+}
+
 // Image error handler
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
@@ -162,7 +173,6 @@ async function handlePlaceOrder() {
   // Validate that an address is selected
   if (!selectedAddress.value) {
     alert("Please select an address before placing your order.")
-    showAddressModal.value = true
     return
   }
 
@@ -172,7 +182,7 @@ async function handlePlaceOrder() {
   const payload = {
     userId: customer.value.user_id,
     pickup_datetime: pickUpTime.value,
-    payment_method: paymentMethod.value,
+    payment_method: getBackendPaymentMethod(), // Use mapped value
     address_id: selectedAddress.value?.id || null,
     items: [
       {
@@ -185,7 +195,6 @@ async function handlePlaceOrder() {
 
   try {
     const res = await axiosInstance.post("/orders", payload)
-    console.log("SUCCESS RESPONSE:", res.data)
     if (res.data.success) {
       emit("close")               
       orderPlacedModal.value = true 
@@ -196,13 +205,6 @@ async function handlePlaceOrder() {
   } catch (err: any) {
     console.log("ERROR RESPONSE:", err.response?.data)
     
-    // Show detailed error to user
-    if (err.response?.data?.errors) {
-      const errors = Object.values(err.response.data.errors).flat()
-      alert("Validation errors:\n" + errors.join("\n"))
-    } else {
-      alert(err.response?.data?.message || 'Order failed. Please check the console for details.')
-    }
   }
 }
 </script>

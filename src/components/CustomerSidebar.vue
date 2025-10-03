@@ -44,7 +44,7 @@ async function navigateTo(item: MenuItem) {
 </script>
 
 <template>
-  <aside class="bg-primary text-white w-60 h-screen flex flex-col">
+  <aside class="bg-primary text-white w-60 h-screen flex flex-col font-montserrat">
     <!-- Logo -->
     <div class="flex items-center justify-center my-12">
       <img src="/images/Sismoya_Logo.png" alt="Logo" class="h-16" />
@@ -57,7 +57,7 @@ async function navigateTo(item: MenuItem) {
         :key="item.name"
         @click="navigateTo(item)"
         :class="[
-          'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left not-italic font-normal',
+          'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left',
           router.currentRoute.value.path === item.route
             ? 'bg-[#246589]'
             : 'hover:bg-[#246589]'
