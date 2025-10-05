@@ -22,43 +22,28 @@ function formatDate(dateString: string) {
 onMounted(async () => {
   try {
     const token = localStorage.getItem("token")
-    console.log("🔐 Current token:", token)
-
     if (!token) {
       router.push("/login")
       return
     }
 
-    // Test if token is valid using profile
     try {
-      const profile = await getProfile()
-      console.log("✅ Token is valid, profile:", profile)
-    } catch (profileError) {
-      console.error("❌ Token validation failed:", profileError)
-      // Only logout if profile fails (authentication issue)
+      await getProfile()
+    } catch {
       localStorage.removeItem("token")
       localStorage.removeItem("user")
       router.push("/login")
       return
     }
 
-    // Try to fetch orders
-    console.log("🔄 Fetching orders from /orders endpoint...")
     const res = await axiosInstance.get("/orders")
-    console.log("✅ Orders response:", res.data)
-    
     if (res.data.success) {
       orders.value = res.data.orders
-      console.log(`📦 Loaded ${orders.value.length} orders`)
     }
   } catch (err: any) {
-    console.error("❌ Failed to load orders:", err)
-    console.error("Error details:", err.response?.data)
-    
+    console.error("Failed to load orders:", err)
     if (err.response?.status === 401) {
-      console.error("🔒 401 Unauthorized - Backend middleware issue")
       backendError.value = "Order history is temporarily unavailable due to a backend configuration issue."
-      // DON'T logout here - this is a backend issue, not an authentication failure
     } else {
       backendError.value = "Failed to load orders. Please try again later."
     }
@@ -80,16 +65,20 @@ const filteredOrders = computed(() => {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-6xl mx-auto p-6">
+    <div class="max-w-6xl mx-auto p-4 sm:p-6">
       <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-blue-800">Orders</h1>
 
-      <!-- Show backend issue warning -->
-      <div v-if="backendError" class="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
+      <!-- Backend Error -->
+      <div
+        v-if="backendError"
+        class="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded-lg"
+      >
         <p class="text-yellow-800 text-sm">
           {{ backendError }}
         </p>
       </div>
 
+      <!-- Search Bar -->
       <div class="mb-4">
         <input
           v-model="search"
@@ -100,8 +89,8 @@ const filteredOrders = computed(() => {
         />
       </div>
 
-      <!-- 📋 Orders Table -->
-      <div class="bg-white shadow-md rounded-xl overflow-x-auto">
+      <!-- Desktop Table -->
+      <div class="hidden sm:block bg-white shadow-md rounded-xl overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-center border-b">
@@ -119,12 +108,13 @@ const filteredOrders = computed(() => {
               <td colspan="6" class="text-center py-6">Loading orders...</td>
             </tr>
 
-            <!-- Backend Error Message -->
+            <!-- Backend Error -->
             <tr v-else-if="backendError && orders.length === 0">
               <td colspan="6" class="text-center py-8">
                 <div class="flex flex-col items-center text-gray-500">
                   <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                   </svg>
                   <p class="font-medium">Order History Temporarily Unavailable</p>
                   <p class="text-sm mt-1">We're working to resolve this issue.</p>
@@ -132,12 +122,12 @@ const filteredOrders = computed(() => {
               </td>
             </tr>
 
-            <!-- Empty State (no backend error) -->
+            <!-- Empty -->
             <tr v-else-if="orders.length === 0">
               <td colspan="6" class="text-center py-6 text-gray-500">No orders found.</td>
             </tr>
 
-            <!-- Data -->
+            <!-- Data Rows -->
             <tr
               v-else
               v-for="order in filteredOrders"
@@ -167,6 +157,52 @@ const filteredOrders = computed(() => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile View (Cards) -->
+      <div class="sm:hidden space-y-4">
+        <div v-if="loading" class="text-center py-6 text-gray-500">Loading orders...</div>
+
+        <div v-else-if="backendError && orders.length === 0" class="text-center py-8 text-gray-500">
+          <p class="font-medium">Order History Temporarily Unavailable</p>
+          <p class="text-sm mt-1">We're working to resolve this issue.</p>
+        </div>
+
+        <div v-else-if="orders.length === 0" class="text-center py-6 text-gray-500">
+          No orders found.
+        </div>
+
+        <div
+          v-else
+          v-for="order in filteredOrders"
+          :key="order.order_id"
+          class="bg-white shadow rounded-lg p-4 border border-gray-100"
+        >
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-semibold text-blue-800">Order #{{ order.order_id }}</h2>
+            <span
+              class="text-sm font-medium"
+              :class="{
+                'text-yellow-500': order.status === 'Pending',
+                'text-green-600': order.status === 'Completed',
+                'text-red-600': order.status === 'Cancelled',
+                'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
+              }"
+            >
+              {{ order.status }}
+            </span>
+          </div>
+
+          <p class="text-gray-700"><strong>Order:</strong> Round Gallon</p>
+          <p class="text-gray-700"><strong>Total:</strong> ₱{{ order.total_price.toFixed(2) }}</p>
+          <p class="text-gray-700"><strong>Date:</strong> {{ formatDate(order.created_at) }}</p>
+
+          <div class="mt-3 text-right">
+            <button class="text-blue-600 underline hover:text-blue-800 text-sm">
+              View Details
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </CustomerLayout>
