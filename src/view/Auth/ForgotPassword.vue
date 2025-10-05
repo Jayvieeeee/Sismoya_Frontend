@@ -83,72 +83,79 @@ function clearError() {
 
 <template>
   <LandingPageLayout>
-
- <section class="relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center">
-    <div class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl px-6">
-      <div class="flex-1 text-center md:text-left mt-[200px] mb-8 md:mb-0">
+    <section class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-10">
+      <!-- Left side: Text + Image -->
+      <div
+        class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start">
         <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
           WELCOME TO <br />
           SISMOYA WATER!
         </h1>
-        <img :src="gallonImg" alt="Water Jugs" class="max-w-xl mx-auto md:mx-0 h-[500px]" />
+        <img
+          :src="gallonImg"
+          alt="Water Jugs"
+          class="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg"
+        />
       </div>
 
-      <div class="flex-1 flex justify-center ml-[200px] pt-10">
-        <div class="bg-white shadow-lg rounded-xl p-10 w-10/12 max-w-md">
-          <h2 class="text-2xl font-semibold text-center mb-8">Forgot Password</h2>
+      <!-- Right side: Forgot Password Form -->
+      <div class="flex-1 flex justify-center w-full">
+        <div class="bg-white shadow-lg rounded-xl p-8 sm:p-10 w-3/5 max-w-sm md:max-w-md">
+          <h2 class="text-2xl font-semibold text-center mb-8">
+            Forgot Password
+          </h2>
+
           <div class="mb-4">
             <div class="relative">
-              <input 
-                v-model="email" 
+              <input
+                v-model="email"
                 @input="clearError"
-                type="email" 
-                placeholder="Email" 
-                class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                type="email"
+                placeholder="Email"
+                class="w-full pl-4 pr-4 py-3 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 :class="{ 'border-red-500': emailError }"
               />
             </div>
-            <!-- Error message display -->
+            <!-- Error message -->
             <p v-if="emailError" class="text-red-500 text-sm mt-2 ml-1">
               {{ emailError }}
             </p>
           </div>
 
-          <button 
+          <button
             @click="forgotPassword"
             :disabled="isSubmitting"
-            class="w-full mt-5 mb-4 py-2 rounded-lg font-medium transition
-                  text-white bg-primary hover:bg-secondary
-                  disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full mt-5 mb-4 py-3 rounded-lg font-medium transition text-white bg-primary hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ isSubmitting ? "Sending..." : "Reset Password" }}
           </button>
 
-          <p @click="goToLogin" class="text-center text-gray-500 mb-6 cursor-pointer hover:underline hover:text-black">
+          <p
+            @click="goToLogin"
+            class="text-center text-gray-500 mb-6 cursor-pointer hover:underline hover:text-black"
+          >
             Back to Login
           </p>
         </div>
       </div>
-    </div>
 
-    <!-- Step 2: Verify Code -->
-    <VerifyCode
-      v-if="showVerifyModal"
-      :email="email"
-      @close="showVerifyModal = false"
-      @verified="handleCodeVerified"
-    />
+      <!-- Step 2: Verify Code -->
+      <VerifyCode
+        v-if="showVerifyModal"
+        :email="email"
+        @close="showVerifyModal = false"
+        @verified="handleCodeVerified"
+      />
 
-    <!-- Step 3: Change Password -->
-    <ChangePass
-      v-if="showChangePass"
-      :email="email"
-      :code="verifiedCode"
-      @close="showChangePass = false"
-      @success="goToLogin"
-    />
-
-  </section>
-
- </LandingPageLayout>
+      <!-- Step 3: Change Password -->
+      <ChangePass
+        v-if="showChangePass"
+        :email="email"
+        :code="verifiedCode"
+        @close="showChangePass = false"
+        @success="goToLogin"
+      />
+    </section>
+  </LandingPageLayout>
 </template>
+

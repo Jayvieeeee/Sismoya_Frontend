@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
+import Swal from 'sweetalert2'
 import { useCartStore } from "@/stores/cart"
 import Sidebar from "@/components/CustomerSidebar.vue"
 import OrderModal from "@/components/OrderModal.vue"
@@ -50,23 +51,43 @@ function closeModal() {
 async function handleAddMore(item: ModalProduct) {
   try {
     await cartStore.addToCart(item.id, item.qty)
-    
-    // Show success message
-    console.log('Item added to cart successfully!')
-    
-    alert(`${item.type} added to cart!`)
-    
+
+    // ✅ Success popup
+    Swal.fire({
+      title: 'Added to Cart!',
+      text: `${item.type} has been successfully added to your cart.`,
+      icon: 'success',
+      confirmButtonColor: '#0097b2',
+      confirmButtonText: 'Okay',
+      background: '#ffffff',
+      color: '#333',
+      showClass: {
+        popup: 'animate__animated animate__fadeInDown'
+      },
+      hideClass: {
+        popup: 'animate__animated animate__fadeOutUp'
+      }
+    })
+
     showModal.value = false
-    
+
   } catch (error) {
     console.error('Failed to add item to cart:', error)
-    alert('Failed to add item to cart. Please try again.')
+
+    // ❌ Error popup
+    Swal.fire({
+      title: 'Error',
+      text: 'Failed to add item to cart. Please try again.',
+      icon: 'error',
+      confirmButtonColor: '#e53e3e',
+      background: '#fff',
+      color: '#333'
+    })
   }
 }
 
 // Direct order
 function handleOrderNow(item: ModalProduct) {
-  selectedProduct.value = { ...item }
   showModal.value = false
   showSummaryModal.value = true
 }
@@ -74,61 +95,70 @@ function handleOrderNow(item: ModalProduct) {
 // Handle order success
 function handleOrderSuccess() {
   showSummaryModal.value = false
-  console.log("Order placed successfully!")
 }
 </script>
 
 <template>
-  <div class="font-Montserrat flex bg-gradient-to-b from-white to-secondary">
-    <Sidebar />
+  <div class="font-montserrat flex flex-col md:flex-row bg-gradient-to-b from-white to-secondary min-h-screen"> 
+    <Sidebar class="hidden md:block" />
 
-    <div class="flex-1 p-6">
+    <div class="flex-1 p-4 sm:p-6 md:p-10">
       <!-- Header -->
-      <div class="flex items-center justify-between mb-6 p-12">
-        <h2 class="text-4xl font-medium text-primary">Gallon</h2>
+      <div class="flex flex-row items-center justify-between mb-8 gap-4">
+        <h2 class="text-3xl sm:text-4xl font-semibold text-primary text-center sm:text-left">
+          Gallon
+        </h2>
         <img
           :src="Cart"
           @click="goToAddToCartPage"
           alt="Cart"
-          class="w-10 h-10 cursor-pointer transition-transform -scale-x-100"
+          class="w-9 h-9 sm:w-10 sm:h-10 cursor-pointer transition-transform"
         />
       </div>
 
-      <!-- ✅ Container Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <!-- ✅ Container Cards -->
+    <div class="flex justify-center items-center min-h-[80vh] px-6 sm:px-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 xl:gap-14 place-items-center w-full max-w-7xl"
+      >
         <div
           v-for="container in containers"
           :key="container.id"
-          class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center max-w-xs mx-auto"
+          class="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center text-center w-full max-w-xs hover:shadow-lg transition"
         >
           <!-- ✅ Image from backend -->
           <img
             :src="`https://sismoya.com/api${container.image_url}`"
             :alt="container.type"
-            class="w-40 h-40 object-contain mb-4"
+            class="w-32 h-32 sm:w-40 sm:h-40 object-contain mb-6"
           />
 
-          <p class="font-medium">Type: {{ container.type }}</p>
-          <p>Liters: {{ container.liters }} liters</p>
-          <p>Price: ₱{{ container.price.toFixed(2) }}</p>
+          <div class="text-sm sm:text-base space-y-1">
+            <p class="font-semibold">Type: {{ container.type }}</p>
+            <p>Liters: {{ container.liters }} liters</p>
+            <p>Price: ₱{{ container.price.toFixed(2) }}</p>
+          </div>
 
-          <div class="flex gap-3 mt-4">
+          <div class="flex flex-col sm:flex-row gap-4 mt-6 w-full">
             <button
               @click="openModal(container, 'cart')"
-              class="bg-primary text-white px-4 py-2 rounded-full hover:bg-secondary transition"
+              class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition text-sm sm:text-base"
             >
               Add to Cart
             </button>
 
             <button
               @click="openModal(container, 'order')"
-              class="bg-primary text-white px-4 py-2 rounded-full hover:bg-secondary transition"
+              class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition text-sm sm:text-base"
             >
               Order Now
             </button>
           </div>
         </div>
       </div>
+    </div>
+
+      
     </div>
   </div>
 
@@ -145,7 +175,7 @@ function handleOrderSuccess() {
   <!-- Order Summary Modal -->
   <OrderSummaryModal
     :isOpen="showSummaryModal"
-    :products="[selectedProduct]" 
+    :products="[selectedProduct]"
     @close="showSummaryModal = false"
     @place-order="handleOrderSuccess"
   />

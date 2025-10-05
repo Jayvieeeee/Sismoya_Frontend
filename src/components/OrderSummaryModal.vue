@@ -6,9 +6,13 @@ import AddressSelectionModal from "@/components/AddressSelectionModal.vue"
 import AddNewAddressModal from "@/components/AddNewAddressModal.vue"
 import DateTimeModal from "@/components/DateTimeModal.vue"
 import OrderPlacedModal from "@/components/OrderPlacedModal.vue"
+import ErrorModal from "@/components/ErrorModal.vue"
 import { getProfile } from "@/utils/auth"
 import { getAddresses } from "@/utils/address"
 
+
+const showError = ref(false)
+const errorMessage = ref("")
 // -------------------- Types --------------------
 interface Address {
   id?: number
@@ -172,17 +176,20 @@ function getImageUrl(imageUrl: string | undefined | null): string {
 // Validate required fields before placing order
 function validateOrder(): boolean {
   if (!selectedAddress.value) {
-    alert("Please select an address before placing your order.")
+    errorMessage.value = "Please select an address before placing your order."
+    showError.value = true
     return false
   }
 
   if (!pickUpTime.value) {
-    alert("Please select a pickup time before placing your order.")
+    errorMessage.value = "Please select a pickup time before placing your order."
+    showError.value = true
     return false
   }
 
   if (!paymentMethod.value) {
-    alert("Please select a payment method before placing your order.")
+    errorMessage.value = "Please select a payment method before placing your order."
+    showError.value = true
     return false
   }
 
@@ -223,10 +230,12 @@ async function handlePlaceOrder() {
     } else {
       alert(res.data.message)
     }
-  } catch (err: any) {
-    console.log("ERROR RESPONSE:", err.response?.data)
-    alert(err.response?.data?.message || 'Order failed. Please check the console for details.')
-  }
+    } catch (err: any) {
+      console.log("ERROR RESPONSE:", err.response?.data)
+      errorMessage.value = err.response?.data?.message || "Order failed. Please check the console for details."
+      showError.value = true
+    }
+
 }
 </script>
 
@@ -385,4 +394,12 @@ async function handlePlaceOrder() {
     :isOpen="orderPlacedModal"
     @close="orderPlacedModal = false"
   />
+
+  <ErrorModal
+  v-if="showError"
+  :visible="showError"
+  :message="errorMessage"
+  @close="showError = false"
+/>
+
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { useRouter } from "vue-router"
 import { logout } from "@/utils/auth"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 
 import dashboardIcon from "@/assets/icons/dashboard.png"
 import containerIcon from "@/assets/icons/container.png"
@@ -8,7 +10,6 @@ import orderHistoryIcon from "@/assets/icons/orderHistory.png"
 import accountSettingsIcon from "@/assets/icons/accountSettings.png"
 import logoutIcon from "@/assets/icons/logout.png"
 
-// ------------------ Types ------------------
 interface MenuItem {
   name: string
   icon: string
@@ -17,8 +18,9 @@ interface MenuItem {
 }
 
 const router = useRouter()
+const isOpen = ref(false) // Sidebar toggle
+const showConfirm = ref(false)
 
-// ------------------ Menu Items ------------------
 const menuItems: MenuItem[] = [
   { name: "Dashboard", icon: dashboardIcon, route: "/customerDashboard" },
   { name: "Gallon", icon: containerIcon, route: "/customerContainer" },
@@ -27,58 +29,122 @@ const menuItems: MenuItem[] = [
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
 ]
 
-// ------------------ Navigation ------------------
 async function navigateTo(item: MenuItem) {
   if (item.name === "Logout") {
-    const result = await logout()
-    if (result.success) {
-      alert(result.message)
-      router.push("/login")
-    } else {
-      alert(result.message)
-    }
+    showConfirm.value = true;
   } else if (item.route) {
     router.push(item.route)
+    isOpen.value = false // Close sidebar on mobile after navigating
   }
 }
+
+async function confirmLogout() {
+  showConfirm.value = false
+  const result = await logout()
+
+  if (result.success) {
+    setTimeout(() => {
+      router.push("/login")
+    }, 500)
+  } else {
+    console.error(result.message || "Logout failed.")
+  }
+}
+
 </script>
 
 <template>
-  <aside class="bg-primary text-white w-60 h-screen flex flex-col font-montserrat">
-    <!-- Logo -->
-    <div class="flex items-center justify-center my-12">
-      <img src="/images/Sismoya_Logo.png" alt="Logo" class="h-16" />
-    </div>
+  <div class="relative font-montserrat">
+    <!-- ✅ Hamburger Button (hidden when sidebar is open) -->
+    <button
+      v-if="!isOpen"
+      @click="isOpen = true"
+      class="fixed top-4 left-4 z-50 bg-primary text-white p-2 rounded-md shadow-md md:hidden"
+    >
+      <img
+        src="https://www.svgrepo.com/show/506800/burger-menu.svg"
+        alt="Menu"
+        class="w-6 h-6 invert"
+      />
+    </button>
 
-    <!-- Top Menu -->
-    <nav class="flex-1 flex flex-col">
-      <button
-        v-for="item in menuItems.filter(i => !i.bottom)"
-        :key="item.name"
-        @click="navigateTo(item)"
-        :class="[
-          'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left',
-          router.currentRoute.value.path === item.route
-            ? 'bg-[#246589]'
-            : 'hover:bg-[#246589]'
-        ]"
-      >
-        <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
-        <span>{{ item.name }}</span>
-      </button>
-    </nav>
+    <!-- ✅ Sidebar -->
+    <aside
+      :class="[
+        'fixed md:static top-0 left-0 h-full w-64 bg-primary text-white flex flex-col transform transition-transform duration-300 z-40',
+        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      ]"
+    >
+      <!-- Header / Logo -->
+      <div class="relative flex items-center justify-center px-6 py-4">
+        <img
+          src="/images/Sismoya_Logo.png"
+          alt="Logo"
+          class="h-14 mx-auto my-6"
+        />
 
-    <!-- Bottom Menu (Logout) -->
-    <nav class="flex flex-col">
-      <button
-        v-for="item in menuItems.filter(i => i.bottom)"
-        :key="item.name"
-        @click="navigateTo(item)"
-        class="flex items-center space-x-3 px-8 py-3 mb-12 text-sm w-full text-left not-italic font-normal hover:bg-[#246589]"
-      >
-        <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
-        <span>{{ item.name }}</span>
-      </button>
-    </nav>
-  </aside>
+        <button
+          @click="isOpen = false"
+          class="absolute right-6 text-2xl font-bold text-white hover:text-gray-300 md:hidden"
+        >
+          ×
+        </button>
+      </div>
+
+
+      <!-- Menu Items -->
+      <nav class="flex-1 flex flex-col justify-between py-6">
+        <div>
+          <button
+            v-for="item in menuItems.filter(i => !i.bottom)"
+            :key="item.name"
+            @click="navigateTo(item)"
+            :class="[ 
+              'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left transition',
+              router.currentRoute.value.path === item.route
+                ? 'bg-[#246589]'
+                : 'hover:bg-[#246589]'
+            ]"
+          >
+            <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
+            <span>{{ item.name }}</span>
+          </button>
+        </div>
+
+        <div>
+          <button
+            v-for="item in menuItems.filter(i => i.bottom)"
+            :key="item.name"
+            @click="navigateTo(item)"
+            class="flex items-center space-x-3 px-6 py-3 text-sm w-full text-left hover:bg-[#246589] transition"
+          >
+            <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
+            <span>{{ item.name }}</span>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- ✅ Backdrop (click to close) -->
+    <div
+      v-if="isOpen"
+      @click="isOpen = false"
+      class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+    ></div>
+  </div>
+
+    <ConfirmModal
+    v-if="showConfirm"
+    :visible="showConfirm"
+    title="Confirm Logout"
+    message="Are you sure you want to log out?"
+    @confirm="confirmLogout"
+    @cancel="showConfirm = false"
+  />
 </template>
+
+<style scoped>
+body {
+  overflow-x: hidden;
+}
+</style>

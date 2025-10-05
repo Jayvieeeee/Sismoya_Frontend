@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
+import Swal from "sweetalert2"
 import Cart from '@/assets/icons/cart.png'
 import plusIcon from '@/assets/icons/plus.png'
 import minusIcon from '@/assets/icons/minus.png'
+import trashIcon from '@/assets/icons/trash.png'
 import CustomerLayout from "@/Layout/CustomerLayout.vue"
 
-// Import Cart API + types
 import type { CartItem } from '@/api/cartApi'
 import {
   getUserCart,
@@ -15,17 +16,12 @@ import {
   clearSelectedItemsBackend
 } from '@/api/cartApi'
 
-// Constants
 const IMAGE_BASE_URL = 'https://sismoya.com/api'
-
-// Composables
 const router = useRouter()
 
-// Reactive state
 const items = ref<CartItem[]>([])
 const imageErrors = ref<Set<number>>(new Set())
 
-// Computed properties
 const cartItems = computed(() => items.value)
 const selectedItems = computed(() => cartItems.value.filter(item => item.selected))
 const selectedCount = computed(() => selectedItems.value.length)
@@ -34,29 +30,56 @@ const totalPrice = computed(() =>
 )
 const isEmpty = computed(() => cartItems.value.length === 0)
 
-// Lifecycle
 onMounted(async () => {
   items.value = await getUserCart()
 })
 
-// Cart actions
 const toggleSelect = (item: CartItem) => {
   item.selected = !item.selected
 }
 
-const checkout = () => {
+const checkout = async () => {
   if (selectedCount.value === 0) {
-    alert("Please select at least one item to checkout")
+    await Swal.fire({
+      icon: "info",
+      title: "No items selected",
+      text: "Please select at least one item to checkout.",
+      confirmButtonColor: "#3085d6"
+    })
     return
   }
-  alert(`✅ Proceeding to checkout with ${selectedCount.value} items...`)
+
+  await Swal.fire({
+    icon: "success",
+    title: "Proceeding to Checkout",
+    text: `You selected ${selectedCount.value} item${selectedCount.value > 1 ? "s" : ""}.`,
+    confirmButtonColor: "#3085d6"
+  })
 }
 
 const updateQuantity = async (item: CartItem, newQuantity: number) => {
-  if (newQuantity === 0) {
-    if (confirm(`Remove ${item.name} from cart?`)) {
+  if (newQuantity <= 0) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Remove Item?",
+      text: `Do you want to remove ${item.name} from the cart?`,
+      showCancelButton: true,
+      confirmButtonText: "Yes, remove it",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6"
+    })
+
+    if (result.isConfirmed) {
       await removeFromCartBackend([item.cart_item_id])
       items.value = await getUserCart()
+      await Swal.fire({
+        icon: "success",
+        title: "Item Removed",
+        text: `${item.name} has been removed.`,
+        timer: 1500,
+        showConfirmButton: false
+      })
     }
     return
   }
@@ -67,30 +90,67 @@ const updateQuantity = async (item: CartItem, newQuantity: number) => {
 const increaseQty = (item: CartItem) => updateQuantity(item, item.quantity + 1)
 const decreaseQty = (item: CartItem) => updateQuantity(item, item.quantity - 1)
 
-const removeSelected = async () => {
-  if (selectedCount.value === 0) return
-  const confirmed = confirm(`Remove ${selectedCount.value} items from cart?`)
-  if (!confirmed) return
+const removeItem = async (item: CartItem) => {
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "Remove Item?",
+    text: `Do you want to remove ${item.name} from your cart?`,
+    showCancelButton: true,
+    confirmButtonText: "Yes, remove it",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6"
+  })
 
-  const ids = selectedItems.value.map(i => i.cart_item_id)
-  await clearSelectedItemsBackend(ids)
-  items.value = await getUserCart()
+  if (result.isConfirmed) {
+    await removeFromCartBackend([item.cart_item_id])
+    items.value = await getUserCart()
+    await Swal.fire({
+      icon: "success",
+      title: "Removed!",
+      text: `${item.name} has been removed from the cart.`,
+      timer: 1500,
+      showConfirmButton: false
+    })
+  }
 }
 
-// Image handling
+const removeSelected = async () => {
+  if (selectedCount.value === 0) return
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "Remove Selected Items?",
+    text: `Are you sure you want to remove ${selectedCount.value} selected items?`,
+    showCancelButton: true,
+    confirmButtonText: "Yes, remove them",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6"
+  })
+
+  if (result.isConfirmed) {
+    const ids = selectedItems.value.map(i => i.cart_item_id)
+    await clearSelectedItemsBackend(ids)
+    items.value = await getUserCart()
+    await Swal.fire({
+      icon: "success",
+      title: "Removed!",
+      text: "Selected items have been removed.",
+      timer: 1500,
+      showConfirmButton: false
+    })
+  }
+}
+
 const getImageUrl = (item: CartItem): string => {
-  if (!item.image_url) return ''
-
+  if (!item.image_url) return ""
   const urlMappings = [
-    { test: (url: string) => url.startsWith('images/'), transform: (url: string) => `${IMAGE_BASE_URL}/${url}` },
-    { test: (url: string) => url.startsWith('/images/'), transform: (url: string) => `${IMAGE_BASE_URL}${url}` },
-    { test: (url: string) => !url.startsWith('http'), transform: (url: string) => `${IMAGE_BASE_URL}/images/${url}` }
+    { test: (url: string) => url.startsWith("images/"), transform: (url: string) => `${IMAGE_BASE_URL}/${url}` },
+    { test: (url: string) => url.startsWith("/images/"), transform: (url: string) => `${IMAGE_BASE_URL}${url}` },
+    { test: (url: string) => !url.startsWith("http"), transform: (url: string) => `${IMAGE_BASE_URL}/images/${url}` }
   ]
-
   const mapping = urlMappings.find(mapping => mapping.test(item.image_url))
   const finalUrl = mapping ? mapping.transform(item.image_url) : item.image_url
-
-  // Cache busting
   return `${finalUrl}?t=${Date.now()}`
 }
 
@@ -98,11 +158,11 @@ const hasImageError = (item: CartItem): boolean => imageErrors.value.has(item.ca
 const handleImageError = (_event: Event, item: CartItem) => imageErrors.value.add(item.cart_item_id)
 const handleImageLoad = (_event: Event, item: CartItem) => imageErrors.value.delete(item.cart_item_id)
 
-// Utilities
 const goBack = () => router.back()
 const formatPrice = (price: number): string => price.toFixed(2)
-const getDisplayText = (value: any, fallback: string = 'N/A'): string => value || fallback
+const getDisplayText = (value: any, fallback: string = "N/A"): string => value || fallback
 </script>
+
 
 
 <template>
@@ -174,8 +234,6 @@ const getDisplayText = (value: any, fallback: string = 'N/A'): string => value |
                   <button
                     @click="decreaseQty(item)"
                     class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors"
-                    :disabled="item.quantity <= 1"
-                    :class="{ 'opacity-50 cursor-not-allowed': item.quantity <= 1 }"
                     aria-label="Decrease quantity"
                   >
                     <img :src="minusIcon" alt="Decrease" class="w-3 h-3" />
@@ -197,16 +255,26 @@ const getDisplayText = (value: any, fallback: string = 'N/A'): string => value |
               </div>
             </div>
 
-            <!-- Right side: product image -->
+          <!-- Right side: product image + remove -->
+          <div class="flex items-center gap-2 mr-12">
             <img
               v-if="!hasImageError(item)"
               :src="getImageUrl(item)"
               @error="handleImageError($event, item)"
               @load="handleImageLoad($event, item)"
               alt="Product"
-              class="w-20 h-20 object-contain mr-12 flex-shrink-0"
+              class="w-20 h-20 object-contain"
             />
-          </div> 
+            <button
+              @click="removeItem(item)"
+              class="p-2 bg-red-100 hover:bg-red-200 rounded-full transition"
+              aria-label="Remove item"
+            >
+              <img :src="trashIcon" alt="Remove" class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
 
             <!-- Checkout Section -->
             <div class="mt-8 pt-6">

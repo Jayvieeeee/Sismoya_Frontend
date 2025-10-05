@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import gallonImg from "@/assets/images/gallon.png";
-import LandingPageLayout from '@/Layout/LandingPageLayout.vue'
+import LandingPageLayout from "@/Layout/LandingPageLayout.vue";
 import { loginUser } from "@/api/loginApi";
 
 const router = useRouter();
@@ -29,7 +29,7 @@ async function handleLogin() {
     localStorage.setItem("user", JSON.stringify(user));
     router.push("/customerDashboard");
   } catch (err: any) {
-    errorMessage.value = "Login failed.";
+    errorMessage.value = "Incorrect Username or Password.";
   }
 }
 
@@ -44,34 +44,36 @@ function goToForgotPass() {
 
 <template>
   <LandingPageLayout>
-
-  <section class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center px-4 py-12">
-    <div class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl gap-12 mt-12">
+    <section
+      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-10">
       <!-- Left side: Text + Image -->
-      <div class="flex-1 text-center md:text-left">
-        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-10">
+      <div class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start">
+        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
           WELCOME TO <br />
           SISMOYA WATER!
         </h1>
-       <img
-        :src="gallonImg"
-        alt="Water Jugs"
-        class="w-full max-w-xs md:max-w-sm lg:max-w-sm mx-auto md:mx-0"
-      />
+        <img
+          :src="gallonImg"
+          alt="Water Jugs"
+          class="w-full max-w-xs sm:max-w-sm lg:max-w-md"
+        />
       </div>
 
       <!-- Right side: Login Form -->
-      <div class="flex-1 flex justify-center">
-        <div class="bg-white shadow-lg rounded-xl ml-40 p-8 sm:p-14 w-3/4  max-w-sm">
+      <div class="flex-1 ml-12 flex justify-center w-full">
+        <div
+          class="bg-white shadow-lg rounded-xl p-8 sm:p-10 w-7/12 max-w-sm md:max-w-md"
+        >
           <h2 class="text-3xl font-medium text-center mb-6">Login</h2>
 
-          <!-- identifier -->
+          <!-- Identifier -->
           <div class="mb-4 relative">
             <input
               v-model="identifier"
               type="text"
               placeholder="Email or Username"
-              class="w-full pl-4 pr-4 py-4 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              class="w-full pl-4 pr-4 py-3 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
             <p
               v-if="!identifier && errorMessage"
               class="text-red-500 text-xs mt-1"
@@ -80,19 +82,19 @@ function goToForgotPass() {
             </p>
           </div>
 
-          <!-- password -->
+          <!-- Password -->
           <div class="mb-4 relative">
             <input
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
               placeholder="Password"
-               class="w-full pl-4 pr-4 py-4 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"/>
-
-            <!-- toggle button -->
+              class="w-full pl-4 pr-10 py-3 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <!-- Toggle -->
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
             >
               <svg
                 v-if="!showPassword"
@@ -146,7 +148,7 @@ function goToForgotPass() {
             </p>
           </div>
 
-          <!-- global error -->
+          <!-- Global Error -->
           <p
             v-if="identifier && password && errorMessage"
             class="text-red-600 text-sm mb-4 text-center"
@@ -163,11 +165,12 @@ function goToForgotPass() {
 
           <button
             @click="handleLogin"
-            class="w-full bg-primary text-white py-3 rounded-lg font-medium mb-4 hover:bg-secondary transition">
+            class="w-full bg-primary text-white py-3 rounded-lg font-medium mb-4 hover:bg-secondary transition"
+          >
             Login
           </button>
 
-          <p class="text-xs text-center md:text-right">
+          <p class="text-xs text-center">
             Don't have an account yet?
             <span
               @click="goToRegister"
@@ -177,8 +180,7 @@ function goToForgotPass() {
           </p>
         </div>
       </div>
-    </div>
-  </section>
-
-</LandingPageLayout>
+    </section>
+  </LandingPageLayout>
 </template>
+

@@ -15,12 +15,12 @@ export interface ModalProduct {
 export interface CartItem {
   cart_item_id?: number;
   gallon_id: number;
-  id?: number; // For compatibility
+  id?: number;
   type?: string;
   liters?: number;
   price?: number;
   quantity: number;
-  qty?: number; // For compatibility
+  qty?: number; 
   total_price?: number;
   image_url?: string;
   selected?: boolean;

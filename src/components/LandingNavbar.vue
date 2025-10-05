@@ -1,26 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted } from "vue"
+import { useRouter } from "vue-router"
 
 const router = useRouter()
-const isOpen = ref(false) // for mobile menu toggle
+const isOpen = ref(false)
+const activeSection = ref("")
 
 const navItems = [
-  { name: 'Home', route: '/' },
-  { name: 'Services', route: '/#services' },
-  { name: 'Contact Us', route: '/#contact' },
-  { name: 'Download App', route: '/#download-app' },
-  { name: 'Login', route: '/login', isButton: true },
+  { name: "Home", route: "/#home" },
+  { name: "Services", route: "/#services" },
+  { name: "Contact Us", route: "/#contact" },
+  { name: "Download App", route: "/#download-app" },
+  { name: "Login", route: "/login", isButton: true },
 ]
 
 function navigateTo(route: string) {
-  isOpen.value = false // close mobile menu after navigation
-  if (route.includes('#')) {
+  isOpen.value = false
+  if (route.includes("#")) {
     router.push(route).then(() => {
-      const hash = route.split('#')[1]
+      const hash = route.split("#")[1]
       const el = document.getElementById(hash)
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth' })
+        el.scrollIntoView({ behavior: "smooth" })
       }
     })
   } else {
@@ -29,16 +30,39 @@ function navigateTo(route: string) {
 }
 
 function isActive(item: { route: string; isButton?: boolean }) {
-  if (item.isButton) {
-    return router.currentRoute.value.path === item.route
-  }
-  if (item.route.includes('#')) {
-    return router.currentRoute.value.hash === '#' + item.route.split('#')[1]
+  if (item.isButton) return router.currentRoute.value.path === item.route
+  if (item.route.includes("#")) {
+    const hash = item.route.split("#")[1]
+    return activeSection.value === hash
   }
   return router.currentRoute.value.fullPath === item.route
 }
-</script>
 
+// --- Scroll Spy Logic ---
+function handleScroll() {
+  const sections = document.querySelectorAll("section[id]")
+  let current = ""
+
+  sections.forEach((section) => {
+    const rect = section.getBoundingClientRect()
+    const topOffset = window.scrollY + rect.top
+    if (window.scrollY >= topOffset - 200) {
+      current = section.getAttribute("id") || ""
+    }
+  })
+
+  if (current) activeSection.value = current
+}
+
+onMounted(() => {
+  window.addEventListener("scroll", handleScroll)
+  handleScroll() // run initially
+})
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", handleScroll)
+})
+</script>
 
 <template>
   <nav class="fixed top-0 left-0 w-full z-50 font-montserrat bg-primary shadow-md px-6">
@@ -69,10 +93,7 @@ function isActive(item: { route: string; isButton?: boolean }) {
       </ul>
 
       <!-- Mobile Hamburger -->
-      <button
-        @click="isOpen = !isOpen"
-        class="md:hidden text-white focus:outline-none pr-2"
-      >
+      <button @click="isOpen = !isOpen" class="md:hidden text-white focus:outline-none pr-2">
         <svg
           v-if="!isOpen"
           class="w-8 h-8"
