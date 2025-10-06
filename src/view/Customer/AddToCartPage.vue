@@ -16,7 +16,7 @@ import {
   clearSelectedItemsBackend
 } from '@/api/cartApi'
 
-const IMAGE_BASE_URL = 'https://sismoya.com/api'
+const IMAGE_BASE_URL = 'https://sismoya.bsit3b.site/api'
 const router = useRouter()
 
 const items = ref<CartItem[]>([])

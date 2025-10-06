@@ -14,8 +14,8 @@ function goToLogin() {
     <!-- HOME PAGE -->
     <section
       id="home"
-      class=" pb-24 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary">
-      <div class="pt-4 flex flex-col items-center justify-center h-full text-center relative z-10 px-6">
+      class=" pb-26 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary">
+      <div class=" flex flex-col items-center justify-center h-full text-center relative z-10 px-6">
         <h1 class="text-2xl md:text-3xl lg:text-4xl text-primary font-medium leading-snug">
           Clean, cold, and refreshing water delivered <br />
           to you
@@ -40,7 +40,7 @@ function goToLogin() {
     <!-- ABOUT US -->
     <section
       id="about"
-      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col justify-center px-6 mt-12"
+      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col justify-center px-6 mt-14"
     >
       <div class="text-center max-w-4xl mx-auto">
         <h1 class="text-4xl md:text-5xl text-primary font-semibold">About Us</h1>
@@ -210,7 +210,7 @@ function goToLogin() {
         </p>
 
         <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-8"
+          class="grid grid-cols-1 md:grid-cols-3 gap-12"
         >
           <!-- Location -->
           <div
@@ -264,5 +264,6 @@ function goToLogin() {
         </div>
       </div>
     </section>
+    
   </LandingPageLayout>
 </template>

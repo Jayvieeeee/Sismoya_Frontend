@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://sismoya.com/api',
+  baseURL: 'https://sismoya.bsit3b.site/api',
   timeout: 10000,
 });
 

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue"
 import axiosInstance from "@/utils/axios"
 import CustomerLayout from "@/Layout/CustomerLayout.vue"
+import OrderDetailsModal from "@/components/OrderDetailsModal.vue"
 import { useRouter } from "vue-router"
 import { getProfile } from "@/utils/auth"
 
@@ -11,12 +12,37 @@ const loading = ref(true)
 const search = ref("")
 const backendError = ref("")
 
+// Modal state
+const isModalOpen = ref(false)
+const selectedOrder = ref<any>(null)
+
 function formatDate(dateString: string) {
   const d = new Date(dateString)
   return d.toLocaleString("en-PH", {
     dateStyle: "short",
     timeStyle: "short"
   })
+}
+
+// Open modal with order details
+function viewOrderDetails(order: any) {
+  selectedOrder.value = {
+    orderId: order.order_id.toString(),
+    status: order.status,
+    pickUpDateTime: formatDate(order.pickup_datetime || order.created_at),
+    gallonType: "Round Gallon",
+    quantity: order.items?.[0]?.quantity || 1,
+    totalAmount: order.total_price,
+    paymentMethod: order.payment_method || "Cash",
+    imageUrl: order.items?.[0]?.gallon?.image_url || undefined
+  }
+  isModalOpen.value = true
+}
+
+// Close modal
+function closeModal() {
+  isModalOpen.value = false
+  selectedOrder.value = null
 }
 
 onMounted(async () => {
@@ -150,7 +176,10 @@ const filteredOrders = computed(() => {
                 {{ order.status }}
               </td>
               <td class="py-3 px-4">
-                <button class="text-blue-600 underline hover:text-blue-800">
+                <button 
+                  @click="viewOrderDetails(order)"
+                  class="text-blue-600 underline hover:text-blue-800"
+                >
                   View Details
                 </button>
               </td>
@@ -198,12 +227,23 @@ const filteredOrders = computed(() => {
           <p class="text-gray-700"><strong>Date:</strong> {{ formatDate(order.created_at) }}</p>
 
           <div class="mt-3 text-right">
-            <button class="text-blue-600 underline hover:text-blue-800 text-sm">
+            <button 
+              @click="viewOrderDetails(order)"
+              class="text-blue-600 underline hover:text-blue-800 text-sm"
+            >
               View Details
             </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Order Details Modal -->
+    <OrderDetailsModal
+      v-if="selectedOrder"
+      :order="selectedOrder"
+      :isOpen="isModalOpen"
+      @close="closeModal"
+    />
   </CustomerLayout>
 </template>

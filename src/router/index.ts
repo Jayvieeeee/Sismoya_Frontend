@@ -11,6 +11,7 @@ import CustomerDashboard from "@views/Customer/Dashboard.vue";
 import ContainerPage from "@views/Customer/ContainerPage.vue";
 import AddToCartPage from "@views/Customer/AddToCartPage.vue";
 import OrderHistory from "@/view/Customer/OrderHistory.vue";
+import AccountSettings from "@/view/Customer/AccountSettings.vue";
 
 const routes: Array<RouteRecordRaw> = [
   { path: "/", name: "Landing", component: LandingPage },
@@ -40,6 +41,12 @@ const routes: Array<RouteRecordRaw> = [
     path: "/orderHistory",
     name: "OrderHistory",
     component: OrderHistory,
+    meta: { requiresAuth: true },
+  },
+    {
+    path: "/accountSettings",
+    name: "AccountSettings",
+    component: AccountSettings,
     meta: { requiresAuth: true },
   },
 ];
