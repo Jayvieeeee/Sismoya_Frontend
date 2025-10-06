@@ -1,4 +1,4 @@
-<!-- OrderDetailsModal.vue - Fixed with smaller gap -->
+<!-- OrderDetailsModal.vue - All details in one line -->
 <script setup lang="ts">
 interface OrderDetails {
   orderId: string;
@@ -60,8 +60,8 @@ function isActiveStatus(status: string, orderStatus: string) {
       <h2 class="text-2xl font-semibold text-center text-primary py-6 border-b">Order Details</h2>
 
       <div class="p-6">
-        <!-- Two Column Layout with smaller gap -->
-        <div class="flex gap-6"> <!-- Changed from gap-8 to gap-6 -->
+        <!-- Two Column Layout -->
+        <div class="flex gap-6">
           <!-- Left Column - Status Timeline -->
           <div class="flex-1">
             <div class="relative">
@@ -95,36 +95,36 @@ function isActiveStatus(status: string, orderStatus: string) {
             </div>
           </div>
 
-          <!-- Right Column - Order Details -->
+          <!-- Right Column - Order Details (All in one line each) -->
           <div class="flex-1 space-y-4">
             <!-- Order ID -->
-            <div>
-              <p class="text-sm font-semibold text-gray-800 mb-1">Order ID:</p>
-              <p class="text-sm text-gray-600">{{ order.orderId }}</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-sm font-semibold text-gray-800 whitespace-nowrap">Order ID:</span>
+              <span class="text-sm text-gray-600">{{ order.orderId }}</span>
             </div>
 
             <!-- Pick Up DateTime -->
-            <div>
-              <p class="text-sm font-semibold text-gray-800 mb-1">Pick Up DateTime:</p>
-              <p class="text-sm text-gray-600">{{ order.pickUpDateTime }}</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-sm font-semibold text-gray-800 whitespace-nowrap">Pick Up DateTime:</span>
+              <span class="text-sm text-gray-600">{{ order.pickUpDateTime }}</span>
             </div>
 
             <!-- Gallon -->
-            <div>
-              <p class="text-sm font-semibold text-gray-800 mb-1">Gallon:</p>
-              <p class="text-sm text-gray-600">{{ order.gallonType }} {{ order.quantity }}x</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-sm font-semibold text-gray-800 whitespace-nowrap">Gallon:</span>
+              <span class="text-sm text-gray-600">{{ order.gallonType }} {{ order.quantity }}x</span>
             </div>
 
             <!-- Total Amount -->
-            <div>
-              <p class="text-sm font-semibold text-gray-800 mb-1">Total Amount:</p>
-              <p class="text-sm text-gray-600">₱{{ order.totalAmount.toFixed(2) }}</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-sm font-semibold text-gray-800 whitespace-nowrap">Total Amount:</span>
+              <span class="text-sm text-gray-600">₱{{ order.totalAmount.toFixed(2) }}</span>
             </div>
 
             <!-- Payment Method -->
-            <div>
-              <p class="text-sm font-semibold text-gray-800 mb-1">Payment Method:</p>
-              <p class="text-sm text-gray-600">{{ order.paymentMethod }}</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-sm font-semibold text-gray-800 whitespace-nowrap">Payment Method:</span>
+              <span class="text-sm text-gray-600">{{ order.paymentMethod }}</span>
             </div>
           </div>
         </div>
