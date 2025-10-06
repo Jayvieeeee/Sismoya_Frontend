@@ -296,6 +296,7 @@ const retryLoad = () => fetchDashboardData();
 onMounted(() => fetchDashboardData());
 </script>
 
+
 <template>
   <CustomerLayout>
     <div class="flex font-montserrat min-h-screen">
