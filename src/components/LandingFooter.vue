@@ -29,7 +29,7 @@
           <ul class="space-y-8">
             <li class="flex items-center space-x-5">
               <img src="/icons/phone_white.png" alt="Phone" class="h-[25px]" />
-              <span>09123456789</span>
+              <span>09422617079</span>
             </li>
             <li class="flex items-center space-x-5">
               <img src="/icons/mail_white.png" alt="Email" class="h-[25px]" />

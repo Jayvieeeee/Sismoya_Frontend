@@ -174,7 +174,7 @@ function handleOrderSuccess() {
         >
           <!-- ✅ Image from backend -->
           <img
-            :src="`https://sismoya.com/api${container.image_url}`"
+            :src="`https://sismoya.bsit3b.site/api${container.image_url}`"
             :alt="container.type"
             class="w-32 h-32 sm:w-40 sm:h-40 object-contain mb-6"
           />

@@ -239,7 +239,7 @@ function goToLogin() {
               alt="Phone"
               class="h-[80px] md:h-[100px] mx-auto mb-4"
             />
-            <p class="text-sm font-semibold mb-2">09123456789</p>
+            <p class="text-sm font-semibold mb-2">09422617079</p>
             <p class="text-sm md:text-base leading-relaxed">
               Reach us by phone for quick orders, delivery arrangements, or any
               immediate concerns.
