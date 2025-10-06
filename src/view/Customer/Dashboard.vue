@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import gallonImg from "@/assets/images/Dashboard_img.png";
 import { getProfile } from "@/utils/auth";
 import CustomerLayout from "@/Layout/CustomerLayout.vue";
@@ -18,49 +18,39 @@ interface User {
   role: string;
 }
 
-interface Order {
+interface DashboardStats {
+  pending: number;
+  completed: number;
+  cancelled: number;
+  total: number;
+}
+
+interface LatestOrder {
+  id: number;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  order_items: string;
+}
+
+interface UserOrder {
   order_id: number;
   total_price: number;
-  created_at: string;
   status: string;
+  created_at: string;
 }
 
 // Reactive data
 const user = ref<User | null>(null);
-const orders = ref<Order[]>([]);
+const stats = ref<DashboardStats>({
+  pending: 0,
+  completed: 0,
+  cancelled: 0,
+  total: 0
+});
+const latestOrders = ref<LatestOrder[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-
-// Computed stats from orders
-const stats = computed(() => {
-  const pending_orders = orders.value.filter(order => 
-    order.status === 'Pending' || order.status === 'To Pick Up' || order.status === 'To Deliver'
-  ).length;
-  
-  const completed_orders = orders.value.filter(order => 
-    order.status === 'Completed'
-  ).length;
-  
-  const cancelled_orders = orders.value.filter(order => 
-    order.status === 'Cancelled'
-  ).length;
-  
-  const total_orders = orders.value.length;
-
-  return {
-    pending_orders,
-    completed_orders,
-    cancelled_orders,
-    total_orders
-  };
-});
-
-// Latest orders (most recent 3)
-const latestOrders = computed(() => {
-  return [...orders.value]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 3);
-});
 
 // Format date function
 const formatDate = (dateString: string) => {
@@ -82,7 +72,8 @@ const formatCurrency = (amount: number) => {
 
 // Get status color
 const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
+  const statusLower = status.toLowerCase();
+  switch (statusLower) {
     case 'completed':
       return 'text-green-600';
     case 'pending':
@@ -97,14 +88,12 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// Format order items for display (based on your order history)
-const formatOrderItems = (order: Order) => {
-  // Since your order history shows "Round Gallon", we'll use that
-  // You might want to update this if you have actual item data
-  return "Round Gallon";
+// Format order items for display
+const formatOrderItems = (order: LatestOrder) => {
+  return order.order_items || "No items";
 };
 
-// Fetch dashboard data
+// Fetch user's orders first to get order IDs, then fetch dashboard data
 const fetchDashboardData = async () => {
   try {
     loading.value = true;
@@ -114,16 +103,83 @@ const fetchDashboardData = async () => {
     const profile = await getProfile();
     user.value = profile;
 
-    // Fetch orders (using the same endpoint as your order history)
-    const response = await axiosInstance.get("/orders");
-    if (response.data?.success) {
-      orders.value = response.data.orders;
-    } else {
-      throw new Error("Failed to fetch orders");
+    console.log('📊 Fetching dashboard data...');
+    console.log('👤 Current user:', user.value);
+
+    if (!user.value?.user_id) {
+      throw new Error("User not authenticated");
     }
+
+    // Step 1: First get the user's orders to have order IDs
+    console.log('🔄 Step 1: Fetching user orders...');
+    const ordersResponse = await axiosInstance.get("/orders", {
+      params: { user_id: user.value.user_id }
+    });
+
+    console.log('📋 User orders response:', ordersResponse.data);
+
+    if (!ordersResponse.data?.success || !Array.isArray(ordersResponse.data.orders)) {
+      throw new Error("Failed to fetch user orders");
+    }
+
+    const userOrders: UserOrder[] = ordersResponse.data.orders;
+    
+    if (userOrders.length === 0) {
+      // No orders yet, set empty state
+      console.log('📭 No orders found for user');
+      stats.value = { pending: 0, completed: 0, cancelled: 0, total: 0 };
+      latestOrders.value = [];
+      return;
+    }
+
+    // Get the most recent order ID for dashboard endpoints
+    const mostRecentOrder = userOrders[0]; // Assuming orders are sorted by date
+    const recentOrderId = mostRecentOrder.order_id;
+
+    console.log('🎯 Using order_id for dashboard requests:', recentOrderId);
+
+    // Step 2: Fetch stats using an order_id
+    console.log('🔄 Step 2: Fetching stats...');
+    const statsResponse = await axiosInstance.get("/orders/stats", {
+      params: { 
+        user_id: user.value.user_id,
+        order_id: recentOrderId 
+      }
+    });
+    
+    console.log('📈 Stats API Response:', statsResponse.data);
+    
+    if (statsResponse.data?.success) {
+      stats.value = statsResponse.data.data;
+      console.log('✅ Stats loaded:', stats.value);
+    } else {
+      throw new Error("Failed to fetch dashboard stats");
+    }
+
+    // Step 3: Fetch latest orders using an order_id
+    console.log('🔄 Step 3: Fetching latest orders...');
+    const latestResponse = await axiosInstance.get("/orders/latest", {
+      params: { 
+        user_id: user.value.user_id,
+        order_id: recentOrderId 
+      }
+    });
+    
+    console.log('📋 Latest Orders API Response:', latestResponse.data);
+    
+    if (latestResponse.data?.success) {
+      latestOrders.value = latestResponse.data.data;
+      console.log('✅ Latest orders loaded:', latestOrders.value);
+    } else {
+      throw new Error("Failed to fetch latest orders");
+    }
+
+    console.log('✅ Dashboard data loaded successfully');
 
   } catch (err: any) {
     console.error("Dashboard data load failed:", err);
+    console.error("Full error:", err);
+    console.error("Error response data:", err.response?.data);
     
     if (err.response?.status === 401) {
       error.value = "Please login again to view your dashboard";
@@ -131,7 +187,13 @@ const fetchDashboardData = async () => {
       localStorage.removeItem("user");
       router.push("/login");
     } else if (err.response?.status === 422) {
-      error.value = "Dashboard data is temporarily unavailable";
+      // If still getting 422, fall back to computing stats locally
+      console.log('🔄 Falling back to local stats computation');
+      await fallbackToLocalStats();
+    } else if (err.response?.status === 404) {
+      error.value = "Dashboard features are not available yet.";
+    } else if (err.response?.status === 500) {
+      error.value = "Server error. Please try again later.";
     } else {
       error.value = err.response?.data?.message || "Failed to load dashboard data";
     }
@@ -140,15 +202,78 @@ const fetchDashboardData = async () => {
   }
 };
 
+// Fallback method: Compute stats locally from user's orders
+const fallbackToLocalStats = async () => {
+  try {
+    console.log('🔄 Fallback: Computing stats locally...');
+    
+    const profile = await getProfile();
+    if (!profile?.user_id) return;
+
+    const ordersResponse = await axiosInstance.get("/orders", {
+      params: { user_id: profile.user_id }
+    });
+
+    if (ordersResponse.data?.success && Array.isArray(ordersResponse.data.orders)) {
+      const userOrders: UserOrder[] = ordersResponse.data.orders;
+      
+      // Compute stats locally with proper typing
+      const pending_orders = userOrders.filter((order: UserOrder) => 
+        order.status === 'Pending' || order.status === 'To Pick Up' || order.status === 'To Deliver'
+      ).length;
+      
+      const completed_orders = userOrders.filter((order: UserOrder) => 
+        order.status === 'Completed'
+      ).length;
+      
+      const cancelled_orders = userOrders.filter((order: UserOrder) => 
+        order.status === 'Cancelled'
+      ).length;
+      
+      const total_orders = userOrders.length;
+
+      stats.value = {
+        pending: pending_orders,
+        completed: completed_orders,
+        cancelled: cancelled_orders,
+        total: total_orders
+      };
+
+      // Get latest 3 orders with proper typing
+      latestOrders.value = userOrders
+        .sort((a: UserOrder, b: UserOrder) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 3)
+        .map((order: UserOrder) => ({
+          id: order.order_id,
+          total_amount: order.total_price,
+          status: order.status,
+          created_at: order.created_at,
+          order_items: "Round Gallon" // Fallback since we don't have item details
+        }));
+
+      console.log('✅ Local stats computed:', stats.value);
+      error.value = null;
+    }
+  } catch (fallbackErr) {
+    console.error('❌ Fallback also failed:', fallbackErr);
+    error.value = "Unable to load dashboard data. Please try again later.";
+  }
+};
+
 // View order details function
 const viewOrderDetails = (orderId: number) => {
-  // Navigate to order details page
+  console.log('🔍 Viewing order details:', orderId);
   router.push(`/orders/${orderId}`);
 };
 
 // View all orders
 const viewAllOrders = () => {
   router.push('/orderHistory');
+};
+
+// Retry loading data
+const retryLoad = () => {
+  fetchDashboardData();
 };
 
 onMounted(() => {
@@ -172,12 +297,13 @@ onMounted(() => {
 
         <!-- Error State -->
         <div v-else-if="error" class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-          <p>{{ error }}</p>
+          <p class="font-semibold">Unable to load dashboard</p>
+          <p class="mt-1 text-sm">{{ error }}</p>
           <button 
-            @click="fetchDashboardData" 
-            class="mt-2 bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition"
+            @click="retryLoad" 
+            class="mt-3 bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition text-sm"
           >
-            Retry
+            Try Again
           </button>
         </div>
 
@@ -199,19 +325,19 @@ onMounted(() => {
           <!-- Stats Section -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-yellow-600">{{ stats.pending_orders }}</p>
+              <p class="text-2xl font-bold text-yellow-600">{{ stats.pending }}</p>
               <p class="text-gray-500 font-medium">Pending Orders</p>
             </div>
             <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-green-600">{{ stats.completed_orders }}</p>
+              <p class="text-2xl font-bold text-green-600">{{ stats.completed }}</p>
               <p class="text-gray-500 font-medium">Completed Orders</p>
             </div>
             <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-red-600">{{ stats.cancelled_orders }}</p>
+              <p class="text-2xl font-bold text-red-600">{{ stats.cancelled }}</p>
               <p class="text-gray-500 font-medium">Cancelled Orders</p>
             </div>
             <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-blue-600">{{ stats.total_orders }}</p>
+              <p class="text-2xl font-bold text-blue-600">{{ stats.total }}</p>
               <p class="text-gray-500 font-medium">Total Orders</p>
             </div>
           </div>
@@ -222,7 +348,7 @@ onMounted(() => {
               <h2 class="text-xl font-bold text-gray-800">Recent Orders</h2>
               <button 
                 @click="viewAllOrders"
-                class="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                class="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
               >
                 View All Orders →
               </button>
@@ -237,7 +363,7 @@ onMounted(() => {
                 <thead>
                   <tr class="border-b bg-gray-50">
                     <th class="py-3 px-4 font-semibold text-gray-700">Order ID</th>
-                    <th class="py-3 px-4 font-semibold text-gray-700">Order</th>
+                    <th class="py-3 px-4 font-semibold text-gray-700">Order Items</th>
                     <th class="py-3 px-4 font-semibold text-gray-700">Total Amount</th>
                     <th class="py-3 px-4 font-semibold text-gray-700">Date</th>
                     <th class="py-3 px-4 font-semibold text-gray-700">Status</th>
@@ -247,15 +373,15 @@ onMounted(() => {
                 <tbody>
                   <tr 
                     v-for="order in latestOrders" 
-                    :key="order.order_id" 
+                    :key="order.id" 
                     class="border-b hover:bg-gray-50 transition"
                   >
-                    <td class="py-3 px-4">{{ order.order_id }}</td>
+                    <td class="py-3 px-4 font-medium">#{{ order.id }}</td>
                     <td class="py-3 px-4">
                       {{ formatOrderItems(order) }}
                     </td>
                     <td class="py-3 px-4 font-medium">
-                      {{ formatCurrency(order.total_price) }}
+                      {{ formatCurrency(order.total_amount) }}
                     </td>
                     <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
                     <td class="py-3 px-4 font-medium" :class="getStatusColor(order.status)">
@@ -263,7 +389,7 @@ onMounted(() => {
                     </td>
                     <td class="py-3 px-4">
                       <button 
-                        @click="viewOrderDetails(order.order_id)"
+                        @click="viewOrderDetails(order.id)"
                         class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer transition"
                       >
                         View Details

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import { useRouter } from "vue-router"
 import Swal from 'sweetalert2'
 import { useCartStore } from "@/stores/cart"
@@ -26,6 +26,9 @@ const selectedProduct = ref<ModalProduct>({
   image_url: "",
 })
 
+// Store the product with selected quantity for immediate ordering
+const productForImmediateOrder = ref<ModalProduct | null>(null)
+
 // ✅ Fetch containers from backend
 onMounted(async () => {
   containers.value = await getContainers()
@@ -38,16 +41,17 @@ function goToAddToCartPage() {
 
 // Modal controls
 function openModal(product: ModalProduct, action: "cart" | "order") {
-  selectedProduct.value = { ...product }
+  selectedProduct.value = { ...product, qty: 1 } // Reset quantity to 1 when opening modal
   modalAction.value = action
   showModal.value = true
 }
 
 function closeModal() {
   showModal.value = false
+  productForImmediateOrder.value = null // Reset when closing modal
 }
 
-// Add to cart - FIXED: Pass only gallonId and quantity
+// Add to cart - adds to cart store
 async function handleAddMore(item: ModalProduct) {
   try {
     await cartStore.addToCart(item.id, item.qty)
@@ -55,7 +59,7 @@ async function handleAddMore(item: ModalProduct) {
     // ✅ Success popup
     Swal.fire({
       title: 'Added to Cart!',
-      text: `${item.type} has been successfully added to your cart.`,
+      text: `${item.type} (${item.qty}x) has been successfully added to your cart.`,
       icon: 'success',
       confirmButtonColor: '#0097b2',
       confirmButtonText: 'Okay',
@@ -86,15 +90,57 @@ async function handleAddMore(item: ModalProduct) {
   }
 }
 
-// Direct order
+// Direct order - creates immediate order with selected quantity
 function handleOrderNow(item: ModalProduct) {
+  console.log("🚀 Order Now with quantity:", item.qty);
+  
+  // Store the product with selected quantity for immediate ordering
+  productForImmediateOrder.value = { ...item }
+  
   showModal.value = false
   showSummaryModal.value = true
 }
 
+// Get products for OrderSummaryModal based on context
+const productsForOrderSummary = computed((): ModalProduct[] => {
+  if (productForImmediateOrder.value) {
+    // For "Order Now" - use the single product with selected quantity
+    console.log("📦 Immediate order product:", productForImmediateOrder.value);
+    return [productForImmediateOrder.value]
+  } else {
+    // For cart checkout - use all cart items (future implementation)
+    return cartStore.itemsForDisplay.map(item => ({
+      id: item.gallon_id || 0,
+      gallon_id: item.gallon_id,
+      cart_item_id: item.cart_item_id,
+      type: item.name || item.type || "Unknown Product",
+      liters: item.liters || parseFloat(item.size) || 0,
+      price: item.price || 0,
+      qty: item.quantity || item.qty || 1,
+      quantity: item.quantity || item.qty || 1,
+      image_url: item.image_url,
+      selected: item.selected,
+      total_price: item.total_price || (item.price || 0) * (item.quantity || 1)
+    }))
+  }
+})
+
 // Handle order success
 function handleOrderSuccess() {
   showSummaryModal.value = false
+  productForImmediateOrder.value = null // Reset after successful order
+  
+  // Show success message for immediate order
+  if (productForImmediateOrder.value) {
+    Swal.fire({
+      title: 'Order Placed!',
+      text: `Your order for ${productForImmediateOrder.value} (${productForImmediateOrder.value}x) has been placed successfully.`,
+      icon: 'success',
+      confirmButtonColor: '#0097b2',
+      background: '#fff',
+      color: '#333'
+    })
+  }
 }
 </script>
 
@@ -162,7 +208,7 @@ function handleOrderSuccess() {
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Order Modal -->
   <OrderModal
     :isOpen="showModal"
     :product="selectedProduct"
@@ -175,7 +221,7 @@ function handleOrderSuccess() {
   <!-- Order Summary Modal -->
   <OrderSummaryModal
     :isOpen="showSummaryModal"
-    :products="[selectedProduct]"
+    :products="productsForOrderSummary"
     @close="showSummaryModal = false"
     @place-order="handleOrderSuccess"
   />
