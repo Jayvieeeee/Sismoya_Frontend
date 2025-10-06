@@ -47,16 +47,16 @@ export async function getUserCart(): Promise<CartItem[]> {
 }
 
 // ----------------------------
-// 🛒 POST /cartItems (add or update)
+// 🛒 POST /cartItems (add or update) - FIXED
 // ----------------------------
-export async function addToCartBackend(gallonId: number, quantity: number = 1): Promise<CartItem[]> {
+export async function addToCartBackend(gallon_id: number, quantity: number = 1): Promise<CartItem[]> {
   try {
     const user = await getProfileSafe();
     if (!user?.user_id) throw new Error("No user ID available");
 
     const response = await axiosInstance.post("/cartItems", {
       user_id: user.user_id,
-      gallonId,
+      gallon_id, // ✅ FIXED: Changed from gallonId to gallon_id
       quantity,
     });
 
