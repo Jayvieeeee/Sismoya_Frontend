@@ -16,11 +16,11 @@ function goToLogin() {
       id="home"
       class=" pb-24 relative font-montserrat h-screen bg-gradient-to-b from-white to-secondary">
       <div class="pt-4 flex flex-col items-center justify-center h-full text-center relative z-10 px-6">
-        <h1 class="text-3xl md:text-4xl lg:text-5xl text-primary font-medium leading-snug">
+        <h1 class="text-2xl md:text-3xl lg:text-4xl text-primary font-medium leading-snug">
           Clean, cold, and refreshing water delivered <br />
           to you
         </h1>
-        <p class="mt-4 text-base md:text-lg my-5 max-w-2xl">
+        <p class="mt-4 text-sm md:text-base my-5 max-w-2xl">
           Safe and refreshing drinking water for your family and community.
         </p>
         <button

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 
 import gallonImg from "@/assets/images/gallon.png";
@@ -15,8 +15,11 @@ const showPassword = ref(false);
 
 // feedback
 const errorMessage = ref("");
+const isLoading = ref(false);
 
+// handle login
 async function handleLogin() {
+  if (isLoading.value) return; // prevent double click
   errorMessage.value = "";
 
   if (!identifier.value || !password.value) {
@@ -25,13 +28,31 @@ async function handleLogin() {
   }
 
   try {
+    isLoading.value = true;
     const user = await loginUser(identifier.value, password.value);
     localStorage.setItem("user", JSON.stringify(user));
     router.push("/customerDashboard");
   } catch (err: any) {
     errorMessage.value = "Incorrect Username or Password.";
+  } finally {
+    isLoading.value = false;
   }
 }
+
+// handle Enter key
+function handleEnterKey(event: KeyboardEvent) {
+  if (event.key === "Enter") {
+    handleLogin();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", handleEnterKey);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleEnterKey);
+});
 
 function goToRegister() {
   router.push("/register");
@@ -45,9 +66,12 @@ function goToForgotPass() {
 <template>
   <LandingPageLayout>
     <section
-      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-10">
+      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-10"
+    >
       <!-- Left side: Text + Image -->
-      <div class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start">
+      <div
+        class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start"
+      >
         <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
           WELCOME TO <br />
           SISMOYA WATER!
@@ -163,11 +187,34 @@ function goToForgotPass() {
             Forgot Password?
           </p>
 
+          <!-- ✅ Login Button -->
           <button
             @click="handleLogin"
-            class="w-full bg-primary text-white py-3 rounded-lg font-medium mb-4 hover:bg-secondary transition"
+            :disabled="isLoading"
+            class="w-full bg-primary text-white py-3 rounded-lg font-medium mb-4 hover:bg-secondary transition disabled:opacity-70 flex items-center justify-center"
           >
-            Login
+            <svg
+              v-if="isLoading"
+              class="animate-spin h-5 w-5 mr-2 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+            {{ isLoading ? "Logging in..." : "Login" }}
           </button>
 
           <p class="text-xs text-center">
@@ -183,4 +230,3 @@ function goToForgotPass() {
     </section>
   </LandingPageLayout>
 </template>
-

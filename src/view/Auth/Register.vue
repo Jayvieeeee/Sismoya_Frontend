@@ -1,31 +1,36 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { registerUser } from "@/api/registerApi";
-import LandingPageLayout from '@/Layout/LandingPageLayout.vue'
+import { ref } from "vue"
+import { useRouter } from "vue-router"
+import { registerUser } from "@/api/registerApi"
+import LandingPageLayout from "@/Layout/LandingPageLayout.vue"
+import SuccessModal from "@/components/SuccessModal.vue"
+import gallonImg from "@/assets/images/gallon.png"
 
-import gallonImg from '@/assets/images/gallon.png';
-
-
-const router = useRouter();
+const router = useRouter()
 
 // Form state
-const firstName = ref("");
-const lastName = ref("");
-const username = ref("");
-const email = ref("");
-const password = ref("");
-const contactNo = ref("");
-const address = ref("");
-const showPassword = ref(false);
-const role = ref("user"); // default role
+const firstName = ref("")
+const lastName = ref("")
+const username = ref("")
+const email = ref("")
+const password = ref("")
+const contactNo = ref("")
+const address = ref("")
+const showPassword = ref(false)
+const role = ref("user")
 
-// Errors state
-const errors = ref<Record<string, string>>({});
+// Status & errors
+const errors = ref<Record<string, string>>({})
+const successVisible = ref(false)
+const isLoading = ref(false)
 
 const handleRegister = async () => {
-  errors.value = {}; // clear previous errors
+  if (isLoading.value) return // Prevent double click
+
+  errors.value = {}
   try {
+    isLoading.value = true
+
     const payload = {
       first_name: firstName.value,
       last_name: lastName.value,
@@ -35,199 +40,240 @@ const handleRegister = async () => {
       contact_no: contactNo.value,
       address: address.value,
       role: role.value,
-    };
-
-    const res = await registerUser(payload);
-    console.log("Registered:", res);
-    alert("Registration successful!");
-  } catch (err: any) {
-    // If backend sends validation errors in a structured way
-    if (err.response?.data?.errors) {
-      errors.value = err.response.data.errors;
-    } else {
-      errors.value.general = err.response?.data?.message || "Registration failed";
     }
+
+    await registerUser(payload)
+    successVisible.value = true // ✅ show success modal
+  } catch (err: any) {
+    if (err.response?.data?.errors) {
+      errors.value = err.response.data.errors
+    } else {
+      errors.value.general = err.response?.data?.message || "Registration failed"
+    }
+  } finally {
+    isLoading.value = false
   }
-};
+}
 
 function goToLogin() {
-  router.push("/login");
+  router.push("/login")
+}
+
+function handleOk() {
+  successVisible.value = false
+  router.push("/login") // ✅ Redirect after OK
 }
 </script>
 
 <template>
   <LandingPageLayout>
-  <section
-    class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center py-10"
-  >
-    <div class="flex flex-col lg:flex-row items-center justify-center w-full max-w-6xl px-6 gap-10">
-      <!-- Left section -->
-      <div class="flex-1 text-center md:text-left">
-        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-10">
-          WELCOME TO <br />
-          SISMOYA WATER!
-        </h1>
-       <img
-        :src="gallonImg"
-        alt="Water Jugs"
-        class="w-full max-w-xs md:max-w-sm lg:max-w-sm mx-auto md:mx-0"
-      />
-      </div>
-
-      <!-- Right section -->
-      <div class="flex-1 flex justify-center mt-12">
-        <div class="bg-white shadow-lg rounded-xl ml-36  p-8 sm:p-12 w-full max-w-sm">
-          <h2 class="text-2xl font-medium text-center mb-6">Register</h2>
-
-          <!-- name -->
-          <div class="flex flex-col sm:flex-row gap-4 mb-6">
-            <div class="w-full sm:w-1/2">
-              <input
-                v-model="firstName"
-                type="text"
-                placeholder="First Name"
-                class="w-full px-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <p
-                v-if="errors.first_name"
-                class="text-red-500 text-sm mt-1"
-              >{{ errors.first_name }}</p>
-            </div>
-            <div class="w-full sm:w-1/2">
-              <input
-                v-model="lastName"
-                type="text"
-                placeholder="Last Name"
-                class="w-full px-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <p
-                v-if="errors.last_name"
-                class="text-red-500 text-sm mt-1"
-              >{{ errors.last_name }}</p>
-            </div>
-          </div>
-
-          <!-- email -->
-          <div class="mb-4 relative">
-            <input
-              v-model="email"
-              type="email"
-              placeholder="Email"
-              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <p v-if="errors.email" class="text-red-500 text-sm mt-1">{{ errors.email }}</p>
-          </div>
-
-          <!-- contact -->
-          <div class="mb-4 relative">
-            <input
-              v-model="contactNo"
-              type="text"
-              placeholder="Contact No"
-              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <p v-if="errors.contact_no" class="text-red-500 text-sm mt-1">{{ errors.contact_no }}</p>
-          </div>
-
-          <!-- username -->
-          <div class="mb-4 relative">
-            <input
-              v-model="username"
-              type="text"
-              placeholder="Username"
-              class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <p v-if="errors.username" class="text-red-500 text-sm mt-1">{{ errors.username }}</p>
-          </div>
-
-        <!-- password -->
-        <div class="mb-4 relative">
-          <input
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="Password"
-            class="w-full pl-4 pr-10 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+    <section
+      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex items-center justify-center py-10"
+    >
+      <div
+        class="flex flex-col lg:flex-row items-center justify-center w-full max-w-6xl px-6 gap-10"
+      >
+        <!-- Left section -->
+        <div class="flex-1 text-center md:text-left">
+          <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-10">
+            WELCOME TO <br />
+            SISMOYA WATER!
+          </h1>
+          <img
+            :src="gallonImg"
+            alt="Water Jugs"
+            class="w-full max-w-xs md:max-w-sm lg:max-w-sm mx-auto md:mx-0"
           />
-
-          <!-- Toggle button -->
-          <button
-            type="button"
-            @click="showPassword = !showPassword"
-            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none"
-          >
-            <svg
-              v-if="!showPassword"
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
-            <svg
-              v-else
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.958 9.958 0 012.223-3.592m3.412-2.406A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.958 9.958 0 01-4.043 5.197M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 3l18 18"
-              />
-            </svg>
-          </button>
-
-          <p v-if="errors.password" class="text-red-500 text-sm mt-1">
-            {{ errors.password }}
-          </p>
         </div>
 
-
-          <!-- general error -->
-          <p v-if="errors.general" class="text-red-600 text-sm mb-3">{{ errors.general }}</p>
-
-          <button
-            @click="handleRegister"
-            class="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-secondary transition"
+        <!-- Right section -->
+        <div class="flex-1 flex justify-center mt-12">
+          <div
+            class="bg-white shadow-lg rounded-xl ml-36 p-8 sm:p-12 w-full max-w-sm"
           >
-            Register
-          </button>
+            <h2 class="text-2xl font-medium text-center mb-6">Register</h2>
+
+            <!-- Name -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+              <div class="w-full sm:w-1/2">
+                <input
+                  v-model="firstName"
+                  type="text"
+                  placeholder="First Name"
+                  class="w-full px-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <p v-if="errors.first_name" class="text-red-500 text-sm mt-1">
+                  {{ errors.first_name }}
+                </p>
+              </div>
+              <div class="w-full sm:w-1/2">
+                <input
+                  v-model="lastName"
+                  type="text"
+                  placeholder="Last Name"
+                  class="w-full px-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <p v-if="errors.last_name" class="text-red-500 text-sm mt-1">
+                  {{ errors.last_name }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-4">
+              <input
+                v-model="email"
+                type="email"
+                placeholder="Email"
+                class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <p v-if="errors.email" class="text-red-500 text-sm mt-1">
+                {{ errors.email }}
+              </p>
+            </div>
+
+            <!-- Contact -->
+            <div class="mb-4">
+              <input
+                v-model="contactNo"
+                type="text"
+                placeholder="Contact No"
+                class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <p v-if="errors.contact_no" class="text-red-500 text-sm mt-1">
+                {{ errors.contact_no }}
+              </p>
+            </div>
+
+            <!-- Username -->
+            <div class="mb-4">
+              <input
+                v-model="username"
+                type="text"
+                placeholder="Username"
+                class="w-full pl-4 pr-4 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <p v-if="errors.username" class="text-red-500 text-sm mt-1">
+                {{ errors.username }}
+              </p>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4 relative">
+              <input
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Password"
+                class="w-full pl-4 pr-10 py-2 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none"
+              >
+                <svg
+                  v-if="!showPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.958 9.958 0 012.223-3.592m3.412-2.406A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.958 9.958 0 01-4.043 5.197M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 3l18 18"
+                  />
+                </svg>
+              </button>
+              <p v-if="errors.password" class="text-red-500 text-sm mt-1">
+                {{ errors.password }}
+              </p>
+            </div>
+
+            <!-- General Error -->
+            <p v-if="errors.general" class="text-red-600 text-sm mb-3">
+              {{ errors.general }}
+            </p>
+
+            <!-- ✅ Register Button with Loading -->
+            <button
+              @click="handleRegister"
+              :disabled="isLoading"
+              class="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-secondary transition disabled:opacity-70 flex items-center justify-center"
+            >
+              <svg
+                v-if="isLoading"
+                class="animate-spin h-5 w-5 mr-2 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              {{ isLoading ? "Registering..." : "Register" }}
+            </button>
 
             <p class="text-sm text-center md:text-right mt-4">
-             Already have an account yet?
-            <span
-              @click="goToLogin"
-              class="text-primary cursor-pointer hover:underline"
-              >Login here</span
-            >
-          </p>
+              Already have an account yet?
+              <span
+                @click="goToLogin"
+                class="text-primary cursor-pointer hover:underline"
+              >
+                Login here
+              </span>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-</LandingPageLayout>
+    <!-- ✅ Success Modal -->
+    <SuccessModal
+      :visible="successVisible"
+      title="Registration Successful!"
+      message="Your account has been created successfully."
+      @ok="handleOk"
+    />
+  </LandingPageLayout>
 </template>
-
