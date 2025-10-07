@@ -168,7 +168,7 @@ const handleImageError = (event: Event) => {
 function getImageUrl(imageUrl: string | undefined | null): string {
   if (!imageUrl) return ''
   if (imageUrl.startsWith('/')) {
-    return `https://sismoya.com/api${imageUrl}`
+    return `https://sismoya.bsit3b.site/api${imageUrl}`
   }
   return imageUrl
 }

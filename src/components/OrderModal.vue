@@ -26,7 +26,7 @@ const imageUrl = computed(() => {
   // Ensure the URL is properly formatted
   if (url.startsWith('/')) {
     // If it's a relative path, construct full URL
-    url = `https://sismoya.com/api${url}`
+    url = `https://sismoya.bsit3b.site/api${url}`
   }
   
   // Add cache busting to avoid cached broken images

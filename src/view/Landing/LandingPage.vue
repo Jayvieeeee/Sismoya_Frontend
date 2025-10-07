@@ -195,75 +195,74 @@ function goToLogin() {
 
 
     <!-- CONTACT US -->
-    <section
-      id="contact"
-      class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary py-16 px-6"
+<section
+  id="contact"
+  class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary py-16 px-6"
+>
+  <div class="container mx-auto text-center">
+    <h2
+      class="text-4xl md:text-5xl font-semibold text-primary pt-10 pb-8">
+      Contact Us
+    </h2>
+    <p class="text-sm md:text-base text-gray-700 mb-12">
+      Need help? We're here for you. Choose the best way to reach us:
+    </p>
+
+    <div
+      class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto"
     >
-      <div class="container mx-auto text-center">
-        <h2
-          class="text-4xl md:text-5xl font-semibold text-primary pt-10 pb-8"
-        >
-          Contact Us
-        </h2>
-        <p class="text-sm md:text-base text-gray-700 mb-12">
-          Need help? We’re here for you. Choose the best way to reach us:
+      <!-- Location -->
+      <div
+        class="bg-white rounded-3xl shadow-md p-8 hover:shadow-xl transition duration-300"
+      >
+        <img
+          src="/icons/location.png"
+          alt="Location"
+          class="h-[80px] md:h-[100px] mx-auto mb-4"
+        />
+        <p class="text-sm font-semibold mb-2">
+          34 Katarungan St. Barangay 149 Bagong Barrio Caloocan City
         </p>
-
-        <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-12"
-        >
-          <!-- Location -->
-          <div
-            class="bg-white rounded-3xl shadow-md p-10 hover:shadow-xl transition duration-300"
-          >
-            <img
-              src="/icons/location.png"
-              alt="Location"
-              class="h-[80px] md:h-[100px] mx-auto mb-4"
-            />
-            <p class="text-sm font-semibold mb-2">
-              34 Katarungan St. Barangay 149 Bagong Barrio Caloocan City
-            </p>
-            <p class="text-sm md:text-base leading-relaxed">
-              Drop by our water station to place orders, ask questions, or get
-              assistance directly from our staff.
-            </p>
-          </div>
-
-          <!-- Phone -->
-          <div
-            class="bg-white rounded-3xl shadow-md p-10 hover:shadow-xl transition duration-300"
-          >
-            <img
-              src="/icons/phone.png"
-              alt="Phone"
-              class="h-[80px] md:h-[100px] mx-auto mb-4"
-            />
-            <p class="text-sm font-semibold mb-2">09422617079</p>
-            <p class="text-sm md:text-base leading-relaxed">
-              Reach us by phone for quick orders, delivery arrangements, or any
-              immediate concerns.
-            </p>
-          </div>
-
-          <!-- Email -->
-          <div
-            class="bg-white rounded-3xl shadow-md p-10 hover:shadow-xl transition duration-300"
-          >
-            <img
-              src="/icons/mail.png"
-              alt="Email"
-              class="h-[80px] md:h-[100px] mx-auto mb-4"
-            />
-            <p class="text-sm font-semibold mb-2">sismoya@gmail.com</p>
-            <p class="text-sm md:text-base leading-relaxed">
-              Send us an email for detailed inquiries, feedback, or support, and
-              we'll respond as soon as possible.
-            </p>
-          </div>
-        </div>
+        <p class="text-sm md:text-base leading-relaxed">
+          Drop by our water station to place orders, ask questions, or get
+          assistance directly from our staff.
+        </p>
       </div>
-    </section>
+
+      <!-- Phone -->
+      <div
+        class="bg-white rounded-3xl shadow-md p-8 hover:shadow-xl transition duration-300"
+      >
+        <img
+          src="/icons/phone.png"
+          alt="Phone"
+          class="h-[80px] md:h-[100px] mx-auto mb-4"
+        />
+        <p class="text-sm font-semibold mb-2">09422617079</p>
+        <p class="text-sm md:text-base leading-relaxed">
+          Reach us by phone for quick orders, delivery arrangements, or any
+          immediate concerns.
+        </p>
+      </div>
+
+      <!-- Email -->
+      <div
+        class="bg-white rounded-3xl shadow-md p-8 hover:shadow-xl transition duration-300"
+      >
+        <img
+          src="/icons/mail.png"
+          alt="Email"
+          class="h-[80px] md:h-[100px] mx-auto mb-4"
+        />
+        <p class="text-sm font-semibold mb-2">sismoya@gmail.com</p>
+        <p class="text-sm md:text-base leading-relaxed">
+          Send us an email for detailed inquiries, feedback, or support, and
+          we'll respond as soon as possible.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
     
   </LandingPageLayout>
 </template>

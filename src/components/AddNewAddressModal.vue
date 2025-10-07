@@ -50,8 +50,6 @@ async function handleSave() {
       alert(response.data.message || "Failed to add address")
     }
   } catch (err: any) {
-    console.error("❌ Error adding address:", err)
-    console.error("❌ Full error:", err.response?.data)
     alert(err.response?.data?.message || "Failed to add address. Please try again.")
   } finally {
     isLoading.value = false

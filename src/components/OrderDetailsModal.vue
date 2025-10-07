@@ -1,4 +1,3 @@
-<!-- OrderDetailsModal.vue - All on one line -->
 <script setup lang="ts">
 interface OrderDetails {
   orderId: string;
@@ -57,27 +56,24 @@ function isActiveStatus(status: string, orderStatus: string) {
       </button>
 
       <!-- Title -->
-      <h2 class="text-2xl font-semibold text-center text-primary py-6 border-b">Order Details</h2>
+      <h2 class="text-2xl font-semibold text-center text-primary py-6">Order Details</h2>
 
       <div class="p-6">
-        <!-- Two Column Layout -->
-        <div class="flex gap-4">
+        <!-- Two Column Layout - Centered with larger gap -->
+        <div class="flex justify-center items-center gap-12">
           <!-- Left Column - Status Timeline -->
-          <div class="flex-1">
-            <div class="relative">
-              <!-- Vertical Line -->
-              <div class="absolute left-2 top-2 bottom-2 w-0.5 bg-gray-300"></div>
-              
+          <div class="flex-shrink-0">
+            <div class="space-y-3">
               <!-- Status Items -->
               <div
                 v-for="(status, index) in statusList"
                 :key="status"
-                class="flex items-center gap-3 mb-6 last:mb-0 relative"
+                class="flex items-center gap-3"
               >
                 <!-- Status Dot -->
                 <div
                   :class="[
-                    'w-4 h-4 rounded-full flex-shrink-0 relative z-10',
+                    'w-3 h-3 rounded-full flex-shrink-0',
                     isActiveStatus(status, order.status) ? getStatusColor(status) : 'bg-gray-300'
                   ]"
                 ></div>
@@ -85,8 +81,8 @@ function isActiveStatus(status: string, orderStatus: string) {
                 <!-- Status Label -->
                 <span
                   :class="[
-                    'text-sm',
-                    isActiveStatus(status, order.status) ? 'font-semibold text-gray-800' : 'text-gray-500'
+                    'text-xs',
+                    isActiveStatus(status, order.status) ? 'font-medium text-gray-800' : 'text-gray-500'
                   ]"
                 >
                   {{ status }}
@@ -95,45 +91,38 @@ function isActiveStatus(status: string, orderStatus: string) {
             </div>
           </div>
 
-          <!-- Right Column - Order Details (ALL ON ONE LINE) -->
-          <div class="flex-1 space-y-4">
-            <!-- Order ID - ONE LINE -->
+          <!-- Right Column - Order Details -->
+          <div class="flex-1 space-y-4 max-w-xs mb-6">
+            <!-- Order ID -->
             <div>
-              <p class="text-sm text-gray-800">
-                <span class="font-semibold">Order ID:</span> {{ order.orderId }}
-              </p>
+              <p class="text-sm">Order ID: {{ order.orderId }}</p>
             </div>
 
-            <!-- Pick Up DateTime - ONE LINE -->
+            <!-- Pick Up DateTime -->
             <div>
-              <p class="text-sm text-gray-800">
-                <span class="font-semibold">Pick Up DateTime:</span> {{ order.pickUpDateTime }}
-              </p>
+              <p class="text-sm">Pick Up DateTime: {{ order.pickUpDateTime }}</p>
             </div>
 
-            <!-- Gallon - ONE LINE -->
-            <div>
-              <p class="text-sm text-gray-800">
-                <span class="font-semibold">Gallon:</span> {{ order.gallonType }} {{ order.quantity }}x
-              </p>
+            <!-- Gallon with Icon -->
+            <div class="flex items-center gap-2">
+              <div class="text-sm">Gallon:</div>
+              <div class="flex items-center gap-1">
+                <span class="text-sm">{{ order.gallonType }} {{ order.quantity }}x</span>
+              </div>
             </div>
 
-            <!-- Total Amount - ONE LINE -->
+            <!-- Total Amount -->
             <div>
-              <p class="text-sm text-gray-800">
-                <span class="font-semibold">Total Amount:</span> ₱{{ order.totalAmount.toFixed(2) }}
-              </p>
+              <p class="text-sm">Total Amount: {{ order.totalAmount.toFixed(2) }}</p>
             </div>
 
-            <!-- Payment Method - ONE LINE -->
+            <!-- Payment Method -->
             <div>
-              <p class="text-sm text-gray-800">
-                <span class="font-semibold">Payment Method:</span> {{ order.paymentMethod }}
-              </p>
+              <p class="text-sm">Payment Method: {{ order.paymentMethod }}</p>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</template>
+</template> 

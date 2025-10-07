@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import gallonImg from "@/assets/images/Dashboard_img.png";
 import { getProfile } from "@/utils/auth";
 import CustomerLayout from "@/Layout/CustomerLayout.vue";
 import axiosInstance from "@/utils/axios";
 import { useRouter } from "vue-router";
+import GallonImg from '@/assets/images/Dashboard_img.png'
+import OrderDetailsModal from "@/components/OrderDetailsModal.vue";
 
 const router = useRouter();
 
-// Interfaces - UPDATED to match backend
 interface User {
   user_id: number;
   first_name: string;
@@ -54,6 +54,10 @@ const latestOrders = ref<LatestOrder[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
+// Modal state
+const isModalOpen = ref(false);
+const selectedOrder = ref<any>(null);
+
 // Helpers
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -95,6 +99,27 @@ const formatOrderItems = (order: LatestOrder) => {
   return "No items";
 };
 
+// Open modal with order details
+const viewOrderDetails = (order: LatestOrder) => {
+  selectedOrder.value = {
+    orderId: order.id.toString(),
+    status: order.status,
+    pickUpDateTime: formatDate(order.created_at),
+    gallonType: "Round Gallon",
+    quantity: 1, // You might want to extract this from order.items if available
+    totalAmount: order.total_amount,
+    paymentMethod: "Cash", // Default value
+    imageUrl: undefined
+  };
+  isModalOpen.value = true;
+};
+
+// Close modal
+const closeModal = () => {
+  isModalOpen.value = false;
+  selectedOrder.value = null;
+};
+
 // NEW: Compute stats from user orders - FIXED STATUS FILTERING
 const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
   console.log("🔄 Computing stats from user orders...");
@@ -124,12 +149,6 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
     cancelled,
     total: userOrders.length,
   };
-  
-  console.log('✅ Computed stats:', stats.value);
-  
-  // Temporary debug - check specific orders
-  console.log('🔍 Order #38 details:', userOrders.find(o => o.order_id === 38));
-  console.log('🔍 All pending orders:', userOrders.filter(o => o.status.toLowerCase() === 'pending'));
 };
 
 // NEW: Improved error handling
@@ -176,7 +195,7 @@ const fallbackToLocalStats = async () => {
       // Set latest orders
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3)
+        .slice(0, 5)
         .map((order) => ({
           id: order.order_id,
           total_amount: order.total_price,
@@ -246,7 +265,7 @@ const fetchDashboardData = async () => {
     // Step 3: Fetch latest orders
     console.log('🔄 Step 3: Fetching latest orders...');
     const latestResponse = await axiosInstance.get("/orders/latest", {
-      params: { user_id: user.value.user_id },
+      params: { user_id: user.value.user_id, limit: 5 },
     });
 
     console.log('📋 Latest Orders API Response:', latestResponse.data);
@@ -266,7 +285,7 @@ const fetchDashboardData = async () => {
       // Fallback: use recent orders from user orders
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3)
+        .slice(0, 5)
         .map(order => ({
           id: order.order_id,
           total_amount: order.total_price,
@@ -289,13 +308,11 @@ const fetchDashboardData = async () => {
 };
 
 // Navigation
-const viewOrderDetails = (id: number) => router.push(`/orders/${id}`);
 const viewAllOrders = () => router.push("/orderHistory");
 const retryLoad = () => fetchDashboardData();
 
 onMounted(() => fetchDashboardData());
 </script>
-
 
 <template>
   <CustomerLayout>
@@ -325,10 +342,20 @@ onMounted(() => fetchDashboardData());
         <div v-else>
           <p class="text-lg mb-6 font-semibold">
             Welcome,
-            <span v-if="user" class="text-primary">
+            <span v-if="user">
               {{ user.first_name }} {{ user.last_name }}
             </span>
           </p>
+
+          <!-- GALLON IMG HERE -->
+          <div class="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 shadow-lg">
+            <div class="flex justify-center items-center">
+              <img 
+                :src="GallonImg" 
+                alt="Sismoya Water Gallon" 
+                class="max-w-xs md:max-w-sm lg:max-w-md transform hover:scale-105 transition duration-300">
+            </div>
+          </div>
 
           <!-- Stats -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -401,7 +428,7 @@ onMounted(() => fetchDashboardData());
                     </td>
                     <td class="py-3 px-4">
                       <button
-                        @click="viewOrderDetails(order.id)"
+                        @click="viewOrderDetails(order)"
                         class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer transition"
                       >
                         View Details
@@ -415,5 +442,13 @@ onMounted(() => fetchDashboardData());
         </div>
       </div>
     </div>
+
+    <!-- Order Details Modal -->
+    <OrderDetailsModal
+      v-if="selectedOrder"
+      :order="selectedOrder"
+      :isOpen="isModalOpen"
+      @close="closeModal"
+    />
   </CustomerLayout>
 </template>
