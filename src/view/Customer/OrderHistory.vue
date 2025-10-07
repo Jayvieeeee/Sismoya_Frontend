@@ -91,8 +91,8 @@ const filteredOrders = computed(() => {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-6xl mx-auto p-4 sm:p-6">
-      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-blue-800">Orders</h1>
+    <div class="p-4 sm:p-6 max-w-6xl mx-auto w-full">
+      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Orders</h1>
 
       <!-- Backend Error -->
       <div
@@ -115,77 +115,79 @@ const filteredOrders = computed(() => {
         />
       </div>
 
-      <!-- Desktop Table -->
-      <div class="hidden sm:block bg-white shadow-md rounded-xl overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-center border-b">
-              <th class="py-3 px-4 font-semibold">Order ID</th>
-              <th class="py-3 px-4 font-semibold">Order</th>
-              <th class="py-3 px-4 font-semibold">Total Amount</th>
-              <th class="py-3 px-4 font-semibold">Date</th>
-              <th class="py-3 px-4 font-semibold">Status</th>
-              <th class="py-3 px-4 font-semibold">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Loading -->
-            <tr v-if="loading">
-              <td colspan="6" class="text-center py-6">Loading orders...</td>
-            </tr>
+      <!-- Desktop Table with Scrollable Body Inside -->
+      <div class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
+        <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0 bg-gray-50 z-10">
+              <tr class="text-center border-b">
+                <th class="py-3 px-4 font-semibold">Order ID</th>
+                <th class="py-3 px-4 font-semibold">Order</th>
+                <th class="py-3 px-4 font-semibold">Total Amount</th>
+                <th class="py-3 px-4 font-semibold">Date</th>
+                <th class="py-3 px-4 font-semibold">Status</th>
+                <th class="py-3 px-4 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Loading -->
+              <tr v-if="loading">
+                <td colspan="6" class="text-center py-6">Loading orders...</td>
+              </tr>
 
-            <!-- Backend Error -->
-            <tr v-else-if="backendError && orders.length === 0">
-              <td colspan="6" class="text-center py-8">
-                <div class="flex flex-col items-center text-gray-500">
-                  <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                  </svg>
-                  <p class="font-medium">Order History Temporarily Unavailable</p>
-                  <p class="text-sm mt-1">We're working to resolve this issue.</p>
-                </div>
-              </td>
-            </tr>
+              <!-- Backend Error -->
+              <tr v-else-if="backendError && orders.length === 0">
+                <td colspan="6" class="text-center py-8">
+                  <div class="flex flex-col items-center text-gray-500">
+                    <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <p class="font-medium">Order History Temporarily Unavailable</p>
+                    <p class="text-sm mt-1">We're working to resolve this issue.</p>
+                  </div>
+                </td>
+              </tr>
 
-            <!-- Empty -->
-            <tr v-else-if="orders.length === 0">
-              <td colspan="6" class="text-center py-6 text-gray-500">No orders found.</td>
-            </tr>
+              <!-- Empty -->
+              <tr v-else-if="orders.length === 0">
+                <td colspan="6" class="text-center py-6 text-gray-500">No orders found.</td>
+              </tr>
 
-            <!-- Data Rows -->
-            <tr
-              v-else
-              v-for="order in filteredOrders"
-              :key="order.order_id"
-              class="border-t hover:bg-gray-50 text-center"
-            >
-              <td class="py-3 px-4">{{ order.order_id }}</td>
-              <td class="py-3 px-4">Round Gallon</td>
-              <td class="py-3 px-4">₱{{ order.total_price.toFixed(2) }}</td>
-              <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
-              <td
-                class="py-3 px-4 font-medium"
-                :class="{
-                  'text-yellow-500': order.status === 'Pending',
-                  'text-green-600': order.status === 'Completed',
-                  'text-red-600': order.status === 'Cancelled',
-                  'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
-                }"
+              <!-- Data Rows -->
+              <tr
+                v-else
+                v-for="order in filteredOrders"
+                :key="order.order_id"
+                class="border-t hover:bg-gray-50 text-center"
               >
-                {{ order.status }}
-              </td>
-              <td class="py-3 px-4">
-                <button 
-                  @click="viewOrderDetails(order)"
-                  class="text-blue-600 underline hover:text-blue-800"
+                <td class="py-3 px-4">{{ order.order_id }}</td>
+                <td class="py-3 px-4">Round Gallon</td>
+                <td class="py-3 px-4">₱{{ order.total_price.toFixed(2) }}</td>
+                <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
+                <td
+                  class="py-3 px-4 font-medium"
+                  :class="{
+                    'text-yellow-500': order.status === 'Pending',
+                    'text-green-600': order.status === 'Completed',
+                    'text-red-600': order.status === 'Cancelled',
+                    'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
+                  }"
                 >
-                  View Details
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  {{ order.status }}
+                </td>
+                <td class="py-3 px-4">
+                  <button 
+                    @click="viewOrderDetails(order)"
+                    class="text-blue-600 underline hover:text-blue-800"
+                  >
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Mobile View (Cards) -->

@@ -106,9 +106,9 @@ const viewOrderDetails = (order: LatestOrder) => {
     status: order.status,
     pickUpDateTime: formatDate(order.created_at),
     gallonType: "Round Gallon",
-    quantity: 1, // You might want to extract this from order.items if available
+    quantity: 1,
     totalAmount: order.total_amount,
-    paymentMethod: "Cash", // Default value
+    paymentMethod: "Cash",
     imageUrl: undefined
   };
   isModalOpen.value = true;
@@ -124,11 +124,9 @@ const closeModal = () => {
 const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
   console.log("🔄 Computing stats from user orders...");
   
-  // Debug: Check all statuses in the orders
   const allStatuses = userOrders.map(o => o.status);
   console.log('📋 All order statuses:', allStatuses);
   
-  // FIXED: Use lowercase and exact matches
   const pending = userOrders.filter((o) => 
     o.status.toLowerCase() === "pending" || 
     o.status.toLowerCase() === "to pick up" || 
@@ -187,15 +185,13 @@ const fallbackToLocalStats = async () => {
     if (ordersResponse.data?.success && Array.isArray(ordersResponse.data.orders)) {
       const userOrders: UserOrder[] = ordersResponse.data.orders;
       
-      // Debug: Log all orders and their statuses
       console.log('📋 All orders for stats computation:', userOrders);
       
       await computeStatsFromOrders(userOrders);
 
-      // Set latest orders
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5)
+        .slice(0, 3)
         .map((order) => ({
           id: order.order_id,
           total_amount: order.total_price,
@@ -232,7 +228,6 @@ const fetchDashboardData = async () => {
       throw new Error("User not authenticated");
     }
 
-    // Step 1: Fetch user orders for fallback
     console.log('🔄 Step 1: Fetching user orders...');
     const ordersResponse = await axiosInstance.get("/orders", {
       params: { user_id: user.value.user_id },
@@ -246,10 +241,9 @@ const fetchDashboardData = async () => {
 
     const userOrders: UserOrder[] = ordersResponse.data.orders;
 
-    // Step 2: Fetch stats (REMOVED order_id parameter - backend doesn't need it)
     console.log('🔄 Step 2: Fetching stats...');
     const statsResponse = await axiosInstance.get("/orders/stats", {
-      params: { user_id: user.value.user_id } // Removed order_id
+      params: { user_id: user.value.user_id }
     });
 
     console.log('📈 Stats API Response:', statsResponse.data);
@@ -258,11 +252,9 @@ const fetchDashboardData = async () => {
       stats.value = statsResponse.data.data;
       console.log('✅ Stats loaded:', stats.value);
     } else {
-      // Fallback to computed stats from user orders
       await computeStatsFromOrders(userOrders);
     }
 
-    // Step 3: Fetch latest orders
     console.log('🔄 Step 3: Fetching latest orders...');
     const latestResponse = await axiosInstance.get("/orders/latest", {
       params: { user_id: user.value.user_id, limit: 5 },
@@ -271,21 +263,19 @@ const fetchDashboardData = async () => {
     console.log('📋 Latest Orders API Response:', latestResponse.data);
 
     if (latestResponse.data?.success && Array.isArray(latestResponse.data.data)) {
-      // Transform backend data to match frontend interface
       latestOrders.value = latestResponse.data.data.map((order: any) => ({
-        id: order.id, // Backend returns 'id' not 'order_id'
+        id: order.id,
         total_amount: order.total_amount,
         status: order.status,
         created_at: order.created_at,
-        order_items: order.order_items, // Backend already formats this
-        items: order.items // Keep original items if needed
+        order_items: order.order_items,
+        items: order.items
       }));
       console.log('✅ Latest orders loaded:', latestOrders.value);
     } else {
-      // Fallback: use recent orders from user orders
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5)
+        .slice(0, 3)
         .map(order => ({
           id: order.order_id,
           total_amount: order.total_price,
@@ -316,127 +306,128 @@ onMounted(() => fetchDashboardData());
 
 <template>
   <CustomerLayout>
-    <div class="flex font-montserrat min-h-screen">
-      <div class="flex-1 p-6 mx-12">
-        <h1 class="text-3xl font-bold text-primary mb-4">Sismoya Water</h1>
+    <div class="flex font-montserrat">
+      <div class="flex-1">
+        <div class="p-4 mx-6">
+          <div v-if="loading" class="text-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p class="text-gray-600 mt-2">Loading dashboard data...</p>
+          </div>
 
-        <div v-if="loading" class="text-center py-8">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p class="text-gray-600 mt-2">Loading dashboard data...</p>
-        </div>
-
-        <div
-          v-else-if="error"
-          class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4"
-        >
-          <p class="font-semibold">Unable to load dashboard</p>
-          <p class="mt-1 text-sm">{{ error }}</p>
-          <button
-            @click="retryLoad"
-            class="mt-3 bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition text-sm"
+          <div
+            v-else-if="error"
+            class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4"
           >
-            Try Again
-          </button>
-        </div>
-
-        <div v-else>
-          <p class="text-lg mb-6 font-semibold">
-            Welcome,
-            <span v-if="user">
-              {{ user.first_name }} {{ user.last_name }}
-            </span>
-          </p>
-
-          <!-- GALLON IMG HERE -->
-          <div class="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 shadow-lg">
-            <div class="flex justify-center items-center">
-              <img 
-                :src="GallonImg" 
-                alt="Sismoya Water Gallon" 
-                class="max-w-xs md:max-w-sm lg:max-w-md transform hover:scale-105 transition duration-300">
-            </div>
-          </div>
-
-          <!-- Stats -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-yellow-600">{{ stats.pending }}</p>
-              <p class="text-gray-500 font-medium">Pending Orders</p>
-            </div>
-            <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-green-600">{{ stats.completed }}</p>
-              <p class="text-gray-500 font-medium">Completed Orders</p>
-            </div>
-            <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-red-600">{{ stats.cancelled }}</p>
-              <p class="text-gray-500 font-medium">Cancelled Orders</p>
-            </div>
-            <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-              <p class="text-2xl font-bold text-blue-600">{{ stats.total }}</p>
-              <p class="text-gray-500 font-medium">Total Orders</p>
-            </div>
-          </div>
-
-          <!-- Recent Orders -->
-          <div class="bg-white shadow rounded-xl p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-bold text-gray-800">Recent Orders</h2>
-              <button
-                @click="viewAllOrders"
-                class="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
-              >
-                View All Orders →
-              </button>
-            </div>
-
-            <div
-              v-if="latestOrders.length === 0"
-              class="text-center py-8 text-gray-500"
+            <p class="font-semibold">Unable to load dashboard</p>
+            <p class="mt-1 text-sm">{{ error }}</p>
+            <button
+              @click="retryLoad"
+              class="mt-3 bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition text-sm"
             >
-              No orders found.
-              <router-link to="/products" class="text-blue-600 hover:underline"
-                >Start shopping</router-link
-              >
+              Try Again
+            </button>
+          </div>
+
+          <div v-else>
+            <p class="text-lg my-4 font-semibold">
+              Welcome,
+              <span v-if="user">
+                {{ user.first_name }} {{ user.last_name }}
+              </span>
+            </p>
+
+            <!-- GALLON IMG HERE - COMPACT -->
+            <div class="mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 shadow-lg">
+              <div class="flex justify-center items-center">
+                <img 
+                  :src="GallonImg" 
+                  alt="Sismoya Water Gallon" 
+                  class="max-w-[200px] md:max-w-[250px] transform hover:scale-105 transition duration-300">
+              </div>
             </div>
 
-            <div v-else class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="border-b bg-gray-50">
-                    <th class="py-3 px-4 font-semibold text-gray-700">Order ID</th>
-                    <th class="py-3 px-4 font-semibold text-gray-700">Order Items</th>
-                    <th class="py-3 px-4 font-semibold text-gray-700">Total Amount</th>
-                    <th class="py-3 px-4 font-semibold text-gray-700">Date</th>
-                    <th class="py-3 px-4 font-semibold text-gray-700">Status</th>
-                    <th class="py-3 px-4 font-semibold text-gray-700">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="order in latestOrders"
-                    :key="order.id"
-                    class="border-b hover:bg-gray-50 transition"
-                  >
-                    <td class="py-3 px-4 font-medium">#{{ order.id }}</td>
-                    <td class="py-3 px-4">{{ formatOrderItems(order) }}</td>
-                    <td class="py-3 px-4 font-medium">
-                      {{ formatCurrency(order.total_amount) }}
-                    </td>
-                    <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
-                    <td class="py-3 px-4 font-medium" :class="getStatusColor(order.status)">
-                      {{ order.status }}
-                    </td>
-                    <td class="py-3 px-4">
-                      <button
-                        @click="viewOrderDetails(order)"
-                        class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer transition"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <!-- Stats - COMPACT -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
+                <p class="text-xl font-bold text-yellow-600">{{ stats.pending }}</p>
+                <p class="text-gray-500 text-sm font-medium">Pending Orders</p>
+              </div>
+              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
+                <p class="text-xl font-bold text-green-600">{{ stats.completed }}</p>
+                <p class="text-gray-500 text-sm font-medium">Completed Orders</p>
+              </div>
+              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
+                <p class="text-xl font-bold text-red-600">{{ stats.cancelled }}</p>
+                <p class="text-gray-500 text-sm font-medium">Cancelled Orders</p>
+              </div>
+              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
+                <p class="text-xl font-bold text-blue-600">{{ stats.total }}</p>
+                <p class="text-gray-500 text-sm font-medium">Total Orders</p>
+              </div>
+            </div>
+
+            <!-- Recent Orders - FIT CONTENT -->
+            <div class="bg-white shadow rounded-xl p-4">
+              <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-bold text-gray-800">Recent Orders</h2>
+                <button
+                  @click="viewAllOrders"
+                  class="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
+                >
+                  View All Orders →
+                </button>
+              </div>
+
+              <div
+                v-if="latestOrders.length === 0"
+                class="text-center py-8 text-gray-500"
+              >
+                No orders found.
+                <router-link to="/products" class="text-blue-600 hover:underline"
+                  >Start shopping</router-link
+                >
+              </div>
+
+              <!-- TABLE FIT CONTENT -->
+              <div v-else>
+                <table class="w-full text-left border-collapse text-sm">
+                  <thead class="bg-gray-50">
+                    <tr class="border-b">
+                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Order ID</th>
+                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Order Items</th>
+                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Total Amount</th>
+                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Date</th>
+                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Status</th>
+                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="order in latestOrders"
+                      :key="order.id"
+                      class="border-b hover:bg-gray-50 transition"
+                    >
+                      <td class="py-2 px-3 font-medium whitespace-nowrap">#{{ order.id }}</td>
+                      <td class="py-2 px-3 whitespace-nowrap">{{ formatOrderItems(order) }}</td>
+                      <td class="py-2 px-3 font-medium whitespace-nowrap">
+                        {{ formatCurrency(order.total_amount) }}
+                      </td>
+                      <td class="py-2 px-3 whitespace-nowrap">{{ formatDate(order.created_at) }}</td>
+                      <td class="py-2 px-3 font-medium whitespace-nowrap" :class="getStatusColor(order.status)">
+                        {{ order.status }}
+                      </td>
+                      <td class="py-2 px-3 whitespace-nowrap">
+                        <button
+                          @click="viewOrderDetails(order)"
+                          class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer transition"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
