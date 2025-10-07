@@ -80,8 +80,8 @@ onUnmounted(() => {
             :class="[
               item.isButton
                 ? isActive(item)
-                  ? 'bg-white text-black font-semibold px-5 py-2 rounded-full'
-                  : 'border-2 border-white mr-4 px-5 py-2 rounded-full hover:bg-white hover:text-black transition'
+                  ? 'bg-white text-black font-semibold px-3 py-2 rounded-full'
+                  : 'border-2 border-white px-3 py-2 rounded-full hover:bg-white hover:text-black transition'
                 : isActive(item)
                   ? 'bg-white text-black font-semibold px-3 py-2 rounded-full'
                   : 'px-3 py-2 rounded-full hover:bg-white hover:text-black transition'

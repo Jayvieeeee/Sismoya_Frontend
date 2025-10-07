@@ -10,19 +10,19 @@ const isEditingContact = ref(false);
 </script>
 
 <template>
-  <div class="pl-8">
-    <h2 class="text-2xl font-bold mb-8">Personal Information</h2>
+  <div class="px-4 sm:px-6 md:px-8">
+    <h2 class="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Personal Information</h2>
 
-    <div class="space-y-6 max-w-md">
+    <div class="space-y-4 sm:space-y-6 max-w-full sm:max-w-md">
       <!-- Name Field -->
-      <div class="flex items-start gap-4">
-        <label class="w-28 text-gray-700 pt-2 text-sm">Name</label>
+      <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+        <label class="w-full sm:w-28 text-gray-700 text-sm font-medium sm:font-normal sm:pt-2">Name</label>
         <div class="flex-1 relative">
           <input
             v-model="name"
             type="text"
             :disabled="!isEditingName"
-            class="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:bg-gray-50 pr-10"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:bg-gray-50 pr-10"
           />
           <button
             @click="isEditingName = !isEditingName"
@@ -36,14 +36,14 @@ const isEditingContact = ref(false);
       </div>
 
       <!-- Email Field -->
-      <div class="flex items-start gap-4">
-        <label class="w-28 text-gray-700 pt-2 text-sm">Email</label>
+      <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+        <label class="w-full sm:w-28 text-gray-700 text-sm font-medium sm:font-normal sm:pt-2">Email</label>
         <div class="flex-1 relative">
           <input
             v-model="email"
             type="email"
             :disabled="!isEditingEmail"
-            class="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:bg-gray-50 pr-10"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:bg-gray-50 pr-10"
           />
           <button
             @click="isEditingEmail = !isEditingEmail"
@@ -57,14 +57,14 @@ const isEditingContact = ref(false);
       </div>
 
       <!-- Contact Number Field -->
-      <div class="flex items-start gap-4">
-        <label class="w-28 text-gray-700 pt-2 text-sm">Contact No.</label>
+      <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+        <label class="w-full sm:w-28 text-gray-700 text-sm font-medium sm:font-normal sm:pt-2">Contact No.</label>
         <div class="flex-1 relative">
           <input
             v-model="contactNo"
             type="tel"
             :disabled="!isEditingContact"
-            class="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:bg-gray-50 pr-10"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-400 focus:outline-none disabled:bg-gray-50 pr-10"
           />
           <button
             @click="isEditingContact = !isEditingContact"

@@ -70,9 +70,8 @@ function goToForgotPass() {
     >
       <!-- Left side: Text + Image -->
       <div
-        class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start"
-      >
-        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
+        class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start">
+        <h1 class="text-2xl md:text-4xl font-semibold text-primary mb-6">
           WELCOME TO <br />
           SISMOYA WATER!
         </h1>

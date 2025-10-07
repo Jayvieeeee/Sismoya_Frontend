@@ -58,7 +58,7 @@ function isActiveStatus(status: string, orderStatus: string) {
       <!-- Title -->
       <h2 class="text-2xl font-semibold text-center text-primary py-6">Order Details</h2>
 
-      <div class="p-6">
+      <div class="p-6 pb-12">
         <!-- Two Column Layout - Centered with larger gap -->
         <div class="flex justify-center items-center gap-12">
           <!-- Left Column - Status Timeline -->
@@ -92,7 +92,7 @@ function isActiveStatus(status: string, orderStatus: string) {
           </div>
 
           <!-- Right Column - Order Details -->
-          <div class="flex-1 space-y-4 max-w-xs mb-6">
+          <div class="flex-1 space-y-4 max-w-xs">
             <!-- Order ID -->
             <div>
               <p class="text-sm">Order ID: {{ order.orderId }}</p>

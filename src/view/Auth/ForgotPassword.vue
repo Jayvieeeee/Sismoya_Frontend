@@ -87,14 +87,14 @@ function clearError() {
       <!-- Left side: Text + Image -->
       <div
         class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start">
-        <h1 class="text-3xl md:text-5xl font-semibold text-primary mb-6">
+        <h1 class="text-2xl md:text-4xl font-semibold text-primary mb-6">
           WELCOME TO <br />
           SISMOYA WATER!
         </h1>
         <img
           :src="gallonImg"
           alt="Water Jugs"
-          class="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg"
+          class="w-full max-w-xs sm:max-w-sm lg:max-w-md"
         />
       </div>
 

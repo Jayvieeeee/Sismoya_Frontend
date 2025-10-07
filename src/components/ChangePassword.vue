@@ -48,8 +48,7 @@ function changePassword() {
   <div class="pl-8">
     <h2 class="text-2xl font-bold mb-6">Change Password</h2>
     
-    <div class="max-w-xl bg-white border border-gray-200 rounded-2xl p-8">
-      <h3 class="text-xl font-semibold mb-6">Change Password</h3>
+    <div class="max-w-xl bg-white  rounded-2xl p-8">
       
       <!-- Success Message -->
       <div v-if="successMessage" class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
