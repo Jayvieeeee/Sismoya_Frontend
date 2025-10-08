@@ -1,5 +1,6 @@
 import axiosInstance from "@/utils/axios"
-import Swal from 'sweetalert2'
+import router from "@/router"
+
 
 export async function getProfile() {
   try {
@@ -51,16 +52,7 @@ export async function validateToken(): Promise<boolean> {
       localStorage.removeItem("token")
       localStorage.removeItem("user")
       
-      // Show SweetAlert notification
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Session Expired',
-        text: 'Your session has expired. Please login again.',
-        confirmButtonText: 'OK',
-        confirmButtonColor: '#3B82F6',
-        allowOutsideClick: false
-      })
-      
+      router.push('/login')
       return false
     } else {
       console.log("🔧 Other error (not authentication), keeping token:", error.message)

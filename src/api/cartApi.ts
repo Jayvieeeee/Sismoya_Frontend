@@ -13,9 +13,7 @@ export interface CartItem {
   selected?: boolean;
 }
 
-// ----------------------------
-// 🔧 Helper: normalize backend items
-// ----------------------------
+
 function normalizeCartItems(items: any[]): CartItem[] {
   return items.map((item: any) => ({
     ...item,
@@ -24,9 +22,6 @@ function normalizeCartItems(items: any[]): CartItem[] {
   }));
 }
 
-// ----------------------------
-// 🛒 GET /cartItems
-// ----------------------------
 export async function getUserCart(): Promise<CartItem[]> {
   try {
     const user = await getProfileSafe();
@@ -46,9 +41,7 @@ export async function getUserCart(): Promise<CartItem[]> {
   }
 }
 
-// ----------------------------
-// 🛒 POST /cartItems (add or update) - FIXED
-// ----------------------------
+
 export async function addToCartBackend(gallon_id: number, quantity: number = 1): Promise<CartItem[]> {
   try {
     const user = await getProfileSafe();
@@ -56,7 +49,7 @@ export async function addToCartBackend(gallon_id: number, quantity: number = 1):
 
     const response = await axiosInstance.post("/cartItems", {
       user_id: user.user_id,
-      gallon_id, // ✅ FIXED: Changed from gallonId to gallon_id
+      gallon_id, 
       quantity,
     });
 
@@ -66,9 +59,7 @@ export async function addToCartBackend(gallon_id: number, quantity: number = 1):
   }
 }
 
-// ----------------------------
-// 🛒 DELETE /cartItems
-// ----------------------------
+
 export async function removeFromCartBackend(cartItemIds: number[]): Promise<CartItem[]> {
   try {
     const user = await getProfileSafe();
@@ -84,9 +75,6 @@ export async function removeFromCartBackend(cartItemIds: number[]): Promise<Cart
   }
 }
 
-// ----------------------------
-// 🛒 PUT /cartItems/decrease
-// ----------------------------
 export async function decreaseQuantityBackend(cartItemId: number): Promise<CartItem[]> {
   try {
     const user = await getProfileSafe();
@@ -103,9 +91,6 @@ export async function decreaseQuantityBackend(cartItemId: number): Promise<CartI
   }
 }
 
-// ----------------------------
-// 🛒 PUT /cartItems/increase
-// ----------------------------
 export async function increaseQuantityBackend(cartItemId: number): Promise<CartItem[]> {
   try {
     const user = await getProfileSafe();
@@ -122,9 +107,6 @@ export async function increaseQuantityBackend(cartItemId: number): Promise<CartI
   }
 }
 
-// ----------------------------
-// 🛒 Smart Update
-// ----------------------------
 export async function updateCartItemBackend(cartItemId: number, newQuantity: number): Promise<CartItem[]> {
   try {
     if (newQuantity === 0) {
@@ -148,9 +130,7 @@ export async function updateCartItemBackend(cartItemId: number, newQuantity: num
   }
 }
 
-// ----------------------------
-// 🛒 Bulk Clear
-// ----------------------------
+
 export async function clearSelectedItemsBackend(cartItemIds: number[]): Promise<CartItem[]> {
   return await removeFromCartBackend(cartItemIds);
 }
