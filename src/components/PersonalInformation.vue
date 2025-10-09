@@ -1,86 +1,3 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getProfile, updateProfile } from '@/api/profileApi'
-import Swal from 'sweetalert2'
-
-// 🧩 Data
-const user = ref<any>(null)
-const loading = ref(true)
-
-// 🧩 Modal state
-const showModal = ref(false)
-const modalType = ref<'name' | 'email' | 'contact' | null>(null)
-const formData = ref({
-  first_name: '',
-  last_name: '',
-  email: '',
-  contact_no: ''
-})
-
-// 🧩 Fetch profile when mounted
-onMounted(async () => {
-  try {
-    const profile = await getProfile()
-    user.value = profile
-    formData.value = {
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      email: profile.email,
-      contact_no: profile.contact_no
-    }
-  } catch (err) {
-    console.error('Failed to load profile:', err)
-  } finally {
-    loading.value = false
-  }
-})
-
-// 🧩 Open modal based on which icon clicked
-function openModal(type: 'name' | 'email' | 'contact') {
-  modalType.value = type
-  showModal.value = true
-}
-
-async function handleSave() {
-  try {
-    let updateData = {}
-
-    if (modalType.value === 'name') {
-      updateData = {
-        first_name: formData.value.first_name,
-        last_name: formData.value.last_name
-      }
-    } else if (modalType.value === 'email') {
-      updateData = { email: formData.value.email }
-    } else if (modalType.value === 'contact') {
-      updateData = { contact_no: formData.value.contact_no }
-    }
-
-    const res = await updateProfile(updateData)
-
-    await Swal.fire({
-      icon: 'success',
-      title: 'Profile Updated',
-      text: res.message || 'Your profile has been updated successfully!',
-      confirmButtonColor: '#3B82F6'
-    })
-
-    showModal.value = false
-    const refreshed = await getProfile()
-    user.value = refreshed
-  } catch (err: any) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Update Failed',
-      text: err.response?.data?.message || 'Something went wrong.',
-      confirmButtonColor: '#EF4444'
-    })
-  }
-}
-
-
-</script>
-
 <template>
   <div class="px-4 sm:px-6 md:px-8">
     <h2 class="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Personal Information</h2>
@@ -144,65 +61,179 @@ async function handleSave() {
       </div>
     </div>
 
-    <!-- ✅ Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+<!-- Modal -->
+<!-- Modal -->
+<div
+  v-if="showModal"
+  class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+>
+  <div
+    class="bg-white rounded-xl shadow-lg w-4/12 relative flex flex-col items-center justify-center p-8"
+  >
+    <!-- Close Button -->
+    <button
+      @click="showModal = false"
+      class="absolute top-5 right-6 text-black text-xl font-semibold hover:text-gray-700"
     >
-      <div class="bg-white rounded-xl p-6 w-full max-w-sm relative shadow-lg">
-        <button
-          @click="showModal = false"
-          class="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-        >
-          ✕
-        </button>
+      ✕
+    </button>
 
-        <h2 class="text-lg font-semibold mb-4">
-          {{ modalType === 'name' ? 'Update Name' : modalType === 'email' ? 'Update Email' : 'Update Contact' }}
-        </h2>
+    <!-- Title -->
+    <h2 class="text-lg font-semibold text-gray-900 mb-10 self-start">
+      {{ modalType === 'name'
+        ? 'Update Name'
+        : modalType === 'email'
+        ? 'Update Email'
+        : 'Update Contact' }}
+    </h2>
 
-        <form @submit.prevent="handleSave">
-          <div v-if="modalType === 'name'" class="space-y-3">
-            <input
-              v-model="formData.first_name"
-              type="text"
-              placeholder="First Name"
-              class="w-full border rounded-lg px-3 py-2"
-            />
-            <input
-              v-model="formData.last_name"
-              type="text"
-              placeholder="Last Name"
-              class="w-full border rounded-lg px-3 py-2"
-            />
-          </div>
+    <!-- Form -->
+    <form
+      @submit.prevent="handleSave"
+      class="flex flex-col gap-8 w-full items-center"
+    >
+      <!-- Name Fields -->
+      <template v-if="modalType === 'name'">
+        <div class="flex items-center w-full">
+          <label class="text-sm font-medium text-black text-right">
+            First Name:
+          </label>
+          <input
+            v-model="formData.first_name"
+            type="text"
+            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
+          />
+        </div>
 
-          <div v-else-if="modalType === 'email'">
-            <input
-              v-model="formData.email"
-              type="email"
-              placeholder="Email"
-              class="w-full border rounded-lg px-3 py-2"
-            />
-          </div>
+        <div class="flex items-center w-full">
+          <label class="text-sm font-medium text-black text-right">
+            Last Name:
+          </label>
+          <input
+            v-model="formData.last_name"
+            type="text"
+            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3  focus:outline-primary"
+          />
+        </div>
+      </template>
 
-          <div v-else-if="modalType === 'contact'">
-            <input
-              v-model="formData.contact_no"
-              type="tel"
-              placeholder="Contact Number"
-              class="w-full border rounded-lg px-3 py-2"
-            />
-          </div>
+      <!-- Email -->
+      <template v-else-if="modalType === 'email'">
+        <div class="flex items-center w-full">
+          <label class="text-sm font-medium text-black text-right">
+            Email:
+          </label>
+          <input
+            v-model="formData.email"
+            type="email"
+            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
+          />
+        </div>
+      </template>
 
-          <button
-            type="submit"
-            class="w-full bg-blue-500 text-white py-2 mt-5 rounded-lg hover:bg-blue-600"
-          >
-            Save Changes
-          </button>
-        </form>
-      </div>
-    </div>
+      <!-- Contact -->
+      <template v-else-if="modalType === 'contact'">
+        <div class="flex items-center w-full">
+          <label class="text-sm font-medium text-black text-right">
+            Contact No.:
+          </label>
+          <input
+            v-model="formData.contact_no"
+            type="tel"
+            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-none"
+          />
+        </div>
+      </template>
+
+      <!-- Save Button -->
+      <button
+        type="submit"
+        class="bg-[#2D8CBA] text-white text-sm px-8 py-2 rounded-md hover:bg-[#24759b] transition mt-10"
+      >
+        Save
+      </button>
+    </form>
+  </div>
+</div>
+
+
+
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { getProfile, updateProfile } from '@/api/profileApi'
+import Swal from 'sweetalert2'
+
+const user = ref<any>(null)
+const loading = ref(true)
+const showModal = ref(false)
+const modalType = ref<'name' | 'email' | 'contact' | null>(null)
+const formData = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  contact_no: ''
+})
+
+onMounted(async () => {
+  try {
+    const profile = await getProfile()
+    user.value = profile
+    formData.value = {
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      email: profile.email,
+      contact_no: profile.contact_no
+    }
+  } catch (err) {
+    console.error('Failed to load profile:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+function openModal(type: 'name' | 'email' | 'contact') {
+  modalType.value = type
+  showModal.value = true
+}
+
+async function handleSave() {
+  loading.value = true
+  try {
+    let updateData = {}
+    if (modalType.value === 'name') {
+      updateData = {
+        first_name: formData.value.first_name,
+        last_name: formData.value.last_name
+      }
+    } else if (modalType.value === 'email') {
+      updateData = { email: formData.value.email }
+    } else if (modalType.value === 'contact') {
+      updateData = { contact_no: formData.value.contact_no }
+    }
+
+    const res = await updateProfile(updateData)
+    await Swal.fire({
+      icon: 'success',
+      title: 'Profile Updated',
+      text: res.message || 'Your profile has been updated successfully!',
+      confirmButtonColor: '#3B82F6'
+    })
+
+    showModal.value = false
+    const refreshed = await getProfile()
+    user.value = refreshed
+  } catch (err: any) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Update Failed',
+      text: err.response?.data?.message || 'Something went wrong.',
+      confirmButtonColor: '#EF4444'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+</script>

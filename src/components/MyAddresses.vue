@@ -1,91 +1,84 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import AddNewAddressModal from '@components/AddNewAddressModal.vue';
+import { ref, onMounted } from "vue"
+import AddNewAddressModal from "@/components/AddNewAddressModal.vue"
+import { getProfile } from "@/utils/auth"
+import { getAddresses } from "@/utils/address"
 
 interface Address {
-  id: string;
-  label: string;
-  address: string;
-  isDefault?: boolean;
+  id: number
+  label: string
+  address: string
+  isDefault?: boolean
 }
 
-const addresses = ref<Address[]>([
-  {
-    id: '1',
-    label: 'Home',
-    address: '145 Banal St. Bagong Barrio Caloocan City',
-    isDefault: true
-  },
-  {
-    id: '2',
-    label: 'Office',
-    address: 'University Of Caloocan City',
-    isDefault: false
-  }
-]);
+const addresses = ref<Address[]>([])
+const modalOpen = ref(false)
+const modalMode = ref<"add" | "edit">("add")
+const selectedAddress = ref<Address | null>(null)
+const userName = ref("")
 
-const showAddModal = ref(false);
-const showEditModal = ref(false);
-const editingAddress = ref<Address | null>(null);
-
-const newAddress = ref({
-  label: '',
-  address: ''
-});
-
-function addNewAddress() {
-  showAddModal.value = true;
-}
-
-function saveNewAddress() {
-  if (newAddress.value.label && newAddress.value.address) {
-    addresses.value.push({
-      id: Date.now().toString(),
-      label: newAddress.value.label,
-      address: newAddress.value.address,
-      isDefault: false
-    });
-    newAddress.value = { label: '', address: '' };
-    showAddModal.value = false;
+// ------------------ Fetch user profile ------------------
+async function fetchProfile() {
+  try {
+    const profile = await getProfile()
+    userName.value = `${profile.first_name} ${profile.last_name}`
+  } catch (error) {
+    console.error("Failed to load profile:", error)
   }
 }
 
-function editAddress(address: Address) {
-  editingAddress.value = { ...address };
-  showEditModal.value = true;
+// ------------------ Fetch user addresses ------------------
+async function fetchAddresses() {
+  try {
+    const res = await getAddresses()
+
+    addresses.value = Array.isArray(res)
+      ? res.map((a: any) => ({
+          id: a.address_id || a.id,
+          label: a.label,
+          address: a.address,
+          isDefault: a.is_default,
+        }))
+      : []
+  } catch (error) {
+    console.error("Failed to load addresses:", error)
+  }
 }
 
-function saveEditAddress() {
-  if (editingAddress.value) {
-    const index = addresses.value.findIndex(a => a.id === editingAddress.value!.id);
-    if (index !== -1) {
-      addresses.value[index] = { ...editingAddress.value };
-    }
-    showEditModal.value = false;
-    editingAddress.value = null;
-  }
+// ------------------ Modal Handling ------------------
+function openAddModal() {
+  modalMode.value = "add"
+  selectedAddress.value = null
+  modalOpen.value = true
+}
+
+function openEditModal(address: Address) {
+  modalMode.value = "edit"
+  selectedAddress.value = { ...address }
+  modalOpen.value = true
+}
+
+function handleAddressSaved() {
+  fetchAddresses()
+  modalOpen.value = false
 }
 
 function closeModal() {
-  showAddModal.value = false;
-  showEditModal.value = false;
-  editingAddress.value = null;
-  newAddress.value = { label: '', address: '' };
+  modalOpen.value = false
 }
 
-// Handle address added from the custom modal
-function handleAddressAdded() {
-  // Refresh addresses or perform any other action
-  console.log('Address added from custom modal');
-}
+onMounted(async () => {
+  await fetchProfile()
+  await fetchAddresses()
+})
 </script>
 
 <template>
-  <div class="pl-8">
+  <div class="pl-8 font-montserrat">
     <h2 class="text-2xl font-bold mb-6">My Addresses</h2>
-    
+
+    <!-- Address List -->
     <div class="max-w-xl space-y-4">
-      <!-- Address Cards -->
       <div
         v-for="address in addresses"
         :key="address.id"
@@ -93,16 +86,30 @@ function handleAddressAdded() {
       >
         <!-- Edit Button -->
         <button
-          @click="editAddress(address)"
+          @click="openEditModal(address)"
           class="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <svg
+            class="w-5 h-5 align-middle"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414
+              a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
           </svg>
         </button>
 
         <h3 class="text-lg font-semibold mb-1">{{ address.label }}</h3>
-        <p class="text-sm text-gray-700 mb-2">Address: {{ address.address }}</p>
+        <p class="text-sm text-gray-700 mb-2">
+          Address: {{ address.address }}
+        </p>
+
         <span
           v-if="address.isDefault"
           class="text-xs font-medium text-gray-600"
@@ -113,74 +120,20 @@ function handleAddressAdded() {
 
       <!-- Add New Address Button -->
       <button
-        @click="addNewAddress"
+        @click="openAddModal"
         class="w-full border border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition font-medium"
       >
         + Add New Address
       </button>
     </div>
 
-    <!-- Add Address Modal using custom component -->
+    <!-- Add/Edit Modal -->
     <AddNewAddressModal
-      :isOpen="showAddModal"
+      :isOpen="modalOpen"
+      :mode="modalMode"
+      :existingAddress="selectedAddress || undefined"
       @close="closeModal"
-      @address-added="handleAddressAdded"
+      @address-saved="handleAddressSaved"
     />
-
-    <!-- Edit Address Modal -->
-    <div
-      v-if="showEditModal && editingAddress"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      @click.self="closeModal"
-    >
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h3 class="text-xl font-semibold mb-4">Edit Address</h3>
-        
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
-            <input
-              v-model="editingAddress.label"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <textarea
-              v-model="editingAddress.address"
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            ></textarea>
-          </div>
-
-          <div class="flex items-center">
-            <input
-              v-model="editingAddress.isDefault"
-              type="checkbox"
-              id="defaultCheck"
-              class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-            />
-            <label for="defaultCheck" class="ml-2 text-sm text-gray-700">Set as default</label>
-          </div>
-        </div>
-
-        <div class="flex gap-3 mt-6">
-          <button
-            @click="closeModal"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-          >
-            Cancel
-          </button>
-          <button
-            @click="saveEditAddress"
-            class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>

@@ -6,7 +6,7 @@ export interface AddressPayload {
   isDefault?: boolean
 }
 
-
+// 🟦 Get all addresses
 export async function getAddresses() {
   const res = await axiosInstance.get("/addresses", {
     headers: {
@@ -14,7 +14,7 @@ export async function getAddresses() {
     },
   })
 
-  console.log("📦 getAddresses raw response:", res.data)
+  console.log("getAddresses raw response:", res.data)
 
   if (Array.isArray(res.data)) return res.data
   if (Array.isArray(res.data.addresses)) return res.data.addresses
@@ -23,4 +23,26 @@ export async function getAddresses() {
   return []
 }
 
+// Add new address
+export async function addAddress(data: AddressPayload) {
+  const res = await axiosInstance.post("/addresses", data, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
+  })
 
+  console.log("addAddress response:", res.data)
+  return res.data
+}
+
+// Update existing address
+export async function updateAddress(id: number, data: AddressPayload) {
+  const res = await axiosInstance.put(`/addresses/${id}`, data, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
+  })
+
+  console.log("updateAddress response:", res.data)
+  return res.data
+}
