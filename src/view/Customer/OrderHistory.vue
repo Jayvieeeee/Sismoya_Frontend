@@ -79,14 +79,35 @@ onMounted(async () => {
 })
 
 const filteredOrders = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  if (!query) return orders.value
+
   return orders.value.filter((o) => {
+    const orderId = o.order_id?.toString().toLowerCase() || ""
+    const status = o.status?.toLowerCase() || ""
+    const total = o.total_price?.toString().toLowerCase() || ""
+    const date = formatDate(o.created_at).toLowerCase()
+
+    // dynamically get first item name or type from database
+    const itemName =
+      o.items?.[0]?.gallon?.name?.toLowerCase() ||
+      o.items?.[0]?.name?.toLowerCase() ||
+      ""
+
+    const payment = o.payment_method?.toLowerCase() || ""
+
     return (
-      search.value === "" ||
-      o.order_id.toString().includes(search.value) ||
-      "Round Gallon".toLowerCase().includes(search.value.toLowerCase())
+      orderId.includes(query) ||
+      status.includes(query) ||
+      total.includes(query) ||
+      date.includes(query) ||
+      itemName.includes(query) ||
+      payment.includes(query)
     )
   })
 })
+
+
 </script>
 
 <template>

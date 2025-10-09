@@ -78,7 +78,10 @@ onMounted(async () => {
     <h2 class="text-2xl font-bold mb-6">My Addresses</h2>
 
     <!-- Address List -->
-    <div class="max-w-xl space-y-4">
+    <div
+      class="max-w-xl space-y-4 overflow-y-auto"
+      style="max-height: 24rem;" 
+    >
       <div
         v-for="address in addresses"
         :key="address.id"
@@ -117,15 +120,15 @@ onMounted(async () => {
           Default
         </span>
       </div>
-
-      <!-- Add New Address Button -->
-      <button
-        @click="openAddModal"
-        class="w-full border border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition font-medium"
-      >
-        + Add New Address
-      </button>
     </div>
+
+    <!-- Add New Address Button -->
+    <button
+      @click="openAddModal"
+      class="w-full border border-gray-300 rounded-xl p-4 mt-4 text-center hover:bg-gray-50 transition font-medium"
+    >
+      + Add New Address
+    </button>
 
     <!-- Add/Edit Modal -->
     <AddNewAddressModal
@@ -137,3 +140,4 @@ onMounted(async () => {
     />
   </div>
 </template>
+
