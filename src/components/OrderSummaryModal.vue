@@ -164,14 +164,20 @@ const handleImageError = (event: Event) => {
   target.style.display = 'none'
 }
 
-// Function to format image URL - FIXED: handles undefined
 function getImageUrl(imageUrl: string | undefined | null): string {
-  if (!imageUrl) return ''
-  if (imageUrl.startsWith('/')) {
-    return `https://sismoya.bsit3b.site/api${imageUrl}`
+  if (!imageUrl) return "/placeholder.png" // optional fallback
+
+  if (imageUrl.startsWith("http")) {
+    return imageUrl
   }
-  return imageUrl
+
+  if (!imageUrl.startsWith("/")) {
+    return `https://sismoya.bsit3b.site/api/${imageUrl}`
+  }
+
+  return `https://sismoya.bsit3b.site/api${imageUrl}`
 }
+
 
 // Validate required fields before placing order
 function validateOrder(): boolean {
@@ -298,7 +304,7 @@ async function handlePlaceOrder() {
       <div 
         v-for="product in products" 
         :key="product.id"
-        class="flex items-center gap-4 my-3 p-3 border-b"
+        class="flex items-center gap-4 my-3 p-3"
       >
         <!-- Product Image with Error Handling -->
         <div class="flex-shrink-0 w-16 h-16 bg-white flex items-center justify-center">

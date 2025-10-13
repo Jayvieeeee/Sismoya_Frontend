@@ -383,9 +383,6 @@ onMounted(() => fetchDashboardData());
                 class="text-center py-8 text-gray-500"
               >
                 No orders found.
-                <router-link to="/products" class="text-blue-600 hover:underline"
-                  >Start shopping</router-link
-                >
               </div>
 
               <!-- TABLE FIT CONTENT -->
