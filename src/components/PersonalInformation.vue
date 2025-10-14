@@ -1,3 +1,79 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { getProfile, updateProfile } from '@/utils/profileApi'
+import Swal from 'sweetalert2'
+
+const user = ref<any>(null)
+const loading = ref(true)
+const showModal = ref(false)
+const modalType = ref<'name' | 'email' | 'contact' | null>(null)
+const formData = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  contact_no: ''
+})
+
+onMounted(async () => {
+  try {
+    const profile = await getProfile()
+    user.value = profile
+    formData.value = {
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      email: profile.email,
+      contact_no: profile.contact_no
+    }
+  } catch (err) {
+    console.error('Failed to load profile:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+function openModal(type: 'name' | 'email' | 'contact') {
+  modalType.value = type
+  showModal.value = true
+}
+
+async function handleSave() {
+  loading.value = true
+  try {
+    let updateData = {}
+    if (modalType.value === 'name') {
+      updateData = {
+        first_name: formData.value.first_name,
+        last_name: formData.value.last_name
+      }
+    } else if (modalType.value === 'email') {
+      updateData = { email: formData.value.email }
+    } else if (modalType.value === 'contact') {
+      updateData = { contact_no: formData.value.contact_no }
+    }
+    await updateProfile(updateData)
+    await Swal.fire({
+      icon: 'success',
+      title: 'Profile Updated',
+      text: 'Your profile has been updated successfully!',
+      confirmButtonColor: '#3B82F6'
+    })
+
+    showModal.value = false
+    const refreshed = await getProfile()
+    user.value = refreshed
+  } catch (err: any) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Update Failed',
+      text: err.response?.data?.message || 'Something went wrong.',
+      confirmButtonColor: '#EF4444'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
 <template>
   <div class="px-4 sm:px-6 md:px-8">
     <h2 class="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Personal Information</h2>
@@ -161,79 +237,3 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getProfile, updateProfile } from '@/api/profileApi'
-import Swal from 'sweetalert2'
-
-const user = ref<any>(null)
-const loading = ref(true)
-const showModal = ref(false)
-const modalType = ref<'name' | 'email' | 'contact' | null>(null)
-const formData = ref({
-  first_name: '',
-  last_name: '',
-  email: '',
-  contact_no: ''
-})
-
-onMounted(async () => {
-  try {
-    const profile = await getProfile()
-    user.value = profile
-    formData.value = {
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      email: profile.email,
-      contact_no: profile.contact_no
-    }
-  } catch (err) {
-    console.error('Failed to load profile:', err)
-  } finally {
-    loading.value = false
-  }
-})
-
-function openModal(type: 'name' | 'email' | 'contact') {
-  modalType.value = type
-  showModal.value = true
-}
-
-async function handleSave() {
-  loading.value = true
-  try {
-    let updateData = {}
-    if (modalType.value === 'name') {
-      updateData = {
-        first_name: formData.value.first_name,
-        last_name: formData.value.last_name
-      }
-    } else if (modalType.value === 'email') {
-      updateData = { email: formData.value.email }
-    } else if (modalType.value === 'contact') {
-      updateData = { contact_no: formData.value.contact_no }
-    }
-
-    const res = await updateProfile(updateData)
-    await Swal.fire({
-      icon: 'success',
-      title: 'Profile Updated',
-      text: res.message || 'Your profile has been updated successfully!',
-      confirmButtonColor: '#3B82F6'
-    })
-
-    showModal.value = false
-    const refreshed = await getProfile()
-    user.value = refreshed
-  } catch (err: any) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Update Failed',
-      text: err.response?.data?.message || 'Something went wrong.',
-      confirmButtonColor: '#EF4444'
-    })
-  } finally {
-    loading.value = false
-  }
-}
-</script>
