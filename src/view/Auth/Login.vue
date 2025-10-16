@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-
 import gallonImg from "@/assets/images/gallon.png";
 import LandingPageLayout from "@/Layout/LandingPageLayout.vue";
 import { loginUser } from "@/api/loginApi";
@@ -19,7 +18,7 @@ const isLoading = ref(false);
 
 // handle login
 async function handleLogin() {
-  if (isLoading.value) return; // prevent double click
+  if (isLoading.value) return;
   errorMessage.value = "";
 
   if (!identifier.value || !password.value) {
@@ -29,9 +28,26 @@ async function handleLogin() {
 
   try {
     isLoading.value = true;
-    const user = await loginUser(identifier.value, password.value);
-    localStorage.setItem("user", JSON.stringify(user));
-    router.push("/customerDashboard");
+
+    const res = await loginUser(identifier.value, password.value);
+
+    if (res.error) {
+      errorMessage.value = res.message || "Invalid credentials.";
+      return;
+    }
+
+    // ✅ Save only the needed data
+    localStorage.setItem("token", res.token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+
+    // ✅ Redirect based on role
+    if (res.user.role === "admin") {
+      router.push("/customer"); // your admin route
+    } else if (res.user.role === "customer") {
+      router.push("/customerDashboard");
+    } else {
+      router.push("/");
+    }
   } catch (err: any) {
     errorMessage.value = "Incorrect Username or Password.";
   } finally {
@@ -62,6 +78,7 @@ function goToForgotPass() {
   router.push("/forgotpass");
 }
 </script>
+
 
 <template>
   <LandingPageLayout>

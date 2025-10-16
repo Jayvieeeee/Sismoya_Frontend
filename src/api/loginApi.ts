@@ -12,7 +12,7 @@ export async function loginUser(identifier: string, password: string) {
       localStorage.setItem("user", JSON.stringify(res.data.user));
     }
 
-    return res.data;
+    return res.data;  
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Login failed");
   }

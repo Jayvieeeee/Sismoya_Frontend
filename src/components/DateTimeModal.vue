@@ -67,11 +67,17 @@ function isPastDate(day: Date) {
 
 
 function handleSave() {
-  if (!selectedDate.value) return
-  const dateStr = selectedDate.value.toISOString().split("T")[0]
-  emit("save", `${dateStr} ${selectedTime.value}`)
-  emit("close")
+  if (!selectedDate.value) return;
+
+  const d = selectedDate.value;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0"); // month is 0-based
+  const dd = String(d.getDate()).padStart(2, "0");
+
+  emit("save", `${yyyy}-${mm}-${dd} ${selectedTime.value}`);
+  emit("close");
 }
+
 
 function formatTime(hour: number) {
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour

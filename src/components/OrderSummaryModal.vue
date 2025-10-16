@@ -7,11 +7,16 @@ import AddNewAddressModal from "@/components/AddNewAddressModal.vue"
 import DateTimeModal from "@/components/DateTimeModal.vue"
 import OrderPlacedModal from "@/components/OrderPlacedModal.vue"
 import ErrorModal from "@/components/ErrorModal.vue"
+import PayPalModal from "@/components/PaypalModal.vue"
 import { getProfile } from "@/utils/auth"
 import { getAddresses } from "@/utils/address"
 
-const showError = ref(false)
-const errorMessage = ref("")
+// -------------------- State --------------------
+const showError = ref(false);
+const errorMessage = ref("");
+const showPayPalModal = ref(false);
+const pendingPayPalOrderId = ref<number | null>(null);
+
 
 // -------------------- Types --------------------
 interface Address {
@@ -41,10 +46,8 @@ const emit = defineEmits<{
   (e: "place-order", orderData: any): void
 }>()
 
-// -------------------- Customer Info --------------------
+// -------------------- Customer & Address --------------------
 const customer = ref<User | null>(null)
-
-// -------------------- Address Handling --------------------
 const addresses = ref<Address[]>([])
 const selectedAddress = ref<Address | null>(null)
 
@@ -57,17 +60,11 @@ const orderPlacedModal = ref(false)
 const pickUpTime = ref("")
 const paymentMethod = ref("Paypal") // Default payment method
 
-// Computed total amount
-const totalAmount = computed(() => {
-  return props.products.reduce((sum, product) => sum + (product.price * product.qty), 0)
-})
+// Computed totals
+const totalAmount = computed(() => props.products.reduce((sum, p) => sum + (p.price * p.qty), 0))
+const totalQuantity = computed(() => props.products.reduce((sum, p) => sum + p.qty, 0))
 
-// Computed total quantity
-const totalQuantity = computed(() => {
-  return props.products.reduce((sum, product) => sum + product.qty, 0)
-})
-
-// Automatically select best address
+// -------------------- Functions --------------------
 const autoSelectAddress = (addressList: Address[]) => {
   if (addressList.length === 0) {
     selectedAddress.value = null
@@ -77,7 +74,6 @@ const autoSelectAddress = (addressList: Address[]) => {
   selectedAddress.value = defaultAddress || addressList[0]
 }
 
-// Refresh addresses
 const refreshAddresses = async () => {
   try {
     const fetched = await getAddresses()
@@ -97,9 +93,7 @@ const refreshAddresses = async () => {
 }
 
 watch(addresses, (newAddresses) => {
-  if (newAddresses.length > 0 && !selectedAddress.value) {
-    autoSelectAddress(newAddresses)
-  }
+  if (newAddresses.length > 0 && !selectedAddress.value) autoSelectAddress(newAddresses)
 })
 
 onMounted(async () => {
@@ -124,7 +118,6 @@ function handleAddNewAddress() {
 }
 
 async function handleAddressAdded(newAddress?: Address) {
-  console.log("🔄 New address added, refreshing addresses...")
   await refreshAddresses()
   if (newAddress && addresses.value.length === 1) {
     selectedAddress.value = addresses.value[0]
@@ -132,22 +125,15 @@ async function handleAddressAdded(newAddress?: Address) {
   showAddAddressModal.value = false
 }
 
-// Map display values to backend values
-const paymentMethodMap = {
-  'Paypal': 'Paypal',
-  'Cash on Pickup': 'CASH'
-}
+// Payment map
+const paymentMethodMap = { Paypal: "Paypal", "Cash on Pickup": "CASH" }
+const getBackendPaymentMethod = () => paymentMethodMap[paymentMethod.value as keyof typeof paymentMethodMap] || paymentMethod.value
 
-const getBackendPaymentMethod = () => {
-  return paymentMethodMap[paymentMethod.value as keyof typeof paymentMethodMap] || paymentMethod.value
-}
-
-// Image handling
+// Images
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   target.style.display = 'none'
 }
-
 function getImageUrl(imageUrl: string | undefined | null): string {
   if (!imageUrl) return "/placeholder.png"
   if (imageUrl.startsWith("http")) return imageUrl
@@ -155,89 +141,64 @@ function getImageUrl(imageUrl: string | undefined | null): string {
   return `https://sismoya.bsit3b.site/api${imageUrl}`
 }
 
-// Validate required fields
+// Validation
 function validateOrder(): boolean {
-  if (!selectedAddress.value) {
-    errorMessage.value = "Please select an address before placing your order."
-    showError.value = true
-    return false
-  }
-  if (!pickUpTime.value) {
-    errorMessage.value = "Please select a pickup time before placing your order."
-    showError.value = true
-    return false
-  }
-  if (!paymentMethod.value) {
-    errorMessage.value = "Please select a payment method before placing your order."
-    showError.value = true
-    return false
-  }
+  if (!selectedAddress.value) { errorMessage.value = "Please select an address."; showError.value = true; return false }
+  if (!pickUpTime.value) { errorMessage.value = "Please select a pickup time."; showError.value = true; return false }
+  if (!paymentMethod.value) { errorMessage.value = "Please select a payment method."; showError.value = true; return false }
   return true
 }
 
-// 🧾 Handle Place Order
-async function handlePlaceOrder() {
-  if (!customer.value || props.products.length === 0) return
-  if (!validateOrder()) return
+const handlePlaceOrder = async () => {
+  if (!customer.value || !props.products.length) return;
+  if (!validateOrder()) return;
 
-  const items = props.products.map(product => ({
-    gallon_id: product.id,
-    quantity: product.qty,
-    total_price: product.price * product.qty
-  }))
-
-  const payload = {
-    userId: customer.value.user_id,
-    pickup_datetime: pickUpTime.value,
-    payment_method: getBackendPaymentMethod(),
-    address_id: selectedAddress.value?.id || null,
-    items: items
-  }
-
-  console.log("🧾 Order payload:", payload)
+  const items = props.products.map(p => ({ gallon_id: p.id, quantity: p.qty, total_price: p.price * p.qty }));
+  const payload = { 
+    userId: customer.value.user_id, 
+    pickup_datetime: pickUpTime.value, 
+    payment_method: getBackendPaymentMethod(), 
+    address_id: selectedAddress.value?.id || null, items };
 
   try {
+    const res = await axiosInstance.post("/orders", payload);
+    if (!res.data.success) throw new Error(res.data.message || "Order failed");
+
     if (paymentMethod.value === "Paypal") {
-      // 🟦 PayPal Flow — call confirm route
-      const res = await axiosInstance.get("/orders/paypal/confirm", {
-        params: {
-          userId: customer.value.user_id,
-          pickup_datetime: pickUpTime.value,
-          payment_method: "Paypal",
-          address_id: selectedAddress.value?.id || null,
-          items: JSON.stringify(items)
-        }
-      })
-
-      // Debug the backend response
-      console.log("✅ PayPal confirm response:", res.data)
-
-      // If backend provides a redirect link, send user there
-      if (res.data?.redirect_url) {
-        window.location.href = res.data.redirect_url
-      } else {
-        console.warn("⚠️ No redirect URL found in backend response, showing success modal instead.")
-        emit("close")
-        orderPlacedModal.value = true
-        emit("place-order", payload)
-      }
+      pendingPayPalOrderId.value = res.data.order_id;
+      showPayPalModal.value = true;
+      emit('close'); // close order summary
     } else {
-      // 💵 Cash Flow — normal order placement
-      const res = await axiosInstance.post("/orders", payload)
-      if (res.data.success) {
-        emit("close")
-        orderPlacedModal.value = true
-        emit("place-order", payload)
-      } else {
-        throw new Error(res.data.message || "Order failed.")
-      }
+      orderPlacedModal.value = true;
+      emit('place-order', payload);
+      emit('close');
     }
   } catch (err: any) {
-    console.error("❌ ERROR RESPONSE:", err.response?.data || err)
-    errorMessage.value = err.response?.data?.message || err.message || "Order failed. Please try again."
-    showError.value = true
+    console.error(err);
+    errorMessage.value = err.response?.data?.message || err.message || "Order failed. Please try again.";
+    showError.value = true;
   }
-}
+};
+
+// -------------------- Confirm PayPal --------------------
+const confirmPayPalOrder = async () => {
+  if (!pendingPayPalOrderId.value) return;
+  try {
+    const res = await axiosInstance.post("/orders/paypal/create", {
+      order_id: pendingPayPalOrderId.value,
+      total_amount: totalAmount.value.toFixed(2)
+    });
+    if (res.data?.paypal?.approve_link) window.location.href = res.data.paypal.approve_link;
+    else orderPlacedModal.value = true;
+  } catch (err: any) {
+    console.error(err);
+    errorMessage.value = err.response?.data?.message || err.message || "PayPal order failed.";
+    showError.value = true;
+  } finally {
+    showPayPalModal.value = false;
+    pendingPayPalOrderId.value = null;
+  }
+};
 </script>
 
 <template>
@@ -327,9 +288,9 @@ async function handlePlaceOrder() {
     @add-new="handleAddNewAddress" />
 
   <AddNewAddressModal 
-  :isOpen="showAddAddressModal" 
-  @close="showAddAddressModal = false" 
-  @address-added="handleAddressAdded" />
+    :isOpen="showAddAddressModal" 
+    @close="showAddAddressModal = false" 
+    @address-added="handleAddressAdded" />
 
   <DateTimeModal :isOpen="showDateTimeModal" 
    @close="showDateTimeModal = false"
@@ -338,8 +299,15 @@ async function handlePlaceOrder() {
   <OrderPlacedModal :isOpen="orderPlacedModal" 
   @close="orderPlacedModal = false" />
 
+<PayPalModal 
+  :isOpen="showPayPalModal"
+  :amount="totalAmount.toFixed(2)"
+  :orderId="pendingPayPalOrderId" 
+  @payment-success="confirmPayPalOrder"
+  @closed="showPayPalModal = false"
+/>
+
   <ErrorModal v-if="showError" :visible="showError" 
-  :message="errorMessage" 
-  @close="showError = false" />
-  
+    :message="errorMessage" 
+    @close="showError = false" />
 </template>
