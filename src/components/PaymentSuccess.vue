@@ -1,6 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p class="text-gray-600">Processing your payment...</p>
+    </div>
+
+    <!-- Success State -->
+    <div v-else class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
       <!-- Success Icon -->
       <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
         <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,44 +67,80 @@ export default {
     const amount = ref(null)
     const token = ref(null)
     const payer_id = ref(null)
+    const loading = ref(false)
 
-    onMounted(() => {
-      // Get parameters from URL
+    onMounted(async () => {
       const urlParams = new URLSearchParams(window.location.search)
-      order_id.value = urlParams.get('order_id')
-      amount.value = urlParams.get('amount')
-      token.value = urlParams.get('token')
-      payer_id.value = urlParams.get('Payer_id')
-
-        console.log('PaymentSuccess page loaded');
-        console.log(window.location.href);
-        document.body.style.backgroundColor = 'red'; // quick visibility check
-      console.log('PaymentSuccess mounted with params:', {
-        order_id: order_id.value,
-        amount: amount.value,
-        token: token.value,
-        payer_id: payer_id.value
-      })
-
-      // Call backend to capture payment
-      if (token.value && payerId.value) {
-        capturePayment()
+      const urlToken = urlParams.get('token')
+      const urlPayerId = urlParams.get('PayerID')
+      
+      console.log('PaymentSuccess page loaded')
+      console.log('Full URL:', window.location.href)
+      console.log('URL params:', { token: urlToken, PayerID: urlPayerId })
+      
+      // Check if coming from PayPal (has token but no orderId yet)
+      if (urlToken && urlPayerId && !urlParams.get('orderId')) {
+        loading.value = true
+        
+        try {
+          console.log('Confirming payment with backend...')
+          
+          // Call backend confirm endpoint
+          const response = await axiosInstance.get('/orders/paypal/confirm', {
+            params: { 
+              token: urlToken, 
+              PayerID: urlPayerId 
+            }
+          })
+          
+          console.log('Backend response:', response.data)
+          
+          if (response.data.success) {
+            // Set values from backend response
+            order_id.value = response.data.data.order_id
+            amount.value = response.data.data.amount
+            token.value = response.data.data.token
+            payer_id.value = response.data.data.payer_id
+            
+            console.log('Payment confirmed successfully:', {
+              order_id: order_id.value,
+              amount: amount.value,
+              token: token.value,
+              payer_id: payer_id.value
+            })
+          } else {
+            console.error('Payment failed:', response.data.message)
+            router.push({
+              path: '/payment-cancel',
+              query: { error: response.data.message }
+            })
+          }
+          
+        } catch (error) {
+          console.error('Error confirming payment:', error)
+          router.push({
+            path: '/payment-cancel',
+            query: { error: error.message || 'Payment confirmation failed' }
+          })
+        } finally {
+          loading.value = false
+        }
+        
+      } else {
+        // Already has orderId (direct access or reload)
+        order_id.value = urlParams.get('orderId')
+        amount.value = urlParams.get('amount')
+        token.value = urlToken
+        payer_id.value = urlPayerId
+        
+        console.log('Direct access with params:', {
+          order_id: order_id.value,
+          amount: amount.value,
+          token: token.value,
+          payer_id: payer_id.value
+        })
       }
     })
-
-    const capturePayment = async () => {
-      try {
-        console.log('Confirming payment...')
-        const response = await axiosInstance.get('/orders/paypal/confirm', {
-          token: token.value,
-          payer_id: payer_id.value,
-          order_id: order_id.value
-        })
-        console.log('Payment confirmation result:', response.data)
-      } catch (error) {
-        console.error('Error confirming payment:', error)
-      }
-    }
 
     const viewOrders = () => {
       router.push('/orderHistory')
@@ -112,6 +155,7 @@ export default {
       amount,
       token,
       payer_id,
+      loading,
       viewOrders,
       goHome
     }

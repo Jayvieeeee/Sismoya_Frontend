@@ -1,24 +1,31 @@
 <IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
+    RewriteEngine On
+    RewriteBase /
+    
+    # Protect sensitive files
+    <FilesMatch "\.(env|json|config|md|lock|gitignore|htaccess|xml|yml|log)$">
+        Require all denied
+    </FilesMatch>
+    
+    # API requests - forward to PHP backend
+    RewriteCond %{REQUEST_URI} ^/api/
+    RewriteRule ^api/(.*)$ /backend/public/index.php?/$1 [L,QSA]
+    
+    # Serve existing files (assets, JS, CSS)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # Serve existing directories
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Everything else → Vue (index.html)
+    RewriteRule ^ index.html [L]
+</IfModule>
 
-  # Protect sensitive files
-  <FilesMatch "\.(env|json|config|md|lock|gitignore|htaccess|xml|yml|log)$">
-    Order allow,deny
-    Deny from all
-  </FilesMatch>
-
-  # Serve existing files (assets)
-  RewriteCond %{REQUEST_FILENAME} -f
-  RewriteRule ^ - [L]
-
-  # Serve existing directories
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  # 🚫 Don't rewrite for JS, CSS, map files, etc.
-  RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|svg|ico|json|map)$ [NC]
-
-  # All other requests → index.html (Vue handles routing)
-  RewriteRule ^ index.html [L]
+# Set proper MIME types
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType image/svg+xml .svg
 </IfModule>
