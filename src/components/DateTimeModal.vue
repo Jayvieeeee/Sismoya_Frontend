@@ -61,28 +61,35 @@ function isPrevMonth(day: Date) {
 
 function isPastDate(day: Date) {
   const today = new Date()
-  today.setHours(0, 0, 0, 0) // normalize to midnight
+  today.setHours(0, 0, 0, 0) 
   return day < today
 }
-
 
 function handleSave() {
   if (!selectedDate.value) return;
 
   const d = selectedDate.value;
   const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0"); // month is 0-based
+  const mm = String(d.getMonth() + 1).padStart(2, "0"); // month 
   const dd = String(d.getDate()).padStart(2, "0");
 
   emit("save", `${yyyy}-${mm}-${dd} ${selectedTime.value}`);
   emit("close");
 }
 
-
 function formatTime(hour: number) {
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
   const period = hour < 12 ? 'AM' : 'PM'
   return `${String(displayHour).padStart(2, '0')}:00 ${period}`
+}
+
+// time slots
+function getAvailableTimeSlots() {
+  const slots = [];
+  for (let h = 8; h <= 17; h++) {
+    slots.push(h);
+  }
+  return slots;
 }
 
 // Formatting
@@ -168,7 +175,7 @@ const monthLabel = (d: Date) =>
             <!-- Time Dropdown -->
             <div v-if="isTimeDropdownOpen" class="absolute top-full mt-2 w-full bg-white border-2 border-gray-300 rounded-2xl max-h-48 overflow-y-auto shadow-lg z-10">
               <div
-                v-for="h in 24" 
+                v-for="h in getAvailableTimeSlots()" 
                 :key="h"
                 @click="selectedTime = `${String(h).padStart(2,'0')}:00`; isTimeDropdownOpen = false"
                 class="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 border-b border-gray-100 last:border-b-0"

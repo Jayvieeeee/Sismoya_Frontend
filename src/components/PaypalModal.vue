@@ -1,71 +1,3 @@
-<script setup lang="ts">
-import { ref } from 'vue'
-import paypalImg from '@/assets/images/paypal.png'
-import axiosInstance from '@/utils/axios'
-
-// -------------------- Props --------------------
-const props = defineProps<{
-  amount: string | number
-  isOpen: boolean
-  orderId: string | number | null
-}>()
-
-const emit = defineEmits(['payment-success', 'payment-error', 'closed'])
-
-// -------------------- State --------------------
-const isLoading = ref(false)
-const isRedirecting = ref(false)
-const errorMessage = ref<string | null>(null)
-
-interface PayPalResponse {
-  success: boolean
-  paypal?: { approve_link: string }
-  message?: string
-}
-
-// -------------------- Functions --------------------
-const handlePay = async () => {
-  if (!props.amount || !props.orderId) return
-
-  isLoading.value = true
-  errorMessage.value = null
-
-  try {
-    const res = await axiosInstance.post(`/orders/paypal/create`, {
-      order_id: props.orderId,
-      total_amount: props.amount
-    })
-
-    const data: PayPalResponse = res.data
-
-    if (data.success && data.paypal?.approve_link) {
-      console.log('Redirecting to PayPal:', data.paypal.approve_link)
-      isRedirecting.value = true
-      setTimeout(() => {
-        window.location.href = data.paypal!.approve_link
-      }, 1200)
-      emit('payment-success', data)
-    } else {
-      errorMessage.value = data.message || 'Failed to initiate PayPal payment.'
-      console.error('PayPal Error:', errorMessage.value, data)
-      emit('payment-error', errorMessage.value)
-    }
-  } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || err.message || 'PayPal payment failed.'
-    console.error('PayPal Exception:', err)
-    emit('payment-error', errorMessage.value)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const closeModal = () => {
-  emit('closed')
-  errorMessage.value = null
-  isRedirecting.value = false
-}
-</script>
-
 <template>
   <div
     v-if="isOpen"
@@ -104,35 +36,142 @@ const closeModal = () => {
         {{ errorMessage }}
       </p>
 
-      <!-- Loading / Redirecting -->
-      <div v-if="isRedirecting" class="flex flex-col items-center gap-2 mt-4">
-        <div class="w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm text-gray-600 mt-2">Redirecting to PayPal...</p>
+      <!-- Loading State -->
+      <div v-if="isRedirecting" class="flex flex-col items-center gap-2 mb-6">
+        <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm text-gray-600">Redirecting to PayPal...</p>
+      </div>
+
+      <!-- Instructions -->
+      <div v-else class="mb-6 p-4 bg-blue-50 rounded-lg">
+        <p class="text-sm text-blue-800 mb-2">
+          <strong>You will be redirected to PayPal's secure checkout page.</strong>
+        </p>
+        <p class="text-xs text-blue-600">
+          After payment, you'll be redirected back to complete your order.
+        </p>
       </div>
 
       <!-- Pay Button -->
       <button
-        v-else
+        v-if="!isRedirecting"
         @click="handlePay"
         :disabled="isLoading"
-        class="w-full bg-primary hover:bg-secondary disabled:bg-blue-400 text-white font-semibold py-3 rounded-full transition-colors"
+        class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 rounded-full transition-colors mb-3"
       >
-        {{ isLoading ? 'Processing...' : 'Pay with PayPal' }}
+        {{ isLoading ? 'Processing...' : 'Proceed to PayPal' }}
+      </button>
+
+      <button
+        v-if="!isRedirecting"
+        @click="closeModal"
+        class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 rounded-full transition-colors"
+      >
+        Cancel
       </button>
     </div>
   </div>
 </template>
 
-<style scoped>
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
+<script>
+import { ref } from 'vue'
+import paypalImg from '@/assets/images/paypal.png'
+import axiosInstance from '@/utils/axios'
+
+export default {
+  name: 'PayPalPaymentModal',
+  props: {
+    amount: {
+      type: [String, Number],
+      required: true
+    },
+    isOpen: {
+      type: Boolean,
+      required: true
+    },
+    orderId: {
+      type: [String, Number],
+      default: null
+    }
+  },
+  emits: ['payment-success', 'payment-error', 'closed'],
+  
+  setup(props, { emit }) {
+    const isLoading = ref(false)
+    const isRedirecting = ref(false)
+    const errorMessage = ref(null)
+
+    const handlePay = async () => {
+      if (!props.amount || !props.orderId) {
+        errorMessage.value = 'Missing order information'
+        return
+      }
+
+      isLoading.value = true
+      errorMessage.value = null
+
+      try {
+        console.log('Creating PayPal payment for order:', props.orderId, 'amount:', props.amount)
+        
+        const res = await axiosInstance.post(`/orders/paypal/create`, {
+          order_id: props.orderId,
+          total_amount: parseFloat(props.amount).toFixed(2)
+        })
+
+        const data = res.data
+        console.log('PayPal API response:', data)
+
+        if (data.success && data.paypal?.approve_link) {
+          console.log('Redirecting to PayPal:', data.paypal.approve_link)
+          
+          // Show redirecting state
+          isRedirecting.value = true
+          
+          // Use setTimeout to allow the UI to update before redirect
+          setTimeout(() => {
+            // Use full page redirect - this is the key fix
+            window.location.href = data.paypal.approve_link
+          }, 1000)
+          
+        } else {
+          errorMessage.value = data.message || 'Failed to initiate PayPal payment.'
+          console.error('PayPal Error:', errorMessage.value, data)
+          emit('payment-error', errorMessage.value)
+        }
+      } catch (err) {
+        console.error('PayPal Exception:', err)
+        errorMessage.value = err.response?.data?.message || err.message || 'PayPal payment failed. Please try again.'
+        emit('payment-error', errorMessage.value)
+      } finally {
+        isLoading.value = false
+      }
+    }
+
+    const closeModal = () => {
+      emit('closed')
+      errorMessage.value = null
+      isRedirecting.value = false
+    }
+
+    return {
+      paypalImg,
+      isLoading,
+      isRedirecting,
+      errorMessage,
+      handlePay,
+      closeModal
+    }
   }
 }
+</script>
+
+<style scoped>
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

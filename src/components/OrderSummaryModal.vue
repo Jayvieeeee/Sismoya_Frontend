@@ -16,7 +16,7 @@ const showError = ref(false);
 const errorMessage = ref("");
 const showPayPalModal = ref(false);
 const pendingPayPalOrderId = ref<number | null>(null);
-
+const orderPlacedModal = ref(false);
 
 // -------------------- Types --------------------
 interface Address {
@@ -54,7 +54,6 @@ const selectedAddress = ref<Address | null>(null)
 const showAddressModal = ref(false)
 const showAddAddressModal = ref(false)
 const showDateTimeModal = ref(false)
-const orderPlacedModal = ref(false)
 
 // -------------------- Order Details --------------------
 const pickUpTime = ref("")
@@ -169,6 +168,7 @@ const handlePlaceOrder = async () => {
       showPayPalModal.value = true;
       emit('close'); // close order summary
     } else {
+      // For Cash on Pickup, show success modal immediately
       orderPlacedModal.value = true;
       emit('place-order', payload);
       emit('close');
@@ -180,25 +180,28 @@ const handlePlaceOrder = async () => {
   }
 };
 
-// -------------------- Confirm PayPal --------------------
-const confirmPayPalOrder = async () => {
-  if (!pendingPayPalOrderId.value) return;
-  try {
-    const res = await axiosInstance.post("/orders/paypal/create", {
-      order_id: pendingPayPalOrderId.value,
-      total_amount: totalAmount.value.toFixed(2)
-    });
-    if (res.data?.paypal?.approve_link) window.location.href = res.data.paypal.approve_link;
-    else orderPlacedModal.value = true;
-  } catch (err: any) {
-    console.error(err);
-    errorMessage.value = err.response?.data?.message || err.message || "PayPal order failed.";
-    showError.value = true;
-  } finally {
-    showPayPalModal.value = false;
-    pendingPayPalOrderId.value = null;
-  }
-};
+// -------------------- PayPal Handlers --------------------
+const handlePayPalSuccess = (data: any) => {
+  console.log('PayPal payment initiated successfully, waiting for completion...');
+  // The OrderPlacedModal will be shown when PayPal redirects back to our success page
+}
+
+const handlePayPalError = (error: string) => {
+  console.error('PayPal payment failed:', error);
+  errorMessage.value = error;
+  showError.value = true;
+  showPayPalModal.value = false;
+}
+
+const handlePayPalClosed = () => {
+  showPayPalModal.value = false;
+  pendingPayPalOrderId.value = null;
+}
+
+// Function to show order placed modal after successful PayPal payment
+const showOrderPlaced = () => {
+  orderPlacedModal.value = true;
+}
 </script>
 
 <template>
@@ -296,18 +299,24 @@ const confirmPayPalOrder = async () => {
    @close="showDateTimeModal = false"
    @save="(value) => { pickUpTime = value }" />
 
-  <OrderPlacedModal :isOpen="orderPlacedModal" 
-  @close="orderPlacedModal = false" />
+  <!-- Order Placed Modal - Shows after successful payment -->
+  <OrderPlacedModal 
+    :isOpen="orderPlacedModal" 
+    @close="orderPlacedModal = false" />
 
-<PayPalModal 
-  :isOpen="showPayPalModal"
-  :amount="totalAmount.toFixed(2)"
-  :orderId="pendingPayPalOrderId" 
-  @payment-success="confirmPayPalOrder"
-  @closed="showPayPalModal = false"
-/>
+  <!-- PayPal Modal -->
+  <PayPalModal 
+    :isOpen="showPayPalModal"
+    :amount="totalAmount.toFixed(2)"
+    :orderId="pendingPayPalOrderId || undefined"
+    @payment-success="handlePayPalSuccess"
+    @payment-error="handlePayPalError"
+    @closed="handlePayPalClosed"
+  />
 
-  <ErrorModal v-if="showError" :visible="showError" 
+  <ErrorModal 
+    v-if="showError" 
+    :visible="showError" 
     :message="errorMessage" 
     @close="showError = false" />
 </template>
