@@ -4,7 +4,7 @@ import TabNavigation from '@/view/Admin/AccSettingsTab.vue'
 import PersonalInformation from '@/components/PersonalInformation.vue';
 
 import ChangePassword from '@/components/ChangePassword.vue';
-import CustomerLayout from '@/Layout/CustomerLayout.vue';
+import AdminLayout from '@/Layout/AdminLayout.vue';
 
 const activeTab = ref('personal-info');
 
@@ -15,7 +15,7 @@ const tabs = [
 </script>
 
 <template>
-  <CustomerLayout>
+  <AdminLayout>
     <div class="min-h-screen p-4 md:p-8">
       
       <div class="max-w-4xl mx-auto mb-6">
@@ -44,5 +44,5 @@ const tabs = [
         </div>
       </div>
     </div>
-  </CustomerLayout>
+  </AdminLayout>
 </template>
