@@ -9,7 +9,7 @@ import { handleLogout } from '@/utils/auth'
 const activeMenu = ref('gallons-details')
 const gallons = ref<any[]>([])
 const loading = ref(true)
-const error = ref<string | null>(null)
+const error = ref<string | null>(null) 
 
 const modalVisible = ref(false)
 const isUpdate = ref(false)
