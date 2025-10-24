@@ -9,8 +9,6 @@ import trashIcon from "@/assets/icons/trash.png"
 import CustomerLayout from "@/Layout/CustomerLayout.vue"
 import OrderSummary from "@/components/OrderSummaryModal.vue"
 import type { ModalProduct } from "@/types"
-
-
 import type { CartItem } from "@/api/cartApi"
 import {
   getUserCart,
@@ -25,6 +23,7 @@ const router = useRouter()
 // Cart data
 const items = ref<CartItem[]>([])
 const imageErrors = ref<Set<number>>(new Set())
+const loadingImages = ref<Set<number>>(new Set())
 
 // Order Summary modal
 const showOrderSummary = ref(false)
@@ -42,15 +41,12 @@ const isEmpty = computed(() => cartItems.value.length === 0)
 // --- Lifecycle ---
 onMounted(async () => {
   items.value = await getUserCart()
+  items.value.forEach(item => loadingImages.value.add(item.cart_item_id))
 })
 
 // --- Functions ---
+const toggleSelect = (item: CartItem) => (item.selected = !item.selected)
 
-const toggleSelect = (item: CartItem) => {
-  item.selected = !item.selected
-}
-
-// ✅ Open the Order Summary modal
 const openOrderSummary = () => {
   if (selectedItems.value.length === 0) {
     Swal.fire({
@@ -62,30 +58,25 @@ const openOrderSummary = () => {
     return
   }
 
-selectedProducts.value = selectedItems.value.map(item => ({
-  id: item.gallon_id || item.cart_item_id,
-  type: item.name,
-  liters: Number(item.size),
-  qty: item.quantity,
-  price: item.price,
-  image_url: item.image_url
-}))
-
+  selectedProducts.value = selectedItems.value.map(item => ({
+    id: item.gallon_id || item.cart_item_id,
+    type: item.name,
+    liters: Number(item.size),
+    qty: item.quantity,
+    price: item.price,
+    image_url: item.image_url
+  }))
 
   showOrderSummary.value = true
 }
 
-// ✅ Handle placing the order
 const handleOrderPlaced = async () => {
-  const ids = selectedItems.value.map((i) => i.cart_item_id)
-
+  const ids = selectedItems.value.map(i => i.cart_item_id)
   await clearSelectedItemsBackend(ids)
   items.value = await getUserCart()
-
   showOrderSummary.value = false
 }
 
-// ✅ Update cart item quantity
 const updateQuantity = async (item: CartItem, newQuantity: number) => {
   if (newQuantity <= 0) {
     const result = await Swal.fire({
@@ -119,7 +110,6 @@ const updateQuantity = async (item: CartItem, newQuantity: number) => {
 const increaseQty = (item: CartItem) => updateQuantity(item, item.quantity + 1)
 const decreaseQty = (item: CartItem) => updateQuantity(item, item.quantity - 1)
 
-// ✅ Remove a single item
 const removeItem = async (item: CartItem) => {
   const result = await Swal.fire({
     icon: "warning",
@@ -145,23 +135,14 @@ const removeItem = async (item: CartItem) => {
   }
 }
 
-
-// --- Helpers ---
 const getImageUrl = (item: CartItem): string => {
   if (!item.image_url) return ""
-  const urlMappings = [
-    { test: (url: string) => url.startsWith("images/"), transform: (url: string) => `${IMAGE_BASE_URL}/${url}` },
-    { test: (url: string) => url.startsWith("/images/"), transform: (url: string) => `${IMAGE_BASE_URL}${url}` },
-    { test: (url: string) => !url.startsWith("http"), transform: (url: string) => `${IMAGE_BASE_URL}/images/${url}` }
-  ]
-  const mapping = urlMappings.find((mapping) => mapping.test(item.image_url))
-  const finalUrl = mapping ? mapping.transform(item.image_url) : item.image_url
-  return `${finalUrl}?t=${Date.now()}`
+  return `${IMAGE_BASE_URL}/${item.image_url}?t=${Date.now()}`
 }
 
 const hasImageError = (item: CartItem): boolean => imageErrors.value.has(item.cart_item_id)
 const handleImageError = (_event: Event, item: CartItem) => imageErrors.value.add(item.cart_item_id)
-const handleImageLoad = (_event: Event, item: CartItem) => imageErrors.value.delete(item.cart_item_id)
+const handleImageLoad = (_event: Event, item: CartItem) => loadingImages.value.delete(item.cart_item_id)
 
 const goBack = () => router.back()
 const formatPrice = (price: number): string => price.toFixed(2)
@@ -260,24 +241,21 @@ const getDisplayText = (value: any, fallback: string = "N/A"): string => value |
                 </div>
               </div>
 
-              <!-- Right side -->
-              <div class="flex items-center gap-2 mr-12">
+        
+                <div
+                  v-if="loadingImages.has(item.cart_item_id)"
+                  class="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-primary"
+                ></div>
+
                 <img
                   v-if="!hasImageError(item)"
                   :src="getImageUrl(item)"
                   @error="handleImageError($event, item)"
                   @load="handleImageLoad($event, item)"
                   alt="Product"
-                  class="w-20 h-20 object-contain"
+                  class="w-20 h-20 object-cover rounded-full transition-opacity duration-300"
+                  :class="loadingImages.has(item.cart_item_id) ? 'opacity-0' : 'opacity-100'"
                 />
-                <button
-                  @click="removeItem(item)"
-                  class="p-2 bg-red-100 hover:bg-red-200 rounded-full transition"
-                  aria-label="Remove item"
-                >
-                  <img :src="trashIcon" alt="Remove" class="w-4 h-4" />
-                </button>
-              </div>
             </div>
 
             <!-- Checkout Section -->

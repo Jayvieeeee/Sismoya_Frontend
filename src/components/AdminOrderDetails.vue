@@ -154,7 +154,7 @@ const closeModal = () => {
 
             <!-- Pick Up DateTime -->
             <div>
-              <p class="text-sm">Pick Up DateTime: {{ formatDate(selectedOrder.date_time || selectedOrder.created_at) }}</p>
+              <p class="text-sm">Pick Up Date & Time: {{ formatDate(selectedOrder.date_time || selectedOrder.created_at) }}</p>
             </div>
 
             <!-- Total Amount -->

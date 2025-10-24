@@ -29,8 +29,8 @@ const menuItems: MenuItem[] = [
   { name: "Orders", icon: orderHistoryIcon, route: "/adminOrders" },
   { name: "Customers", icon: customerIcon, route: "/customers" },
   { name: "Riders", icon: riderIcon, route: "/riders" },
+  { name: "Gallon Settings", icon: siteIcon, route: "/siteSettings" },
   { name: "Account Settings", icon: accountSettingsIcon, route: "/adminAccountSettings" },
-  { name: "Site Settings", icon: siteIcon, route: "/siteSettings" },
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
 ]
 

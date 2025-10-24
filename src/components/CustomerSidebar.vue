@@ -143,8 +143,4 @@ async function confirmLogout() {
   />
 </template>
 
-<style scoped>
-body {
-  overflow-x: hidden;
-}
-</style>
+

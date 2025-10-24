@@ -100,7 +100,7 @@ function isActiveStatus(status: string, orderStatus: string) {
 
             <!-- Pick Up DateTime -->
             <div>
-              <p class="text-sm">Pick Up DateTime: {{ order.pickUpDateTime }}</p>
+              <p class="text-sm">Pick Up Date & Time: {{ order.pickUpDateTime }}</p>
             </div>
 
             <!-- Gallon with Icon -->

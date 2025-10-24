@@ -32,6 +32,7 @@ interface LatestOrder {
   created_at: string;
   order_items: string;
   items?: any[];
+  payment_method?: string; // Add this
 }
 
 interface UserOrder {
@@ -65,6 +66,9 @@ const formatDate = (dateString: string) => {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
   });
 };
 
@@ -76,12 +80,36 @@ const formatCurrency = (amount: number) => {
 };
 
 const getStatusColor = (status: string) => {
-  const s = status.toLowerCase();
-  if (s === "completed") return "text-green-600";
-  if (s === "pending") return "text-yellow-600";
-  if (s === "cancelled") return "text-red-600";
-  if (s === "to pick up" || s === "to deliver") return "text-blue-600";
-  return "text-gray-600";
+  const colors: { [key: string]: string } = {
+    pending: "text-amber-600 font-semibold",
+    to_pickup: "text-blue-600 font-medium",
+    to_pick_up: "text-blue-600 font-medium", 
+    picked_up: "text-gray-700 font-medium",
+    "picked up": "text-gray-700 font-medium",
+    preparing: "text-purple-600 font-semibold",
+    to_deliver: "text-indigo-600 font-medium",
+    completed: "text-green-600 font-semibold",
+    cancelled: "text-red-600 font-semibold",
+  };
+
+  return colors[status.toLowerCase()] || "text-gray-600 font-normal";
+};
+
+// Optional: Format the status text for display
+const formatStatus = (status: string) => {
+  const formatted: { [key: string]: string } = {
+    pending: "Pending",
+    to_pickup: "To Pickup", 
+    to_pick_up: "To Pick Up",
+    picked_up: "Picked Up",
+    "picked up": "Picked Up",
+    preparing: "Preparing",
+    to_deliver: "To Deliver",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
+  
+  return formatted[status.toLowerCase()] || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
 // UPDATED: Better order items formatting
@@ -99,18 +127,49 @@ const formatOrderItems = (order: LatestOrder) => {
   return "No items";
 };
 
-// Open modal with order details
+// UPDATED: Open modal with order details - INCLUDES PAYMENT METHOD AND TIME
 const viewOrderDetails = (order: LatestOrder) => {
+  console.log('Order data for modal:', order);
+  
+  let gallonType = "Round Gallon";
+  let quantity = 1;
+  let imageUrl = undefined;
+  let paymentMethod = "Cash"; // Default to Cash
+
+  // Try to extract from items array first
+  if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+    const firstItem = order.items[0];
+    gallonType = firstItem.gallon_name || firstItem.product_name || "Round Gallon";
+    quantity = firstItem.quantity || 1;
+    imageUrl = firstItem.gallon_image || undefined;
+    
+    // Try to get payment method from item or order
+    paymentMethod = firstItem.payment_method || order.payment_method || "Cash";
+  } 
+  // If no items array, try to parse from order_items string
+  else if (order.order_items) {
+    const match = order.order_items.match(/(\d+)x\s*(.+)/);
+    if (match) {
+      quantity = parseInt(match[1]) || 1;
+      gallonType = match[2].trim() || "Round Gallon";
+    }
+    
+    // Try to get payment method from order
+    paymentMethod = order.payment_method || "Cash";
+  }
+
   selectedOrder.value = {
-    order_id: order.id.toString(),
+    orderId: order.id?.toString() ?? "N/A",
     status: order.status,
-    pickUpDateTime: formatDate(order.created_at),
-    gallonType: "Round Gallon",
-    quantity: 1,
-    totalAmount: order.total_amount,
-    paymentMethod: "Cash",
-    imageUrl: undefined
+    pickUpDateTime: formatDate(order.created_at), // This will now include time
+    gallonType: gallonType,
+    quantity: quantity,
+    totalAmount: parseFloat(order.total_amount?.toString() ?? "0"),
+    paymentMethod: paymentMethod, // Now uses actual payment method if available
+    imageUrl: imageUrl,
   };
+  
+  console.log('Modal data:', selectedOrder.value);
   isModalOpen.value = true;
 };
 
@@ -123,7 +182,6 @@ const closeModal = () => {
 // Compute stats from user orders - FIXED STATUS FILTERING
 const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
   
-
   const pending = userOrders.filter((o) => 
     o.status.toLowerCase() === "pending" || 
     o.status.toLowerCase() === "to pick up" || 
@@ -178,8 +236,6 @@ const fallbackToLocalStats = async () => {
     if (ordersResponse.data?.success && Array.isArray(ordersResponse.data.orders)) {
       const userOrders: UserOrder[] = ordersResponse.data.orders;
       
-  
-      
       await computeStatsFromOrders(userOrders);
 
       latestOrders.value = userOrders
@@ -193,7 +249,8 @@ const fallbackToLocalStats = async () => {
           order_items: order.items ? 
             order.items.map((item: any) => 
               `${item.quantity}x ${item.gallon_name || 'Round Gallon'}`
-            ).join(', ') : 'Round Gallon'
+            ).join(', ') : 'Round Gallon',
+          items: order.items // IMPORTANT: Include items array
         }));
 
       error.value = null;
@@ -203,7 +260,7 @@ const fallbackToLocalStats = async () => {
   }
 };
 
-// UPDATED: Fixed dashboard data fetching
+// UPDATED: Fixed dashboard data fetching with proper items mapping
 const fetchDashboardData = async () => {
   try {
     loading.value = true;
@@ -220,7 +277,6 @@ const fetchDashboardData = async () => {
       params: { user_id: user.value.user_id },
     });
 
-
     if (!ordersResponse.data?.success || !Array.isArray(ordersResponse.data.orders)) {
       throw new Error("Failed to fetch user orders");
     }
@@ -230,7 +286,6 @@ const fetchDashboardData = async () => {
     const statsResponse = await axiosInstance.get("/orders/stats", {
       params: { user_id: user.value.user_id }
     });
-
 
     if (statsResponse.data?.success) {
       stats.value = statsResponse.data.data;
@@ -242,7 +297,6 @@ const fetchDashboardData = async () => {
       params: { user_id: user.value.user_id, limit: 5 },
     });
 
-
     if (latestResponse.data?.success && Array.isArray(latestResponse.data.data)) {
       latestOrders.value = latestResponse.data.data.map((order: any) => ({
         id: order.order_id,
@@ -250,9 +304,10 @@ const fetchDashboardData = async () => {
         status: order.status,
         created_at: order.created_at,
         order_items: order.order_items,
-        items: order.items
+        items: order.items // IMPORTANT: Ensure items array is included
       }));
     } else {
+      // FIXED: Include items array in fallback mapping
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 3)
@@ -264,9 +319,12 @@ const fetchDashboardData = async () => {
           order_items: order.items ? 
             order.items.map((item: any) => 
               `${item.quantity}x ${item.gallon_name || 'Round Gallon'}`
-            ).join(', ') : 'Round Gallon'
+            ).join(', ') : 'Round Gallon',
+          items: order.items // IMPORTANT: Include items array here too
         }));
     }
+
+    console.log('Latest orders:', latestOrders.value); // Debug log
 
   } catch (err: any) {
     await handleDashboardError(err);
@@ -388,10 +446,10 @@ onMounted(() => fetchDashboardData());
                         {{ formatCurrency(order.total_amount) }}
                       </td>
                       <td class="py-2 px-3 whitespace-nowrap">{{ formatDate(order.created_at) }}</td>
-                      <td class="py-2 px-3 font-medium whitespace-nowrap" :class="getStatusColor(order.status)">
-                        {{ order.status }}
+                      <td class="py-2 px-3 whitespace-nowrap" :class="getStatusColor(order.status)">
+                        {{ formatStatus(order.status) }}
                       </td>
-                      <td class="py-2 px-3 whitespace-nowrap">
+                      <td class="py-2 px-3 whitespace-nowrap">  
                         <button
                           @click="viewOrderDetails(order)"
                           class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer transition"

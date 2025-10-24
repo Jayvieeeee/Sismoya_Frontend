@@ -1,41 +1,90 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref, computed, onMounted } from "vue"
 import AdminLayout from "@/Layout/AdminLayout.vue"
+import axiosInstance from "@/utils/axios"
+import RiderDetailsModal from "@/components/RiderDetailsModal.vue"
+import AddRiderModal from "@components/AddRider.vue"
 
 const search = ref("")
+const riders = ref<any[]>([])
+const loading = ref(true)
 
-// Static rider data
-const riders = ref([
-  {
-    id: 1,
-    name: "Chrisha Dalmacio",
-    contact_no: "09123456789",
-    email: "dalmacioehrisha@gmail.com",
-    status: "Inactive",
-    date_created: "01-10-2025"
-  },
-  {
-    id: 2,
-    name: "Jayvie Letada",
-    contact_no: "09123456789",
-    email: "jayvleletada@gmail.com",
-    status: "Active",
-    date_created: "01-10-2025"
-  },
-  {
-    id: 3,
-    name: "Eragp Campo",
-    contact_no: "09123456789",
-    email: "sampeweap@gmail.com",
-    status: "Inactive",
-    date_created: "03-25-2025"
+const showRiderModal = ref(false)
+const selectedRider = ref<any | null>(null)
+const deliveryHistory = ref<any[]>([])
+
+const showAddRiderModal = ref(false)
+
+// Load all riders
+async function loadRiders() {
+  try {
+    loading.value = true
+    const { data } = await axiosInstance.get("/admin/riders")
+    if (!data.error && data.riders) {
+      riders.value = data.riders.map((r: any) => ({
+        id: r.user_id,
+        name: r.first_name + " " + r.last_name,
+        contact_no: r.contact_no,
+        email: r.email,
+        status: r.status.charAt(0).toUpperCase() + r.status.slice(1),
+        date_created: new Date(r.created_at).toLocaleDateString(),
+      }))
+    }
+  } catch (error) {
+    console.error("Error fetching riders:", error)
+  } finally {
+    loading.value = false
   }
-])
+}
 
+// View Riders
+async function viewRiderDetails(rider: any) {
+  try {
+    console.log("Rider object:", rider)
+    const { data } = await axiosInstance.get(`/admin/riders/${rider.id}`)
+    if (!data.error) {
+      selectedRider.value = data.rider
+      deliveryHistory.value = data.delivery_history
+      showRiderModal.value = true
+    } else {
+      console.error("Backend error:", data.message)
+    }
+  } catch (error) {
+    console.error("Error loading rider details:", error)
+  }
+}
+
+// Rider Status 
+async function toggleRiderStatus(rider: any) {
+  try {
+    const newStatus = rider.status === "Active" ? "Inactive" : "Active"
+    
+    console.log("🔄 Toggling status for rider:", rider.id, "from", rider.status, "to", newStatus)
+    
+    const { data } = await axiosInstance.put(`/admin/riders/${rider.id}/update-status`, {
+      status: newStatus.toLowerCase() // Send the new status in the request body
+    })
+    
+    if (!data.error) {
+      // Update the local state
+      rider.status = newStatus
+      
+      // Also update the selected rider in the modal if it's the same rider
+      if (selectedRider.value && selectedRider.value.id === rider.id) {
+        selectedRider.value.status = newStatus
+      }
+    } else {
+      console.error("Backend error:", data.message)
+    }
+  } catch (error) {
+    console.error("Error updating status:", error)
+  }
+}
+
+// FILTERED SEARCH
 const filteredRiders = computed(() => {
   const query = search.value.trim().toLowerCase()
   if (!query) return riders.value
-
   return riders.value.filter((r) => {
     const id = r.id?.toString().toLowerCase() || ""
     const name = r.name?.toLowerCase() || ""
@@ -43,7 +92,6 @@ const filteredRiders = computed(() => {
     const email = r.email?.toLowerCase() || ""
     const status = r.status?.toLowerCase() || ""
     const date = r.date_created?.toLowerCase() || ""
-
     return (
       id.includes(query) ||
       name.includes(query) ||
@@ -55,10 +103,9 @@ const filteredRiders = computed(() => {
   })
 })
 
-function viewRiderDetails(rider: any) {
-  alert(`Viewing details for: ${rider.name}`)
-  // You can implement a modal or navigation here
-}
+onMounted(() => {
+  loadRiders()
+})
 </script>
 
 <template>
@@ -66,8 +113,15 @@ function viewRiderDetails(rider: any) {
     <div class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
       <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Riders</h1>
 
-      <!-- Search Bar -->
-      <div class="mb-4 flex justify-end">
+      <!-- Search and Add Rider Row -->
+      <div class="mb-4 flex justify-between items-center">
+        <button
+          @click="showAddRiderModal = true"
+          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          + Add Rider
+        </button>
+
         <input
           v-model="search"
           type="text"
@@ -76,8 +130,13 @@ function viewRiderDetails(rider: any) {
         />
       </div>
 
-      <!-- Desktop Table with Scrollable Body Inside -->
-      <div class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
+      <!-- Loading -->
+      <div v-if="loading" class="text-center py-10 text-gray-500">
+        Loading riders...
+      </div>
+
+      <!-- Table -->
+      <div v-else class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
         <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
           <table class="w-full text-sm">
             <thead class="sticky top-0 bg-gray-50 z-10">
@@ -91,15 +150,14 @@ function viewRiderDetails(rider: any) {
                 <th class="py-3 px-4 font-semibold">Action</th>
               </tr>
             </thead>
+
             <tbody>
-              <!-- Empty -->
               <tr v-if="filteredRiders.length === 0">
                 <td colspan="7" class="text-center py-6 text-gray-500">
                   No riders found.
                 </td>
               </tr>
 
-              <!-- Data Rows -->
               <tr
                 v-else
                 v-for="rider in filteredRiders"
@@ -109,7 +167,7 @@ function viewRiderDetails(rider: any) {
                 <td class="py-3 px-4">{{ rider.id }}</td>
                 <td class="py-3 px-4">{{ rider.name }}</td>
                 <td class="py-3 px-4">{{ rider.contact_no }}</td>
-                <td class="py-3 px-4 text-gray-600">{{ rider.email }}</td>
+                <td class="py-3 px-4">{{ rider.email }}</td>
                 <td
                   class="py-3 px-4 font-medium"
                   :class="{
@@ -134,7 +192,7 @@ function viewRiderDetails(rider: any) {
         </div>
       </div>
 
-      <!-- Mobile View (Cards) -->
+      <!-- Mobile View -->
       <div class="sm:hidden space-y-4">
         <div v-if="filteredRiders.length === 0" class="text-center py-6 text-gray-500">
           No riders found.
@@ -176,4 +234,19 @@ function viewRiderDetails(rider: any) {
       </div>
     </div>
   </AdminLayout>
+
+<RiderDetailsModal
+  v-model="showRiderModal"
+  :rider="selectedRider"
+  :delivery-history="deliveryHistory"
+  @toggle-status="toggleRiderStatus"
+/>
+  <!-- ✅ Add Rider Modal -->
+  <AddRiderModal
+    v-if="showAddRiderModal"
+    v-model="showAddRiderModal"
+    @rider-added="loadRiders"
+  />
+  
+
 </template>
