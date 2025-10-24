@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue"
 import AdminLayout from "@/Layout/AdminLayout.vue"
 import axiosInstance from "@/utils/axios"
-import CustomerInfoModal from "@/components/CustomerInfoModal.vue"
+import CustomerInfoModal from "@/components/customerInfoModal.vue"
 
 
 const search = ref("")
