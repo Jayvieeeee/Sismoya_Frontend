@@ -43,12 +43,9 @@
       </div>
 
       <!-- Instructions -->
-      <div v-else class="mb-6 p-4 bg-blue-50 rounded-lg">
-        <p class="text-sm text-blue-800 mb-2">
-          <strong>You will be redirected to PayPal's secure checkout page.</strong>
-        </p>
-        <p class="text-xs text-blue-600">
-          After payment, you'll be redirected back to complete your order.
+      <div v-else class="mb-6 rounded-lg">
+        <p class="text-xs">
+          You will be redirected to PayPal's checkout page.
         </p>
       </div>
 
@@ -57,7 +54,7 @@
         v-if="!isRedirecting"
         @click="handlePay"
         :disabled="isLoading"
-        class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 rounded-full transition-colors mb-3"
+        class="w-full bg-primary hover:bg-secondary disabled:bg-gray-400 text-white font-semibold py-3 rounded-full transition-colors mb-3"
       >
         {{ isLoading ? 'Processing...' : 'Proceed to PayPal' }}
       </button>

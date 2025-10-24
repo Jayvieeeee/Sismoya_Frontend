@@ -10,6 +10,7 @@ import riderIcon from "@/assets/icons/rider.png"
 import orderHistoryIcon from "@/assets/icons/orderHistory.png"
 import accountSettingsIcon from "@/assets/icons/accountSettings.png"
 import logoutIcon from "@/assets/icons/logout.png"
+import siteIcon from "@/assets/icons/site.png"
 
 interface MenuItem {
   name: string
@@ -25,10 +26,11 @@ const showConfirm = ref(false)
 // Admin menu items
 const menuItems: MenuItem[] = [
   { name: "Dashboard", icon: dashboardIcon, route: "/adminDashboard" },
+  { name: "Orders", icon: orderHistoryIcon, route: "/adminOrders" },
   { name: "Customers", icon: customerIcon, route: "/customers" },
   { name: "Riders", icon: riderIcon, route: "/riders" },
-  { name: "Orders", icon: orderHistoryIcon, route: "/adminOrders" },
   { name: "Account Settings", icon: accountSettingsIcon, route: "/adminAccountSettings" },
+  { name: "Site Settings", icon: siteIcon, route: "/siteSettings" },
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
 ]
 

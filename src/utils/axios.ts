@@ -8,7 +8,7 @@ const axiosInstance = axios.create({
   timeout: 10000,
 })
 
-// ✅ Automatically attach token for every request
+// Automatically attach token for every request
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token")
@@ -20,7 +20,7 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ✅ Handle 401 Unauthorized responses globally
+// Handle 401 Unauthorized responses globally
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {

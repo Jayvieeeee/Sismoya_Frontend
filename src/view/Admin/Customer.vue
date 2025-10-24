@@ -66,7 +66,7 @@ function viewCustomerInfo(customer: any) {
 
       <!-- Total Customers Card -->
       <div class="bg-white shadow-md rounded-xl p-6 mb-6 inline-block">
-        <div class="text-5xl font-bold text-blue-600 mb-2">
+        <div class="text-5xl text-center font-bold text-blue-600 mb-2">
           {{ customers.length }}
         </div>
         <div class="text-gray-600 text-sm">Total Customers</div>
@@ -85,7 +85,7 @@ function viewCustomerInfo(customer: any) {
       <!-- Desktop Table with Scrollable Body Inside -->
       <div class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
         <div class="max-h-[calc(100vh-280px)] overflow-y-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm text-center">
             <thead class="sticky top-0 bg-gray-50 z-10">
               <tr class="text-left border-b">
                 <th class="py-3 px-4 font-semibold">Customer ID</th>

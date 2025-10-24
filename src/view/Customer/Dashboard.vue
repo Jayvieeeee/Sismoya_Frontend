@@ -102,7 +102,7 @@ const formatOrderItems = (order: LatestOrder) => {
 // Open modal with order details
 const viewOrderDetails = (order: LatestOrder) => {
   selectedOrder.value = {
-    orderId: order.id.toString(),
+    order_id: order.id.toString(),
     status: order.status,
     pickUpDateTime: formatDate(order.created_at),
     gallonType: "Round Gallon",
@@ -120,13 +120,10 @@ const closeModal = () => {
   selectedOrder.value = null;
 };
 
-// NEW: Compute stats from user orders - FIXED STATUS FILTERING
+// Compute stats from user orders - FIXED STATUS FILTERING
 const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
-  console.log("🔄 Computing stats from user orders...");
   
-  const allStatuses = userOrders.map(o => o.status);
-  console.log('📋 All order statuses:', allStatuses);
-  
+
   const pending = userOrders.filter((o) => 
     o.status.toLowerCase() === "pending" || 
     o.status.toLowerCase() === "to pick up" || 
@@ -149,10 +146,8 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
   };
 };
 
-// NEW: Improved error handling
+// error handling
 const handleDashboardError = async (err: any) => {
-  console.error("Full error:", err);
-  console.error("Error response data:", err.response?.data);
 
   if (err.response?.status === 401) {
     error.value = "Please login again to view your dashboard";
@@ -160,7 +155,6 @@ const handleDashboardError = async (err: any) => {
     localStorage.removeItem("user");
     router.push("/login");
   } else if (err.response?.status === 422) {
-    console.log('🔄 Falling back to local stats computation');
     await fallbackToLocalStats();
   } else if (err.response?.status === 404) {
     error.value = "Dashboard features are not available yet.";
@@ -174,7 +168,6 @@ const handleDashboardError = async (err: any) => {
 // UPDATED: Fallback local stats with proper status filtering
 const fallbackToLocalStats = async () => {
   try {
-    console.log("🔄 Fallback: Computing stats locally...");
     const profile = await getProfile();
     if (!profile?.user_id) return;
 
@@ -185,7 +178,7 @@ const fallbackToLocalStats = async () => {
     if (ordersResponse.data?.success && Array.isArray(ordersResponse.data.orders)) {
       const userOrders: UserOrder[] = ordersResponse.data.orders;
       
-      console.log('📋 All orders for stats computation:', userOrders);
+  
       
       await computeStatsFromOrders(userOrders);
 
@@ -203,11 +196,9 @@ const fallbackToLocalStats = async () => {
             ).join(', ') : 'Round Gallon'
         }));
 
-      console.log("✅ Local stats computed:", stats.value);
       error.value = null;
     }
   } catch (fallbackErr) {
-    console.error("❌ Fallback also failed:", fallbackErr);
     error.value = "Unable to load dashboard data. Please try again later.";
   }
 };
@@ -221,19 +212,14 @@ const fetchDashboardData = async () => {
     const profile = await getProfile();
     user.value = profile;
 
-    console.log('📊 Fetching dashboard data...');
-    console.log('👤 Current user:', user.value);
-
     if (!user.value?.user_id) {
       throw new Error("User not authenticated");
     }
 
-    console.log('🔄 Step 1: Fetching user orders...');
     const ordersResponse = await axiosInstance.get("/orders", {
       params: { user_id: user.value.user_id },
     });
 
-    console.log('📋 User orders response:', ordersResponse.data);
 
     if (!ordersResponse.data?.success || !Array.isArray(ordersResponse.data.orders)) {
       throw new Error("Failed to fetch user orders");
@@ -241,37 +227,31 @@ const fetchDashboardData = async () => {
 
     const userOrders: UserOrder[] = ordersResponse.data.orders;
 
-    console.log('🔄 Step 2: Fetching stats...');
     const statsResponse = await axiosInstance.get("/orders/stats", {
       params: { user_id: user.value.user_id }
     });
 
-    console.log('📈 Stats API Response:', statsResponse.data);
 
     if (statsResponse.data?.success) {
       stats.value = statsResponse.data.data;
-      console.log('✅ Stats loaded:', stats.value);
     } else {
       await computeStatsFromOrders(userOrders);
     }
 
-    console.log('🔄 Step 3: Fetching latest orders...');
     const latestResponse = await axiosInstance.get("/orders/latest", {
       params: { user_id: user.value.user_id, limit: 5 },
     });
 
-    console.log('📋 Latest Orders API Response:', latestResponse.data);
 
     if (latestResponse.data?.success && Array.isArray(latestResponse.data.data)) {
       latestOrders.value = latestResponse.data.data.map((order: any) => ({
-        id: order.id,
-        total_amount: order.total_amount,
+        id: order.order_id,
+        total_amount: order.total_price,
         status: order.status,
         created_at: order.created_at,
         order_items: order.order_items,
         items: order.items
       }));
-      console.log('✅ Latest orders loaded:', latestOrders.value);
     } else {
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -288,9 +268,7 @@ const fetchDashboardData = async () => {
         }));
     }
 
-    console.log('✅ Dashboard data loaded successfully');
   } catch (err: any) {
-    console.error("❌ Dashboard data load failed:", err);
     await handleDashboardError(err);
   } finally {
     loading.value = false;

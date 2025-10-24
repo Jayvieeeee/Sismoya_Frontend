@@ -171,7 +171,7 @@ export default {
     }
 
     const goHome = () => {
-      router.push('/')
+      router.push('/customerDashboard')
     }
 
     return {

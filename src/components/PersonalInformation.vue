@@ -87,7 +87,7 @@ async function handleSave() {
             type="text"
             :value="user.first_name + ' ' + user.last_name"
             disabled
-            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-full bg-gray-50 pr-10"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-600 rounded-full bg-gray-50 pr-10"
           />
           <button
             @click="openModal('name')"
@@ -106,7 +106,7 @@ async function handleSave() {
             type="email"
             :value="user.email"
             disabled
-            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-full bg-gray-50 pr-10"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-600 rounded-full bg-gray-50 pr-10"
           />
           <button
             @click="openModal('email')"
@@ -125,7 +125,7 @@ async function handleSave() {
             type="tel"
             :value="user.contact_no"
             disabled
-            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-full bg-gray-50 pr-10"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-600 rounded-full bg-gray-50 pr-10"
           />
           <button
             @click="openModal('contact')"

@@ -36,15 +36,15 @@ async function handleLogin() {
       return;
     }
 
-    // ✅ Save only the needed data
+    // Save only the needed data
     localStorage.setItem("token", res.token);
     localStorage.setItem("user", JSON.stringify(res.user));
 
-    // ✅ Redirect based on role
+    // Redirect based on role
     if (res.user.role === "admin") {
-      router.push("/customer"); // your admin route
+      router.push("/adminDashboard"); // admin route
     } else if (res.user.role === "customer") {
-      router.push("/customerDashboard");
+      router.push("/customerDashboard");// customer
     } else {
       router.push("/");
     }

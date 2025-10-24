@@ -24,17 +24,41 @@ function formatDate(dateString: string) {
   })
 }
 
-// Open modal with order details
+// Get product name from order items - UPDATED with correct property paths
+function getProductName(order: any) {
+  if (order.items && order.items.length > 0) {
+    const firstItem = order.items[0]
+    // Use gallon_name from the item
+    return firstItem.gallon_name || "Water Gallon"
+  }
+  
+  return "Water Gallon"
+}
+
+
+// Get all items for modal display
+function getAllItems(order: any) {
+  if (order.items && order.items.length > 0) {
+    return order.items.map((item: any) => ({
+      name: item.gallon_name || "Water Gallon",
+      quantity: item.quantity || 1,
+      price: item.price || 0,
+      imageUrl: item.image_url || undefined
+    }))
+  }
+  return []
+}
+
+// Open modal with order details - UPDATED
 function viewOrderDetails(order: any) {
   selectedOrder.value = {
     orderId: order.order_id.toString(),
     status: order.status,
     pickUpDateTime: formatDate(order.pickup_datetime || order.created_at),
-    gallonType: "Round Gallon",
-    quantity: order.items?.[0]?.quantity || 1,
+    items: getAllItems(order), // Pass all items for display
     totalAmount: order.total_price,
     paymentMethod: order.payment_method || "Cash",
-    imageUrl: order.items?.[0]?.gallon?.image_url || undefined
+    paymentStatus: order.payment_status || "unknown"
   }
   isModalOpen.value = true
 }
@@ -63,6 +87,7 @@ onMounted(async () => {
     }
 
     const res = await axiosInstance.get("/orders")
+    
     if (res.data.success) {
       orders.value = res.data.orders
     }
@@ -87,13 +112,7 @@ const filteredOrders = computed(() => {
     const status = o.status?.toLowerCase() || ""
     const total = o.total_price?.toString().toLowerCase() || ""
     const date = formatDate(o.created_at).toLowerCase()
-
-    // dynamically get first item name or type from database
-    const itemName =
-      o.items?.[0]?.gallon?.name?.toLowerCase() ||
-      o.items?.[0]?.name?.toLowerCase() ||
-      ""
-
+    const productName = getProductName(o).toLowerCase() // Use dynamic product name for search
     const payment = o.payment_method?.toLowerCase() || ""
 
     return (
@@ -101,13 +120,11 @@ const filteredOrders = computed(() => {
       status.includes(query) ||
       total.includes(query) ||
       date.includes(query) ||
-      itemName.includes(query) ||
+      productName.includes(query) ||
       payment.includes(query)
     )
   })
 })
-
-
 </script>
 
 <template>
@@ -130,7 +147,7 @@ const filteredOrders = computed(() => {
         <input
           v-model="search"
           type="text"
-          placeholder="Search"
+          placeholder="Search orders..."
           class="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           :disabled="!!backendError"
         />
@@ -143,7 +160,7 @@ const filteredOrders = computed(() => {
             <thead class="sticky top-0 bg-gray-50 z-10">
               <tr class="text-center border-b">
                 <th class="py-3 px-4 font-semibold">Order ID</th>
-                <th class="py-3 px-4 font-semibold">Order</th>
+                <th class="py-3 px-4 font-semibold">Product</th>
                 <th class="py-3 px-4 font-semibold">Total Amount</th>
                 <th class="py-3 px-4 font-semibold">Date</th>
                 <th class="py-3 px-4 font-semibold">Status</th>
@@ -183,19 +200,19 @@ const filteredOrders = computed(() => {
                 class="border-t hover:bg-gray-50 text-center"
               >
                 <td class="py-3 px-4">{{ order.order_id }}</td>
-                <td class="py-3 px-4">Round Gallon</td>
-                <td class="py-3 px-4">₱{{ order.total_price.toFixed(2) }}</td>
+                <td class="py-3 px-4">{{ getProductName(order) }}</td> <!-- Now shows actual product name -->
+                <td class="py-3 px-4">₱{{ order.total_price?.toFixed(2) }}</td>
                 <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
                 <td
                   class="py-3 px-4 font-medium"
                   :class="{
-                    'text-yellow-500': order.status === 'Pending',
-                    'text-green-600': order.status === 'Completed',
-                    'text-red-600': order.status === 'Cancelled',
-                    'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
+                    'text-yellow-500': order.status === 'pending',
+                    'text-green-600': order.status === 'completed',
+                    'text-red-600': order.status === 'cancelled',
+                    'text-blue-600': order.status === 'to_pick_up' || order.status === 'to_deliver'
                   }"
                 >
-                  {{ order.status }}
+                  {{ order.status?.charAt(0).toUpperCase() + order.status?.slice(1) }}
                 </td>
                 <td class="py-3 px-4">
                   <button 
@@ -235,19 +252,20 @@ const filteredOrders = computed(() => {
             <span
               class="text-sm font-medium"
               :class="{
-                'text-yellow-500': order.status === 'Pending',
-                'text-green-600': order.status === 'Completed',
-                'text-red-600': order.status === 'Cancelled',
-                'text-blue-600': order.status === 'To Pick Up' || order.status === 'To Deliver'
+                'text-yellow-500': order.status === 'pending',
+                'text-green-600': order.status === 'completed',
+                'text-red-600': order.status === 'cancelled',
+                'text-blue-600': order.status === 'to_pick_up' || order.status === 'to_deliver'
               }"
             >
-              {{ order.status }}
+              {{ order.status?.charAt(0).toUpperCase() + order.status?.slice(1) }}
             </span>
           </div>
 
-          <p class="text-gray-700"><strong>Order:</strong> Round Gallon</p>
-          <p class="text-gray-700"><strong>Total:</strong> ₱{{ order.total_price.toFixed(2) }}</p>
+          <p class="text-gray-700"><strong>Product:</strong> {{ getProductName(order) }}</p> <!-- Now shows actual product name -->
+          <p class="text-gray-700"><strong>Total:</strong> ₱{{ order.total_price?.toFixed(2) }}</p>
           <p class="text-gray-700"><strong>Date:</strong> {{ formatDate(order.created_at) }}</p>
+          <p class="text-gray-700"><strong>Payment:</strong> {{ order.payment_method?.charAt(0).toUpperCase() + order.payment_method?.slice(1) }}</p>
 
           <div class="mt-3 text-right">
             <button 

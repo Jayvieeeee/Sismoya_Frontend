@@ -3,10 +3,18 @@ import { ref } from "vue"
 import Swal from "sweetalert2"
 import { changePassword } from "@/utils/profileApi"
 
+// Import Heroicons
+import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline"
+
 const oldPassword = ref("")
 const newPassword = ref("")
 const confirmPassword = ref("")
 const loading = ref(false)
+
+// Visibility toggles
+const showOld = ref(false)
+const showNew = ref(false)
+const showConfirm = ref(false)
 
 async function handleChangePassword() {
   loading.value = true
@@ -56,49 +64,90 @@ async function handleChangePassword() {
 }
 </script>
 
-
 <template>
-  <div class="max-w-md mx-auto mt-10 p-6">
-    <h2 class="text-xl font-semibold mb-4">Change Password</h2>
+  <div class="px-4 sm:px-6 md:px-8">
+    <h2 class="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Change Password</h2>
 
-    <form @submit.prevent="handleChangePassword">
-      <div class="mb-4">
-        <label class="block mb-1">Old Password</label>
-        <input
-          v-model="oldPassword"
-          type="password"
-          class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-primary"
-          placeholder="Enter your old password"
-        />
+    <form
+      @submit.prevent="handleChangePassword"
+      class="space-y-4 sm:space-y-6 max-w-full sm:max-w-md"
+    >
+      <!-- Old Password -->
+      <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 relative">
+        <label class="w-full sm:w-40 text-gray-700 text-sm font-medium sm:pt-2">
+          Old Password
+        </label>
+        <div class="flex-1 relative">
+          <input
+            :type="showOld ? 'text' : 'password'"
+            v-model="oldPassword"
+            placeholder="Enter old password"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-600 rounded-full bg-gray-50 pr-10 focus:ring focus:ring-primary focus:outline-none"
+          />
+          <button
+            type="button"
+            @click="showOld = !showOld"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+          >
+            <component :is="showOld ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      <div class="mb-4">
-        <label class="block mb-1">New Password</label>
-        <input
-          v-model="newPassword"
-          type="password"
-          class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-primary"
-          placeholder="Enter new password"
-        />
+      <!-- New Password -->
+      <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 relative">
+        <label class="w-full sm:w-40 text-gray-700 text-sm font-medium sm:pt-2">
+          New Password
+        </label>
+        <div class="flex-1 relative">
+          <input
+            :type="showNew ? 'text' : 'password'"
+            v-model="newPassword"
+            placeholder="Enter new password"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-600 rounded-full bg-gray-50 pr-10 focus:ring focus:ring-primary focus:outline-none"
+          />
+          <button
+            type="button"
+            @click="showNew = !showNew"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+          >
+            <component :is="showNew ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      <div class="mb-6">
-        <label class="block mb-1">Confirm Password</label>
-        <input
-          v-model="confirmPassword"
-          type="password"
-          class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-200"
-          placeholder="Confirm password"
-        />
+      <!-- Confirm Password -->
+      <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 relative">
+        <label class="w-full sm:w-40 text-gray-700 text-sm font-medium sm:pt-2">
+          Confirm Password
+        </label>
+        <div class="flex-1 relative">
+          <input
+            :type="showConfirm ? 'text' : 'password'"
+            v-model="confirmPassword"
+            placeholder="Confirm password"
+            class="w-full px-4 py-2 text-sm sm:text-base border border-gray-600 rounded-full bg-gray-50 pr-10 focus:ring focus:ring-primary focus:outline-none"
+          />
+          <button
+            type="button"
+            @click="showConfirm = !showConfirm"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+          >
+            <component :is="showConfirm ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      <button
-        type="submit"
-        :disabled="loading"
-        class="w-1/2 block mx-auto rounded-full bg-primary text-white py-2 hover:bg-secondary disabled:opacity-50"
-      >
-        {{ loading ? "Updating..." : "Change Password" }}
-      </button>
+      <!-- Submit Button -->
+      <div class="pt-24">
+        <button
+          type="submit"
+          :disabled="loading"
+          class="w-40 sm:w-48 block mx-auto rounded-full bg-primary text-white py-2 hover:bg-secondary disabled:opacity-50 transition"
+        >
+          {{ loading ? "Updating..." : "Change Password" }}
+        </button>
+      </div>
     </form>
   </div>
 </template>

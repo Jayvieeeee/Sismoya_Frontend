@@ -39,7 +39,7 @@ export default {
       window.location.href = '/cart'
     },
     goHome() {
-      window.location.href = '/'
+      window.location.href = '/customerDashboard'
     }
   }
 }

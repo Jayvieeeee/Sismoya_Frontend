@@ -7,7 +7,7 @@ import AdminSidebar from '@/components/AdminSidebar.vue';
   <div class="h-screen flex font-montserrat overflow-hidden">
     <AdminSidebar />
 
-    <main class="flex-1 overflow-y-auto bg-gradient-to-b from-white to-secondary p-6">
+  <main class="flex-1 h-screen overflow-hidden bg-gradient-to-b from-white to-secondary p-6">
       <slot />
     </main>
   </div>

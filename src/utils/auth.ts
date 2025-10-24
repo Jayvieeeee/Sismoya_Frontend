@@ -35,7 +35,6 @@ export async function logout() {
   }
 }
 
-// ✅ Improved Token validator with SweetAlert notification
 export async function validateToken(): Promise<boolean> {
   try {
     const token = localStorage.getItem('token')
@@ -46,24 +45,18 @@ export async function validateToken(): Promise<boolean> {
     await getProfile()
     return true
   } catch (error: any) {
-    // Only clear token if it's an authentication error (401 from profile)
     if (error.response?.status === 401) {
-      console.log("🔒 Authentication failed - clearing token")
       localStorage.removeItem("token")
       localStorage.removeItem("user")
       
       router.push('/login')
       return false
     } else {
-      console.log("🔧 Other error (not authentication), keeping token:", error.message)
-      // Don't clear token for other errors (network issues, server errors, etc.)
-      // Return true to indicate token might still be valid
       return true
     }
   }
 }
 
-// New function: Safe profile get that doesn't throw on errors
 export async function getProfileSafe() {
   try {
     return await getProfile()
@@ -72,3 +65,25 @@ export async function getProfileSafe() {
     return null
   }
 }
+
+export const handleLogout = async (message = 'Your session has expired. Please log in again.') => {
+  const Swal = await import('sweetalert2');
+  
+  await Swal.default.fire({
+    icon: 'warning',
+    title: 'Session Expired',
+    text: message,
+    confirmButtonText: 'Login Again',
+    confirmButtonColor: '#d33',
+    showCancelButton: true,
+    cancelButtonText: 'Stay',
+    timer: 10000,
+    timerProgressBar: true
+  }).then((result) => {
+    if (result.isConfirmed) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = '/login';
+    }
+  });
+};

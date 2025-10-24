@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, computed, watch } from "vue"
 
 // Props
 const props = defineProps<{ isOpen: boolean }>()
@@ -13,6 +13,14 @@ const currentDate = ref(new Date())
 const selectedDate = ref<Date | null>(null)
 const selectedTime = ref("")  // default empty
 const isTimeDropdownOpen = ref(false)
+
+// Get current time in Philippine Time (UTC+8)
+function getCurrentPhilippineTime() {
+  const now = new Date();
+  // Convert to Philippine Time (UTC+8)
+  const phTime = new Date(now.getTime() + (8 * 60 * 60 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
+  return phTime;
+}
 
 // Month navigation
 function prevMonth() {
@@ -60,9 +68,11 @@ function isPrevMonth(day: Date) {
 }
 
 function isPastDate(day: Date) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) 
-  return day < today
+  const today = getCurrentPhilippineTime();
+  today.setHours(0, 0, 0, 0);
+  const compareDate = new Date(day);
+  compareDate.setHours(0, 0, 0, 0);
+  return compareDate < today;
 }
 
 function handleSave() {
@@ -70,7 +80,7 @@ function handleSave() {
 
   const d = selectedDate.value;
   const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0"); // month 
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
 
   emit("save", `${yyyy}-${mm}-${dd} ${selectedTime.value}`);
@@ -83,18 +93,69 @@ function formatTime(hour: number) {
   return `${String(displayHour).padStart(2, '0')}:00 ${period}`
 }
 
-// time slots
+// Check if a time slot is available
+function isTimeSlotAvailable(hour: number) {
+  if (!selectedDate.value) return false;
+  
+  const now = getCurrentPhilippineTime();
+  const selectedDateTime = new Date(selectedDate.value);
+  
+  // Set time in Philippine Time
+  selectedDateTime.setHours(hour, 0, 0, 0);
+  
+  // If the selected date is today, check if the time is in the past
+  const isToday = selectedDate.value.toDateString() === now.toDateString();
+  
+  if (isToday) {
+    return selectedDateTime > now;
+  }
+  
+  // For future dates, all time slots are available
+  return true;
+}
+
 function getAvailableTimeSlots() {
   const slots = [];
   for (let h = 8; h <= 17; h++) {
-    slots.push(h);
+    if (isTimeSlotAvailable(h)) {
+      slots.push(h);
+    }
   }
   return slots;
 }
 
+// Reset selected time when date changes
+watch(selectedDate, (newDate) => {
+  if (newDate) {
+    // Check if the current selected time is still available
+    if (selectedTime.value) {
+      const hour = parseInt(selectedTime.value.split(':')[0]);
+      if (!isTimeSlotAvailable(hour)) {
+        selectedTime.value = "";
+      }
+    }
+  } else {
+    selectedTime.value = "";
+  }
+});
+
 // Formatting
 const monthLabel = (d: Date) =>
   d.toLocaleString("default", { month: "long", year: "numeric" })
+
+// Display current Philippine time
+const currentPhilippineTime = computed(() => {
+  return getCurrentPhilippineTime().toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+});
 </script>
 
 <template>
@@ -105,16 +166,21 @@ const monthLabel = (d: Date) =>
       <button @click="emit('close')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 text-2xl font-light">✕</button>
       
       <!-- Title -->
-      <h2 class="text-center text-xl font-medium text-sky-500 mb-8">
+      <h2 class="text-center text-xl font-medium text-sky-500 mb-2">
         DateTime Selection
       </h2>
+      
+      <!-- Current Philippine Time -->
+      <div class="text-center text-sm text-gray-600 mb-6">
+        <p>Current Philippine Time: {{ currentPhilippineTime }}</p>
+      </div>
 
       <!-- Main Content: Calendar and Time Side by Side -->
       <div class="flex gap-6 mb-8">
         <!-- Date Selector -->
         <div class="max-w-md w-full">
           <div class="border-2 border-black rounded-lg p-1 text-center mb-2">
-            <span class=" font-medium">Select a day</span>
+            <span class="font-medium">Select a day</span>
           </div>
           
           <!-- Calendar -->
@@ -165,7 +231,9 @@ const monthLabel = (d: Date) =>
           <div class="relative">
             <button
               @click="isTimeDropdownOpen = !isTimeDropdownOpen"
-              class="w-full border-2 border-black  rounded-lg px-4 py-2 text-left flex justify-between items-center hover:border-gray-400 transition-colors">
+              :disabled="!selectedDate"
+              class="w-full border-2 border-black rounded-lg px-4 py-2 text-left flex justify-between items-center hover:border-gray-400 transition-colors disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
               <span class="text-gray-700">
                 {{ selectedTime ? formatTime(parseInt(selectedTime.split(':')[0])) : 'Select a time' }}
               </span>
@@ -173,7 +241,7 @@ const monthLabel = (d: Date) =>
             </button>
             
             <!-- Time Dropdown -->
-            <div v-if="isTimeDropdownOpen" class="absolute top-full mt-2 w-full bg-white border-2 border-gray-300 rounded-2xl max-h-48 overflow-y-auto shadow-lg z-10">
+            <div v-if="isTimeDropdownOpen && selectedDate" class="absolute top-full mt-2 w-full bg-white border-2 border-gray-300 rounded-2xl max-h-48 overflow-y-auto shadow-lg z-10">
               <div
                 v-for="h in getAvailableTimeSlots()" 
                 :key="h"
@@ -181,6 +249,9 @@ const monthLabel = (d: Date) =>
                 class="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 border-b border-gray-100 last:border-b-0"
               >
                 {{ formatTime(h) }}
+              </div>
+              <div v-if="getAvailableTimeSlots().length === 0" class="px-4 py-3 text-gray-500 text-center">
+                No available times for today
               </div>
             </div>
           </div>
