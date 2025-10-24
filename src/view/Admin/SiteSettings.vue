@@ -302,4 +302,4 @@ const handleDelete = async (gallon_id: number) => {
       </div>
     </Modal>
   </AdminLayout>
-</template>
+</template> 
