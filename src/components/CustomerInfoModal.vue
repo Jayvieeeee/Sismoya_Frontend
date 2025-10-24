@@ -208,7 +208,7 @@ const closeOrderDetails = () => {
       </div>
     </div>
 
-    <!-- ✅ Include the separate Order Details Modal -->
+    <!-- Include the separate Order Details Modal -->
 <ViewDetailsModal
   :isOpen="isOrderModalOpen"
   :selectedOrder="selectedOrder"
