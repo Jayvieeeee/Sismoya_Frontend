@@ -1,119 +1,120 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
-import axiosInstance from "@/utils/axios"
-import CustomerLayout from "@/Layout/CustomerLayout.vue"
-import OrderDetailsModal from "@/components/OrderDetailsModal.vue"
-import { useRouter } from "vue-router"
-import { getProfile } from "@/utils/auth"
+import { ref, onMounted, computed } from "vue";
+import axiosInstance from "@/utils/axios";
+import CustomerLayout from "@/Layout/CustomerLayout.vue";
+import OrderDetailsModal from "@/components/OrderDetailsModal.vue";
+import { useRouter } from "vue-router";
+import { getProfile } from "@/utils/auth";
 
-const router = useRouter()
-const orders = ref<any[]>([])
-const loading = ref(true)
-const search = ref("")
-const backendError = ref("")
+const router = useRouter();
+const orders = ref<any[]>([]);
+const loading = ref(true);
+const search = ref("");
+const backendError = ref("");
 
-// Modal state
-const isModalOpen = ref(false)
-const selectedOrder = ref<any>(null)
+const isModalOpen = ref(false);
+const selectedOrder = ref<any>(null);
 
-function formatDate(dateString: string) {
-  const d = new Date(dateString)
-  return d.toLocaleString("en-PH", {
-    dateStyle: "short",
-    timeStyle: "short"
-  })
+function formatDate(datetime: string): string {
+  if (!datetime) return "N/A";
+  const date = new Date(datetime);
+  return date.toLocaleString("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    hour12: true,
+  });
 }
 
-// Get product name from order items - UPDATED with correct property paths
+function getDisplayDate(order: any) {
+  return order.pickup_datetime
+    ? formatDate(order.pickup_datetime)
+    : formatDate(order.created_at);
+}
+
+
 function getProductName(order: any) {
-  if (order.items && order.items.length > 0) {
-    const firstItem = order.items[0]
-    // Use gallon_name from the item
-    return firstItem.gallon_name || "Water Gallon"
+  if (order.items?.length) {
+    const item = order.items[0];
+    return item.gallon_name || item.product_name || "Unknown Product";
   }
-  
-  return "Water Gallon"
+  return "Unknown Product";
 }
 
-
-// Get all items for modal display
-function getAllItems(order: any) {
-  if (order.items && order.items.length > 0) {
-    return order.items.map((item: any) => ({
-      name: item.gallon_name || "Water Gallon",
-      quantity: item.quantity || 1,
-      price: item.price || 0,
-      imageUrl: item.image_url || undefined
-    }))
+function formatStatus(status: string) {
+  const normalized = status?.toLowerCase() || "";
+  switch (normalized) {
+    case "pending": return "Pending";
+    case "to pick up": return "To Pick Up";
+    case "preparing": return "Preparing";
+    case "to deliver": return "To Deliver";
+    case "completed": return "Completed";
+    default: return "Pending";
   }
-  return []
 }
 
-// Open modal with order details - UPDATED
 function viewOrderDetails(order: any) {
+
+  const firstItem = order.items?.[0] || {};
+
   selectedOrder.value = {
-    orderId: order.order_id.toString(),
-    status: order.status,
-    pickUpDateTime: formatDate(order.pickup_datetime || order.created_at),
-    items: getAllItems(order), // Pass all items for display
-    totalAmount: order.total_price,
+    orderId: order.order_id?.toString() ?? "N/A",
+    status: formatStatus(order.status),
+    pickUpDateTime: getDisplayDate(order),
+    gallonType: firstItem.gallon_name || firstItem.product_name || "Unknown Gallon",
+    quantity: firstItem.quantity ?? 0,
+    totalAmount: parseFloat(order.total_price ?? 0),
     paymentMethod: order.payment_method || "Cash",
-    paymentStatus: order.payment_status || "unknown"
-  }
-  isModalOpen.value = true
+    imageUrl: firstItem.gallon_image || "/default-gallon.png",
+  };
+
+  isModalOpen.value = true;
 }
 
-// Close modal
 function closeModal() {
-  isModalOpen.value = false
-  selectedOrder.value = null
+  isModalOpen.value = false;
+  selectedOrder.value = null;
 }
 
 onMounted(async () => {
   try {
-    const token = localStorage.getItem("token")
-    if (!token) {
-      router.push("/login")
-      return
-    }
+    const token = localStorage.getItem("token");
+    if (!token) return router.push("/login");
 
-    try {
-      await getProfile()
-    } catch {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-      router.push("/login")
-      return
-    }
+    await getProfile().catch(() => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      router.push("/login");
+    });
 
-    const res = await axiosInstance.get("/orders")
-    
+    const res = await axiosInstance.get("/orders");
     if (res.data.success) {
-      orders.value = res.data.orders
+      orders.value = res.data.orders;
+    } else {
+      backendError.value = res.data.message || "Unable to load orders.";
     }
   } catch (err: any) {
-    console.error("Failed to load orders:", err)
-    if (err.response?.status === 401) {
-      backendError.value = "Order history is temporarily unavailable due to a backend configuration issue."
-    } else {
-      backendError.value = "Failed to load orders. Please try again later."
-    }
+    console.error("Failed to load orders:", err);
+    backendError.value =
+      err.response?.status === 401
+        ? "Order history is temporarily unavailable due to a backend configuration issue."
+        : "Failed to load orders. Please try again later.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
+// ✅ Computed filtered orders (search)
 const filteredOrders = computed(() => {
-  const query = search.value.trim().toLowerCase()
-  if (!query) return orders.value
+  const query = search.value.trim().toLowerCase();
+  if (!query) return orders.value;
 
   return orders.value.filter((o) => {
-    const orderId = o.order_id?.toString().toLowerCase() || ""
-    const status = o.status?.toLowerCase() || ""
-    const total = o.total_price?.toString().toLowerCase() || ""
-    const date = formatDate(o.created_at).toLowerCase()
-    const productName = getProductName(o).toLowerCase() // Use dynamic product name for search
-    const payment = o.payment_method?.toLowerCase() || ""
+    const orderId = o.order_id?.toString().toLowerCase() || "";
+    const status = o.status?.toLowerCase() || "";
+    const total = o.total_price?.toString().toLowerCase() || "";
+    const date = getDisplayDate(o).toLowerCase();
+    const productName = getProductName(o).toLowerCase();
+    const payment = o.payment_method?.toLowerCase() || "";
 
     return (
       orderId.includes(query) ||
@@ -122,10 +123,12 @@ const filteredOrders = computed(() => {
       date.includes(query) ||
       productName.includes(query) ||
       payment.includes(query)
-    )
-  })
-})
+    );
+  });
+});
 </script>
+
+
 
 <template>
   <CustomerLayout>
@@ -202,18 +205,19 @@ const filteredOrders = computed(() => {
                 <td class="py-3 px-4">{{ order.order_id }}</td>
                 <td class="py-3 px-4">{{ getProductName(order) }}</td> <!-- Now shows actual product name -->
                 <td class="py-3 px-4">₱{{ order.total_price?.toFixed(2) }}</td>
-                <td class="py-3 px-4">{{ formatDate(order.created_at) }}</td>
+                <td class="py-3 px-4">{{ formatDate(order.pickup_datetime) }}</td>
                 <td
                   class="py-3 px-4 font-medium"
                   :class="{
                     'text-yellow-500': order.status === 'pending',
                     'text-green-600': order.status === 'completed',
                     'text-red-600': order.status === 'cancelled',
-                    'text-blue-600': order.status === 'to_pick_up' || order.status === 'to_deliver'
+                    'text-blue-600': ['to_pick_up', 'to_deliver', 'preparing'].includes(order.status),
                   }"
                 >
-                  {{ order.status?.charAt(0).toUpperCase() + order.status?.slice(1) }}
+                {{ order.status.replaceAll('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) }}
                 </td>
+
                 <td class="py-3 px-4">
                   <button 
                     @click="viewOrderDetails(order)"
