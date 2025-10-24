@@ -25,7 +25,7 @@ const selectedGallon = reactive({
 const IMAGE_BASE_URL = 'https://sismoya.bsit3b.site/api'
 const previewImage = ref<string | null>(null)
 
-// 🧾 Fetch Gallons
+// Fetch Gallons
 const fetchGallons = async () => {
   try {
     const res = await axiosInstance.get('/gallons')
@@ -44,7 +44,7 @@ const fetchGallons = async () => {
 
 onMounted(fetchGallons)
 
-// 🟢 Open Add Modal
+//  Open Add Modal
 const openAddModal = () => {
   isUpdate.value = false
   Object.assign(selectedGallon, {
@@ -58,7 +58,7 @@ const openAddModal = () => {
   modalVisible.value = true
 }
 
-// 🟣 Open Update Modal
+// Open Update Modal
 const openUpdateModal = (gallon: any) => {
   isUpdate.value = true
   Object.assign(selectedGallon, { ...gallon })
@@ -66,13 +66,13 @@ const openUpdateModal = (gallon: any) => {
   modalVisible.value = true
 }
 
-// 🧩 Get Image URL
+// Get Image URL
 const getImageUrl = (url: string) => {
   if (!url) return ''
   return url.startsWith('http') ? url : `${IMAGE_BASE_URL}/${url}`
 }
 
-// 📤 Upload Image
+// Upload Image
 const handleImageUpload = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
@@ -89,19 +89,19 @@ const handleImageUpload = async (e: Event) => {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    // ✅ Automatically set image_url from backend response
+    // Automatically set image_url from backend response
     if (res.data.url) {
       selectedGallon.image_url = res.data.url
-      console.log('✅ Image uploaded:', selectedGallon.image_url)
+      console.log('Image uploaded:', selectedGallon.image_url)
     } else if (res.data.path) {
       // fallback if backend uses "path" instead of "url"
       selectedGallon.image_url = res.data.path
-      console.log('✅ Image uploaded (path):', selectedGallon.image_url)
+      console.log(' Image uploaded (path):', selectedGallon.image_url)
     } else {
       alert('Upload failed: No image URL returned from server.')
     }
   } catch (err) {
-    console.error('❌ Image upload failed:', err)
+    console.error(' Image upload failed:', err)
     alert('Image upload failed. Please check your server.')
   } finally {
     uploading.value = false
@@ -168,7 +168,7 @@ const handleDelete = async (gallon_id: number) => {
           <div v-if="loading" class="text-gray-500">Loading gallons...</div>
           <div v-else-if="error" class="text-red-500">Error: {{ error }}</div>
 
-          <!-- ✅ Scrollable Table Container -->
+          <!-- Scrollable Table Container -->
           <div v-else class="rounded-lg overflow-hidden">
             <div class="overflow-auto max-h-[500px]"> <!-- Vertical scrolling -->
               <table class="min-w-full text-sm">
@@ -191,7 +191,7 @@ const handleDelete = async (gallon_id: number) => {
                   >
                     <td class="px-4 py-4 text-gray-700 whitespace-nowrap">{{ gallon.gallon_id }}</td>
 
-                    <!-- ✅ Circular Image -->
+                    <!-- Image -->
                     <td class="px-4 py-4 whitespace-nowrap">
                       <img
                         v-if="gallon.image_url"
@@ -207,7 +207,7 @@ const handleDelete = async (gallon_id: number) => {
                     <td class="px-4 py-4 text-gray-700 whitespace-nowrap">₱{{ gallon.price }}</td>
                     <td class="px-4 py-4 whitespace-nowrap">
                       <div class="flex justify-center gap-2">
-                        <!-- ✏️ Edit Button -->
+                        <!-- Edit Button -->
                         <button
                           @click="openUpdateModal(gallon)"
                           class="inline-flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition"
@@ -233,7 +233,7 @@ const handleDelete = async (gallon_id: number) => {
       </div>
     </div>
 
-    <!-- ✅ Modal -->
+    <!-- Modal -->
     <Modal
       :visible="modalVisible"
       :title="isUpdate ? 'Update Gallon' : 'Add Gallon'"
@@ -266,13 +266,13 @@ const handleDelete = async (gallon_id: number) => {
           />
         </div>
 
-        <!-- 🌀 Show Uploading Spinner -->
+        <!-- Show Uploading Spinner -->
         <div v-if="uploading" class="flex justify-center items-center py-2">
           <div class="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
           <span class="ml-2 text-sm text-gray-600">Uploading...</span>
         </div>
 
-        <!-- ✅ Image Preview -->
+        <!--Image Preview -->
         <div v-if="previewImage" class="flex justify-center mt-2">
           <img
             :src="previewImage"
