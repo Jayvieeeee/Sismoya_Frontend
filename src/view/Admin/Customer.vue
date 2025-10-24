@@ -219,12 +219,11 @@ onMounted(fetchCustomers)
           </div>
         </div>
       </div>
-
+    </div>
       <CustomerInfoModal
         :show="showModal"
         :customerId="selectedCustomerId"
         @close="showModal = false"
       />
-    </div>
   </AdminLayout>
 </template>
