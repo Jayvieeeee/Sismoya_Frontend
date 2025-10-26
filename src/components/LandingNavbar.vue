@@ -10,7 +10,6 @@ const navItems = [
   { name: "Home", route: "/#home" },
   { name: "Services", route: "/#services" },
   { name: "Contact Us", route: "/#contact" },
-  { name: "Download App", route: "/#download-app" },
   { name: "Login", route: "/login", isButton: true },
 ]
 
@@ -38,7 +37,6 @@ function isActive(item: { route: string; isButton?: boolean }) {
   return router.currentRoute.value.fullPath === item.route
 }
 
-// --- Scroll Spy Logic ---
 function handleScroll() {
   const sections = document.querySelectorAll("section[id]")
   let current = ""
@@ -56,7 +54,7 @@ function handleScroll() {
 
 onMounted(() => {
   window.addEventListener("scroll", handleScroll)
-  handleScroll() // run initially
+  handleScroll()
 })
 
 onUnmounted(() => {
@@ -65,7 +63,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <nav class="fixed top-0 left-0 w-full z-50 font-montserrat bg-primary shadow-md px-6">
+  <nav class="fixed top-0 left-0 w-full z-50 font-montserrat bg-primary shadow-md px-8">
     <div class="flex justify-between items-center h-16">
       <!-- Logo -->
       <div class="ml-4 flex items-center">
@@ -73,7 +71,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Desktop Menu -->
-      <ul class="hidden md:flex space-x-8 text-white font-medium text-sm items-center pr-5">
+      <ul class="hidden md:flex space-x-8 text-white font-medium text-sm items-center pr-10">
         <li v-for="item in navItems" :key="item.name">
           <button
             @click="navigateTo(item.route)"

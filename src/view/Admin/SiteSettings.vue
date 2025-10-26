@@ -149,7 +149,7 @@ const handleDelete = async (gallon_id: number) => {
 <template>
   <AdminLayout>
     <div class="min-h-screen p-8">
-      <h1 class="text-3xl font-bold text-cyan-600 mb-8">Site Settings</h1>
+      <h1 class="text-3xl font-bold text-cyan-600 mb-20">Site Settings</h1>
 
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden flex">
         <div class="flex-1 p-8">
@@ -170,7 +170,7 @@ const handleDelete = async (gallon_id: number) => {
 
           <!-- Scrollable Table Container -->
           <div v-else class="rounded-lg overflow-hidden">
-            <div class="overflow-auto max-h-[500px]"> <!-- Vertical scrolling -->
+            <div class="overflow-auto max-h-[400px]"> <!-- Vertical scrolling -->
               <table class="min-w-full text-sm">
                 <thead class="sticky top-0 bg-white z-10">
                   <tr class="border-b border-gray-200">

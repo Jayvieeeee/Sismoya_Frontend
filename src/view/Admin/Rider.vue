@@ -4,6 +4,7 @@ import AdminLayout from "@/Layout/AdminLayout.vue"
 import axiosInstance from "@/utils/axios"
 import RiderDetailsModal from "@/components/RiderDetailsModal.vue"
 import AddRiderModal from "@components/AddRider.vue"
+import Modal from "@/components/Modal.vue"
 
 const search = ref("")
 const riders = ref<any[]>([])
@@ -14,6 +15,8 @@ const selectedRider = ref<any | null>(null)
 const deliveryHistory = ref<any[]>([])
 
 const showAddRiderModal = ref(false)
+const showConfirmModal = ref(false)
+const riderToToggle = ref<any | null>(null)
 
 // Load all riders
 async function loadRiders() {
@@ -40,7 +43,6 @@ async function loadRiders() {
 // View Riders
 async function viewRiderDetails(rider: any) {
   try {
-    console.log("Rider object:", rider)
     const { data } = await axiosInstance.get(`/admin/riders/${rider.id}`)
     if (!data.error) {
       selectedRider.value = data.rider
@@ -54,32 +56,41 @@ async function viewRiderDetails(rider: any) {
   }
 }
 
-// Rider Status 
-async function toggleRiderStatus(rider: any) {
+function confirmToggleStatus(rider: any) {
+  riderToToggle.value = rider
+  showConfirmModal.value = true
+}
+
+async function handleToggleConfirm() {
+  if (!riderToToggle.value) return
+
+  const rider = riderToToggle.value
+  const newStatus = rider.status === "Active" ? "Inactive" : "Active"
+
   try {
-    const newStatus = rider.status === "Active" ? "Inactive" : "Active"
-    
-    console.log("🔄 Toggling status for rider:", rider.id, "from", rider.status, "to", newStatus)
-    
-    const { data } = await axiosInstance.put(`/admin/riders/${rider.id}/update-status`, {
-      status: newStatus.toLowerCase() // Send the new status in the request body
-    })
-    
+    const { data } = await axiosInstance.put(
+      `/admin/riders/${rider.id}/update-status`,
+      { status: newStatus.toLowerCase() }
+    )
+
     if (!data.error) {
-      // Update the local state
       rider.status = newStatus
-      
-      // Also update the selected rider in the modal if it's the same rider
       if (selectedRider.value && selectedRider.value.id === rider.id) {
         selectedRider.value.status = newStatus
       }
-    } else {
-      console.error("Backend error:", data.message)
+
+      await loadRiders()
+
+      showConfirmModal.value = false;
+      showRiderModal.value = false;
     }
   } catch (error) {
     console.error("Error updating status:", error)
+  } finally {
+    riderToToggle.value = null
   }
 }
+
 
 // FILTERED SEARCH
 const filteredRiders = computed(() => {
@@ -137,7 +148,7 @@ onMounted(() => {
 
       <!-- Table -->
       <div v-else class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
-        <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+        <div class="max-h-[400px] overflow-y-auto">
           <table class="w-full text-sm">
             <thead class="sticky top-0 bg-gray-50 z-10">
               <tr class="text-left border-b">
@@ -239,14 +250,51 @@ onMounted(() => {
   v-model="showRiderModal"
   :rider="selectedRider"
   :delivery-history="deliveryHistory"
-  @toggle-status="toggleRiderStatus"
+  @toggle-status="confirmToggleStatus"
 />
-  <!-- ✅ Add Rider Modal -->
+
   <AddRiderModal
     v-if="showAddRiderModal"
     v-model="showAddRiderModal"
     @rider-added="loadRiders"
   />
-  
+
+<Modal
+  v-if="showConfirmModal"
+  :visible="showConfirmModal"
+  :title="riderToToggle?.status === 'Active' ? 'Deactivate Rider?' : 'Activate Rider?'"
+  @close="showConfirmModal = false"
+>
+  <div class="text-center text-gray-700">
+    <p>
+      Are you sure you want to
+      <span
+        class="font-semibold"
+        :class="riderToToggle?.status === 'Active' ? 'text-red-600' : 'text-green-600'"
+      >
+        {{ riderToToggle?.status === 'Active' ? 'deactivate' : 'activate' }}
+      </span>
+      this rider?
+    </p>
+  </div>
+
+  <!-- ✅ Custom Yes / No Actions -->
+  <template #actions>
+    <button
+      @click="showConfirmModal = false"
+      class="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium transition"
+    >
+      No
+    </button>
+    <button
+      @click="handleToggleConfirm"
+      class="px-5 py-2 rounded-lg bg-primary hover:bg-secondary text-white font-medium transition"
+    >
+      Yes
+    </button>
+  </template>
+</Modal>
+
+
 
 </template>

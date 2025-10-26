@@ -15,7 +15,7 @@
       </button>
 
       <!-- Title -->
-      <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">
+      <h2 class="text-2xl font-bold text-center text-primary mb-6">
         Rider Information
       </h2>
 
@@ -44,7 +44,7 @@
 
       <!-- Delivery History -->
       <div>
-        <h3 class="text-lg font-semibold text-blue-700 mb-3">
+        <h3 class="text-lg font-semibold text-primary mb-3">
           Delivery History
         </h3>
 
@@ -112,7 +112,6 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "toggle-status"])
 
-// Computed properties to handle different data structures
 const riderId = computed(() => {
   if (!props.rider) return null
   return props.rider.id || props.rider.user_id || props.rider.rider_id

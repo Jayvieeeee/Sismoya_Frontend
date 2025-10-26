@@ -8,7 +8,6 @@ export async function getContainers() {
       let imageUrl = ""
 
       if (c.image_url) {
-        // Use relative path - the browser will handle the full URL
         imageUrl = c.image_url.startsWith("/") 
           ? c.image_url 
           : `/${c.image_url}`

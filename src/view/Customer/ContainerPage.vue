@@ -26,10 +26,8 @@ const selectedProduct = ref<ModalProduct>({
   image_url: "",
 })
 
-// Store the product with selected quantity for immediate ordering
 const productForImmediateOrder = ref<ModalProduct | null>(null)
 
-// ✅ Fetch containers from backend
 onMounted(async () => {
   containers.value = await getContainers()
 })
@@ -41,7 +39,7 @@ function goToAddToCartPage() {
 
 // Modal controls
 function openModal(product: ModalProduct, action: "cart" | "order") {
-  selectedProduct.value = { ...product, qty: 1 } // Reset quantity to 1 when opening modal
+  selectedProduct.value = { ...product, qty: 1 } 
   modalAction.value = action
   showModal.value = true
 }
@@ -56,7 +54,7 @@ async function handleAddMore(item: ModalProduct) {
   try {
     await cartStore.addToCart(item.id, item.qty)
 
-    // ✅ Success popup
+    //  Success
     Swal.fire({
       title: 'Added to Cart!',
       text: `${item.type} (${item.qty}x) has been successfully added to your cart.`,
@@ -78,7 +76,7 @@ async function handleAddMore(item: ModalProduct) {
   } catch (error) {
     console.error('Failed to add item to cart:', error)
 
-    // ❌ Error popup
+    //  Error
     Swal.fire({
       title: 'Error',
       text: 'Failed to add item to cart. Please try again.',
@@ -90,11 +88,9 @@ async function handleAddMore(item: ModalProduct) {
   }
 }
 
-// Direct order - creates immediate order with selected quantity
 function handleOrderNow(item: ModalProduct) {
-  console.log("🚀 Order Now with quantity:", item.qty);
   
-  // Store the product with selected quantity for immediate ordering
+
   productForImmediateOrder.value = { ...item }
   
   showModal.value = false
@@ -128,7 +124,7 @@ const productsForOrderSummary = computed((): ModalProduct[] => {
 // Handle order success
 function handleOrderSuccess() {
   showSummaryModal.value = false
-  productForImmediateOrder.value = null // Reset after successful order
+  productForImmediateOrder.value = null
   
   // Show success message for immediate order
   if (productForImmediateOrder.value) {
