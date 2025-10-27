@@ -3,7 +3,9 @@ import AdminLayout from "@/Layout/AdminLayout.vue"
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/vue/24/outline'
 import { useOrders } from "@/api/admin/useOrder"
 import AdminOrderDetails from "@/components/AdminOrderDetails.vue"
+import Modal from "@/components/Modal.vue"
 import { ref } from 'vue'
+import Swal from 'sweetalert2'
 
 const {
   searchQuery,
@@ -28,6 +30,108 @@ const {
 } = useOrders()
 
 const isFilterOpen = ref(false)
+
+// Modal state for backend messages
+const showMessageModal = ref(false)
+const modalMessage = ref('')
+const modalTitle = ref('')
+
+// Close message modal
+const closeMessageModal = () => {
+  showMessageModal.value = false
+  modalMessage.value = ''
+  modalTitle.value = ''
+}
+
+// Get SweetAlert configuration based on action
+const getSwalConfig = (action: string, orderId: number) => {
+  const configs: { [key: string]: any } = {
+    'approve': {
+      title: 'Approve Order?',
+      text: `Are you sure you want to APPROVE Order #${orderId}?`,
+      icon: 'question',
+      confirmButtonText: 'Yes, Approve!',
+      confirmButtonColor: '#10B981',
+      showCancelButton: true,
+      cancelButtonText: 'Cancel',
+      iconColor: '#10B981'
+    },
+    'cancel': {
+      title: 'Cancel Order?',
+      text: `Are you sure you want to CANCEL Order #${orderId}? This action cannot be undone.`,
+      icon: 'warning',
+      confirmButtonText: 'Yes, Cancel!',
+      confirmButtonColor: '#EF4444',
+      showCancelButton: true,
+      cancelButtonText: 'Keep Order',
+      iconColor: '#EF4444'
+    },
+    'mark_preparing': {
+      title: 'Mark as Preparing?',
+      text: `Are you sure you want to mark Order #${orderId} as PREPARING?`,
+      icon: 'info',
+      confirmButtonText: 'Yes, Mark Preparing!',
+      confirmButtonColor: '#3B82F6',
+      showCancelButton: true,
+      cancelButtonText: 'Cancel',
+      iconColor: '#3B82F6'
+    },
+    'mark_to_deliver': {
+      title: 'Mark for Delivery?',
+      text: `Are you sure you want to mark Order #${orderId} as TO DELIVER?`,
+      icon: 'info',
+      confirmButtonText: 'Yes, Mark for Delivery!',
+      confirmButtonColor: '#8B5CF6',
+      showCancelButton: true,
+      cancelButtonText: 'Cancel',
+      iconColor: '#8B5CF6'
+    }
+  }
+  
+  return configs[action] || {
+    title: 'Confirm Action',
+    text: `Are you sure you want to perform this action on Order #${orderId}?`,
+    icon: 'question',
+    confirmButtonText: 'Confirm',
+    confirmButtonColor: '#6B7280',
+    showCancelButton: true,
+    cancelButtonText: 'Cancel'
+  }
+}
+
+const handleActionWithSweetAlert = async (orderId: string | number, action: string, status: string) => {
+  const numericOrderId = typeof orderId === 'string' ? parseInt(orderId, 10) : orderId
+  
+  const swalConfig = getSwalConfig(action, numericOrderId)
+  
+  const result = await Swal.fire(swalConfig)
+  
+  if (result.isConfirmed) {
+    try {
+      // Call the original handleAction
+      await handleAction(numericOrderId, action, status)
+      
+      // Show success message
+      Swal.fire({
+        title: 'Success!',
+        text: 'Action completed successfully',
+        icon: 'success',
+        confirmButtonColor: '#10B981',
+        timer: 2000,
+        showConfirmButton: false
+      })
+      
+    } catch (error: any) {
+      // Show error message
+      Swal.fire({
+        title: 'Error!',
+        text: error.message || 'An error occurred while processing your request',
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      })
+    }
+  }
+}
 </script>
 
 <template>
@@ -40,7 +144,7 @@ const isFilterOpen = ref(false)
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 bg-[#B3C8D3] p-4 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
+        <div class="grid grid-cols-1 bg-[#077ebe] p-4 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
           <div
             v-for="stat in stats"
             :key="stat.label"
@@ -64,7 +168,6 @@ const isFilterOpen = ref(false)
                 type="text"
                 placeholder="Search order"
                 class="w-2/5 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
-                :disabled="!!backendError"
               />
             </div>
             <div class="flex gap-3 w-full sm:w-auto">
@@ -145,7 +248,7 @@ const isFilterOpen = ref(false)
                     </span>
                   </td>
 
-                  <!-- NEW COLUMN -->
+                  <!-- View Details Column -->
                   <td class="px-6 py-4">
                     <button 
                       @click="openOrderDetails(order)"
@@ -155,47 +258,46 @@ const isFilterOpen = ref(false)
                     </button>
                   </td>
 
-                  <!-- ACTION COLUMN -->
-<!-- In your Orders.vue template -->
-<td class="px-4 py-3 whitespace-nowrap">
-  <div class="flex flex-col gap-1 items-center">
-    <!-- Approve Button -->
-    <button
-      v-if="getActionButtons(order.status).includes('approve')"
-      @click="handleAction(order.order_id || order.id, 'approve', order.status)"
-      class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition font-medium w-full"
-    >
-      Approve
-    </button>
-    
-    <!-- Cancel Button -->
-    <button
-      v-if="getActionButtons(order.status).includes('cancel')"
-      @click="handleAction(order.order_id || order.id, 'cancel', order.status)"
-      class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition font-medium w-full"
-    >
-      Cancel
-    </button>
+                  <!-- Action Column -->
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="flex flex-col gap-1 items-center">
+                      <!-- Approve Button -->
+                      <button
+                        v-if="getActionButtons(order.status).includes('approve')"
+                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'approve', order.status)"
+                        class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition font-medium w-full"
+                      >
+                        Approve
+                      </button>
+                      
+                      <!-- Cancel Button -->
+                      <button
+                        v-if="getActionButtons(order.status).includes('cancel')"
+                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'cancel', order.status)"
+                        class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition font-medium w-full"
+                      >
+                        Cancel
+                      </button>
 
-    <!-- Mark as Preparing Button -->
-    <button
-      v-if="getActionButtons(order.status).includes('mark_preparing')"
-      @click="handleAction(order.order_id || order.id, 'mark_preparing', order.status)"
-      class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition font-medium w-full"
-    >
-      Mark as Preparing
-    </button>
+                      <!-- Mark as Preparing Button -->
+                      <button
+                        v-if="getActionButtons(order.status).includes('mark_preparing')"
+                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'mark_preparing', order.status)"
+                        class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition font-medium w-full"
+                      >
+                        Mark as Preparing
+                      </button>
 
-    <!-- Mark for Delivery Button -->
-    <button
-      v-if="getActionButtons(order.status).includes('mark_to_deliver')"
-      @click="handleAction(order.order_id || order.id, 'mark_to_deliver', order.status)"
-      class="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded transition font-medium w-full"
-    >
-      Mark for Delivery
-    </button>
-  </div>
-</td>
+                      <!-- Mark for Delivery Button -->
+                      <button
+                        v-if="getActionButtons(order.status).includes('mark_to_deliver')"
+                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'mark_to_deliver', order.status)"
+                        class="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded transition font-medium w-full"
+                      >
+                        Mark for Delivery
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -204,11 +306,30 @@ const isFilterOpen = ref(false)
       </div>
     </div>
 
-<AdminOrderDetails 
-  :isOpen="isModalOpen" 
-  :selectedOrder="selectedOrder"
-  @close="closeModal"
-/>
+    <!-- Order Details Modal -->
+    <AdminOrderDetails 
+      :isOpen="isModalOpen" 
+      :selectedOrder="selectedOrder"
+      @close="closeModal"
+    />
+
+    <!-- Message Modal for backend responses (fallback) -->
+    <Modal
+      :visible="showMessageModal"
+      :title="modalTitle"
+      @close="closeMessageModal"
+    >
+      <p>{{ modalMessage }}</p>
+      
+      <template #actions>
+        <button
+          @click="closeMessageModal"
+          class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition"
+        >
+          OK
+        </button>
+      </template>
+    </Modal>
 
   </AdminLayout>
 </template>

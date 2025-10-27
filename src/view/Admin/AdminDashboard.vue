@@ -73,38 +73,81 @@ const formatCurrency = (v: number) => {
   return `₱${Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
 }
 
-// Build chart data (labels for months/weeks/days)
-const labelsMonthly = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-const labelsWeekly = ["W1","W2","W3","W4","W5"]
-const labelsDaily = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+const getDynamicLabels = () => {
+  const today = new Date()
+  const currentDay = today.getDay() 
+  
+  const lastMonday = new Date(today)
+  const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1 
+  lastMonday.setDate(today.getDate() - daysSinceMonday)
+  
+  const dailyLabels = []
+  for (let i = 0; i < 6; i++) {
+    const date = new Date(lastMonday)
+    date.setDate(lastMonday.getDate() + i)
+    dailyLabels.push(date.toLocaleDateString("en-US", { 
+      weekday: "short", 
+      month: "short", 
+      day: "numeric" 
+    }))
+  }
+
+  // For weekly view: current week and previous 4 weeks
+  const weeklyLabels = []
+  for (let i = 4; i >= 0; i--) {
+    const weekStart = new Date(lastMonday)
+    weekStart.setDate(lastMonday.getDate() - (i * 7))
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 5) // Monday to Saturday (6 days)
+    weeklyLabels.push(`W${5-i} (${weekStart.getMonth()+1}/${weekStart.getDate()})`)
+  }
+
+  // For monthly view: current year months
+  const monthlyLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+  return {
+    daily: dailyLabels,
+    weekly: weeklyLabels,
+    monthly: monthlyLabels
+  }
+}
+
+const labels = ref(getDynamicLabels())
+
+// Update labels every minute to ensure they're current
+const updateLabels = () => {
+  labels.value = getDynamicLabels()
+  if (barChart) {
+    renderBarChart()
+  }
+}
 
 // Render bar chart using Chart.js
 function renderBarChart() {
   if (!barCanvas.value) return
 
   // choose dataset and labels by activeView
-  let labels: string[] = []
+  let currentLabels: string[] = []
   let data: number[] = []
 
   if (activeView.value === "daily") {
-    labels = labelsDaily
-    data = salesDaily.value.slice(0, labelsDaily.length)
+    currentLabels = labels.value.daily
+    data = salesDaily.value.slice(0, currentLabels.length)
   } else if (activeView.value === "weekly") {
-    labels = labelsWeekly
-    data = salesWeekly.value.slice(0, labelsWeekly.length)
+    currentLabels = labels.value.weekly
+    data = salesWeekly.value.slice(0, currentLabels.length)
   } else {
-    labels = labelsMonthly
-    data = salesMonthly.value.slice(0, labelsMonthly.length)
+    currentLabels = labels.value.monthly
+    data = salesMonthly.value.slice(0, currentLabels.length)
   }
 
-  // ensure array lengths match labels - pad with zeros
-  while (data.length < labels.length) data.push(0)
+  while (data.length < currentLabels.length) data.push(0)
 
   const ctx = barCanvas.value.getContext("2d")
   if (!ctx) return
 
   if (barChart) {
-    barChart.data.labels = labels
+    barChart.data.labels = currentLabels
     barChart.data.datasets![0].data = data
     barChart.update()
     return
@@ -113,7 +156,7 @@ function renderBarChart() {
   barChart = new Chart(ctx, {
     type: "bar",
     data: {
-      labels,
+      labels: currentLabels,
       datasets: [
         {
           label: "Sales",
@@ -138,13 +181,18 @@ function renderBarChart() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: "#6B7280", font: { size: 11 } }
+          ticks: { 
+            color: "#6B7280", 
+            font: { size: 11 },
+            maxRotation: 45,
+            minRotation: 45
+          }
         },
         y: {
           beginAtZero: true,
           grid: { color: "rgba(0,0,0,0.04)" },
           ticks: {
-            callback: (val) => (Number(val) >= 1000 ? `${Number(val)/1000}k` : Number(val)),
+            callback: (val) => (Number(val) >= 1000 ? `₱${Number(val)/1000}k` : `${Number(val)}`),
             color: "#6B7280"
           }
         }
@@ -153,17 +201,14 @@ function renderBarChart() {
   })
 }
 
-// Render doughnut chart (order status)
 function renderDoughnutChart() {
   if (!doughnutCanvas.value) return;
   const ctx = doughnutCanvas.value.getContext("2d");
   if (!ctx) return;
 
-
   const values = orderStatusList.value.map(s => s.value);
- 
-
   const totalOrders = values.reduce((sum, val) => sum + val, 0);
+  
   if (totalOrders === 0) {
     if (doughnutChart) {
       doughnutChart.destroy();
@@ -181,61 +226,52 @@ function renderDoughnutChart() {
     doughnutChart.destroy(); 
   }
 
-doughnutChart = new Chart(ctx, {
-  type: "doughnut",
-  data: {
-    labels: nonZeroLabels,
-    datasets: [
-      {
-        data: nonZeroValues,
-        backgroundColor: nonZeroColors,
-        borderWidth: 2,
-        borderColor: '#ffffff',
-        hoverOffset: 8,
-      }
-    ]
-  },
-  options: {
-    // 👇 
-    cutout: "70%" as any,
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (tooltipItem: any) => {
-            const value = tooltipItem.raw
-            const percentage = totalOrders > 0
-              ? Math.round((value / totalOrders) * 100)
-              : 0
-            return `${tooltipItem.label}: ${value} orders (${percentage}%)`
+  doughnutChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: nonZeroLabels,
+      datasets: [
+        {
+          data: nonZeroValues,
+          backgroundColor: nonZeroColors,
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 8,
+        }
+      ]
+    },
+    options: {
+      cutout: "70%" as any,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (tooltipItem: any) => {
+              const value = tooltipItem.raw
+              const percentage = totalOrders > 0
+                ? Math.round((value / totalOrders) * 100)
+                : 0
+              return `${tooltipItem.label}: ${value} orders (${percentage}%)`
+            }
           }
         }
       }
-    }
-  } as any // 👈 cast to any to silence TS false-positive
-})
-
+    } as any
+  })
 }
 
-
-// Set orderStatusList from map (for chart) - FIXED to show all statuses separately
 function buildOrderStatusList() {
   const map = orderStatusMap.value
   const list = []
   
-  // Add ALL statuses separately instead of combining them
   if (map["pending"] || map["pending"] === 0) list.push({ label: "Pending", value: map["pending"], color: "#f97316" })
   if (map["preparing"] || map["preparing"] === 0) list.push({ label: "Preparing", value: map["preparing"], color: "#3b82f6" })
   if (map["completed"] || map["completed"] === 0) list.push({ label: "Completed", value: map["completed"], color: "#10b981" })
   if (map["cancelled"] || map["cancelled"] === 0) list.push({ label: "Cancelled", value: map["cancelled"], color: "#ef4444" })
-  if (map["to_pickup"] || map["to_pickup"] === 0) list.push({ label: "To Pickup", value: map["to_pickup"], color: "#8b5cf6" })
-  if (map["to_deliver"] || map["to_deliver"] === 0) list.push({ label: "To Deliver", value: map["to_deliver"], color: "#06b6d4" })
   
   orderStatusList.value = list
-  
-  console.log("Built order status list:", list)
 }
 
 // Format status for display
@@ -267,7 +303,6 @@ const getStatusColor = (status: string) => {
 function extractCustomerName(orderItems: string): string {
   if (!orderItems) return 'Customer'
   
-  // Try to extract a meaningful name from order items
   const productMatch = orderItems.match(/^([^x]+)/)
   if (productMatch) {
     const productName = productMatch[1].trim()
@@ -277,11 +312,6 @@ function extractCustomerName(orderItems: string): string {
   return 'Customer'
 }
 
-const totalOrders = () => {
-  return orderStatusList.value.reduce((total, status) => total + status.value, 0)
-}
-
-// Normalize and map backend response into frontend structures
 async function fetchDashboardData() {
   try {
     const token = localStorage.getItem("token")
@@ -299,6 +329,10 @@ async function fetchDashboardData() {
 
     console.log("Dashboard data received:", d)
 
+    // Update current date and time
+    currentDate.value = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    currentTime.value = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+
     // Stats card values
     stats.value = [
       { label: "Completed Orders Today", value: d.stats?.completed_today ?? 0 },
@@ -310,12 +344,10 @@ async function fetchDashboardData() {
     ordersToPickUp.value = d.orders_to_pickup ?? 0
     ordersToDeliver.value = d.orders_to_deliver ?? 0
 
-    // Sales revenue: backend might return numeric array or array of objects
-    const monthlyRaw = d.sales_revenue?.monthly ?? []
-    // monthlyRaw could be [100,200,..] or [{month:'Jan', total:100}, ...]
-    const normalizeArray = (arr: any[], labels: string[]) => {
+    // Process sales data with dynamic labels
+    const normalizeArray = (arr: any[], targetLength: number) => {
       const out: number[] = []
-      for (let i = 0; i < labels.length; i++) {
+      for (let i = 0; i < targetLength; i++) {
         const item = arr[i]
         if (item == null) { out.push(0); continue }
         if (typeof item === "object") {
@@ -327,25 +359,10 @@ async function fetchDashboardData() {
       return out
     }
 
-    salesMonthly.value = normalizeArray(monthlyRaw, labelsMonthly)
-
-    // Weekly & daily fallback: if API provides, use it; else slice/generate from monthly
-    salesWeekly.value = normalizeArray(d.sales_revenue?.weekly ?? [], labelsWeekly)
-    // If weekly missing, create 5 weekly buckets from monthly sums (simple grouping)
-    if (salesWeekly.value.every(v => v === 0)) {
-      // evenly distribute monthly totals into 5 buckets as fallback
-      const totalMonthly = salesMonthly.value.reduce((a,b) => a+b, 0)
-      const per = Math.round(totalMonthly / labelsWeekly.length)
-      salesWeekly.value = labelsWeekly.map(() => per)
-    }
-
-    salesDaily.value = normalizeArray(d.sales_revenue?.daily ?? [], labelsDaily)
-    if (salesDaily.value.every(v => v === 0)) {
-      // fallback: use last 7 days approximation from monthly last element
-      const lastMonth = salesMonthly.value[ new Date().getMonth() ] || 0
-      const perDay = Math.round(lastMonth / 30)
-      salesDaily.value = labelsDaily.map(() => perDay)
-    }
+    // Use dynamic label lengths
+    salesDaily.value = normalizeArray(d.sales_revenue?.daily ?? [], labels.value.daily.length)
+    salesWeekly.value = normalizeArray(d.sales_revenue?.weekly ?? [], labels.value.weekly.length)
+    salesMonthly.value = normalizeArray(d.sales_revenue?.monthly ?? [], labels.value.monthly.length)
 
     // Build order status map
     orderStatusMap.value = {
@@ -358,9 +375,7 @@ async function fetchDashboardData() {
     }
     buildOrderStatusList()
 
-// Recent orders mapping - using the actual API field names from your response
     recentOrders.value = (d.recent_orders ?? []).map((o: any) => {
-      // Extract customer name from order_items or use placeholder
       const orderItems = o.order_items || ''
       const customerName = extractCustomerName(orderItems) || 'Customer'
       
@@ -387,6 +402,13 @@ async function fetchDashboardData() {
   }
 }
 
+// Auto-refresh data every 30 seconds
+const startAutoRefresh = () => {
+  setInterval(() => {
+    fetchDashboardData()
+  }, 30000) // 30 seconds
+}
+
 // watch activeView changes to re-render bar chart
 watch(activeView, () => {
   renderBarChart()
@@ -395,6 +417,10 @@ watch(activeView, () => {
 // initial fetch
 onMounted(() => {
   fetchDashboardData()
+  startAutoRefresh()
+  
+  // Update labels every minute to keep them current
+  setInterval(updateLabels, 60000)
 })
 </script>
 
@@ -429,17 +455,17 @@ onMounted(() => {
             <div class="flex gap-2">
               <button
                 :class="{'bg-sky-500 text-white': activeView==='daily', 'bg-gray-200 text-gray-700': activeView!=='daily'}"
-                class="px-3 py-1 text-xs rounded-full"
+                class="px-3 py-1 text-xs rounded-full transition-colors"
                 @click="activeView = 'daily'"
               >Daily</button>
               <button
                 :class="{'bg-sky-500 text-white': activeView==='weekly', 'bg-gray-200 text-gray-700': activeView!=='weekly'}"
-                class="px-3 py-1 text-xs rounded-full"
+                class="px-3 py-1 text-xs rounded-full transition-colors"
                 @click="activeView = 'weekly'"
               >Weekly</button>
               <button
                 :class="{'bg-sky-500 text-white': activeView==='monthly', 'bg-gray-200 text-gray-700': activeView!=='monthly'}"
-                class="px-3 py-1 text-xs rounded-full"
+                class="px-3 py-1 text-xs rounded-full transition-colors"
                 @click="activeView = 'monthly'"
               >Monthly</button>
             </div>
@@ -449,33 +475,30 @@ onMounted(() => {
           <div class="w-full h-44">
             <canvas ref="barCanvas" class="w-full h-full"></canvas>
           </div>
+        
         </div>
 
-  <!-- Order status/doughnut -->
-      <div class="bg-white rounded-xl p-4 shadow-sm min-h-[260px]">
-        <h3 class="font-semibold text-gray-700 mb-2">Order Status</h3>
-        <div class="flex items-center gap-4">
-          <div class="w-36 h-36 relative">
-            <canvas ref="doughnutCanvas" class="w-full h-full"></canvas>
-            <!-- center total - NOW SHOWS SUM OF ALL ORDERS -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <!-- Order status -->
+        <div class="bg-white rounded-xl p-4 shadow-sm min-h-[260px]">
+          <h3 class="font-semibold text-gray-700 mb-8">Order Status</h3>
+          <div class="flex items-center gap-4">
+            <div class="w-36 h-36 relative">
+              <canvas ref="doughnutCanvas" class="w-full h-full"></canvas>
             </div>
-          </div>
 
-          <div class="flex-1">
-            <div v-for="s in orderStatusList" :key="s.label" class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2">
-                <div :style="{color: s.color}" class="text-lg">●</div>
-                <div class="text-sm text-gray-600">{{ s.label }}</div>
+            <div class="flex-1">
+              <div v-for="s in orderStatusList" :key="s.label" class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div :style="{color: s.color}" class="text-lg">●</div>
+                  <div class="text-sm text-gray-600">{{ s.label }}</div>
+                </div>
+                <div class="text-sm font-semibold text-gray-700">{{ s.value }}</div>
               </div>
-              <div class="text-sm font-semibold text-gray-700">{{ s.value }}</div>
             </div>
           </div>
         </div>
       </div>
-      </div>
 
-      <!-- bottom: pickup/deliver + recent orders -->
       <div class="grid grid-cols-3 gap-4">
         <div class="space-y-4 p-4">
           <!-- Orders To Pick Up Card -->
@@ -523,7 +546,7 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-              <tr v-for="o in recentOrders" :key="o.id" class="border-b last:border-b-0">
+                <tr v-for="o in recentOrders" :key="o.id" class="border-b last:border-b-0">
                   <td class="py-3 text-gray-700">#{{ o.id }}</td>
                   <td class="py-3 text-gray-600">{{ o.name }}</td>
                   <td class="py-3 text-gray-500">{{ o.date }}</td>

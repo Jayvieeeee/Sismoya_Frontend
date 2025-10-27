@@ -3,6 +3,9 @@ import { ref, onMounted } from 'vue'
 import { getProfile, updateProfile } from '@/utils/profileApi'
 import Swal from 'sweetalert2'
 
+// ✅ Import Heroicons
+import { PencilSquareIcon } from '@heroicons/vue/24/outline'
+
 const user = ref<any>(null)
 const loading = ref(true)
 const showModal = ref(false)
@@ -50,6 +53,7 @@ async function handleSave() {
     } else if (modalType.value === 'contact') {
       updateData = { contact_no: formData.value.contact_no }
     }
+
     await updateProfile(updateData)
     await Swal.fire({
       icon: 'success',
@@ -93,7 +97,7 @@ async function handleSave() {
             @click="openModal('name')"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500"
           >
-            ✎
+            <PencilSquareIcon class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -112,7 +116,7 @@ async function handleSave() {
             @click="openModal('email')"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500"
           >
-            ✎
+            <PencilSquareIcon class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -131,109 +135,100 @@ async function handleSave() {
             @click="openModal('contact')"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500"
           >
-            ✎
+            <PencilSquareIcon class="w-5 h-5" />
           </button>
         </div>
       </div>
     </div>
 
-<!-- Modal -->
-<!-- Modal -->
-<div
-  v-if="showModal"
-  class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
->
-  <div
-    class="bg-white rounded-xl shadow-lg w-4/12 relative flex flex-col items-center justify-center p-8"
-  >
-    <!-- Close Button -->
-    <button
-      @click="showModal = false"
-      class="absolute top-5 right-6 text-black text-xl font-semibold hover:text-gray-700"
+    <!-- Modal -->
+    <div
+      v-if="showModal"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
     >
-      ✕
-    </button>
-
-    <!-- Title -->
-    <h2 class="text-lg font-semibold text-gray-900 mb-10 self-start">
-      {{ modalType === 'name'
-        ? 'Update Name'
-        : modalType === 'email'
-        ? 'Update Email'
-        : 'Update Contact' }}
-    </h2>
-
-    <!-- Form -->
-    <form
-      @submit.prevent="handleSave"
-      class="flex flex-col gap-8 w-full items-center"
-    >
-      <!-- Name Fields -->
-      <template v-if="modalType === 'name'">
-        <div class="flex items-center w-full">
-          <label class="text-sm font-medium text-black text-right">
-            First Name:
-          </label>
-          <input
-            v-model="formData.first_name"
-            type="text"
-            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
-          />
-        </div>
-
-        <div class="flex items-center w-full">
-          <label class="text-sm font-medium text-black text-right">
-            Last Name:
-          </label>
-          <input
-            v-model="formData.last_name"
-            type="text"
-            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3  focus:outline-primary"
-          />
-        </div>
-      </template>
-
-      <!-- Email -->
-      <template v-else-if="modalType === 'email'">
-        <div class="flex items-center w-full">
-          <label class="text-sm font-medium text-black text-right">
-            Email:
-          </label>
-          <input
-            v-model="formData.email"
-            type="email"
-            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
-          />
-        </div>
-      </template>
-
-      <!-- Contact -->
-      <template v-else-if="modalType === 'contact'">
-        <div class="flex items-center w-full">
-          <label class="text-sm font-medium text-black text-right">
-            Contact No.:
-          </label>
-          <input
-            v-model="formData.contact_no"
-            type="tel"
-            class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-none"
-          />
-        </div>
-      </template>
-
-      <!-- Save Button -->
-      <button
-        type="submit"
-        class="bg-[#2D8CBA] text-white text-sm px-8 py-2 rounded-md hover:bg-[#24759b] transition mt-10"
+      <div
+        class="bg-white rounded-xl shadow-lg w-4/12 relative flex flex-col items-center justify-center p-8"
       >
-        Save
-      </button>
-    </form>
-  </div>
-</div>
+        <!-- Close Button -->
+        <button
+          @click="showModal = false"
+          class="absolute top-5 right-6 text-black text-xl font-semibold hover:text-gray-700"
+        >
+          ✕
+        </button>
 
+        <!-- Title -->
+        <h2 class="text-lg font-semibold text-gray-900 mb-10 self-start">
+          {{ modalType === 'name'
+            ? 'Update Name'
+            : modalType === 'email'
+            ? 'Update Email'
+            : 'Update Contact' }}
+        </h2>
 
+        <!-- Form -->
+        <form
+          @submit.prevent="handleSave"
+          class="flex flex-col gap-8 w-full items-center"
+        >
+          <template v-if="modalType === 'name'">
+            <div class="flex items-center w-full">
+              <label class="text-sm font-medium text-black text-right">
+                First Name:
+              </label>
+              <input
+                v-model="formData.first_name"
+                type="text"
+                class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
+              />
+            </div>
 
+            <div class="flex items-center w-full">
+              <label class="text-sm font-medium text-black text-right">
+                Last Name:
+              </label>
+              <input
+                v-model="formData.last_name"
+                type="text"
+                class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
+              />
+            </div>
+          </template>
+
+          <template v-else-if="modalType === 'email'">
+            <div class="flex items-center w-full">
+              <label class="text-sm font-medium text-black text-right">
+                Email:
+              </label>
+              <input
+                v-model="formData.email"
+                type="email"
+                class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-primary"
+              />
+            </div>
+          </template>
+
+          <template v-else-if="modalType === 'contact'">
+            <div class="flex items-center w-full">
+              <label class="text-sm font-medium text-black text-right">
+                Contact No.:
+              </label>
+              <input
+                v-model="formData.contact_no"
+                type="tel"
+                class="border border-black rounded-md px-3 py-2 ml-6 w-2/3 focus:outline-none"
+              />
+            </div>
+          </template>
+
+          <button
+            type="submit"
+            class="bg-[#2D8CBA] text-white text-sm px-8 py-2 rounded-md hover:bg-[#24759b] transition mt-10"
+          >
+            Save
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
-

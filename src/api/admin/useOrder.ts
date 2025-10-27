@@ -1,4 +1,3 @@
-// composables/useOrders.ts
 import { ref, onMounted, computed } from 'vue'
 import axiosInstance from "@/utils/axios"
 import { useRouter } from "vue-router"
@@ -44,9 +43,6 @@ export function useOrders() {
   const selectedOrder = ref<Order | null>(null)
   const isModalOpen = ref(false)
 
-  // ==============================
-  // 🧮 STATUS STATS
-  // ==============================
   const stats = computed(() => {
     const statusCounts = {
       'Pending': 0,
@@ -70,9 +66,6 @@ export function useOrders() {
     ]
   })
 
-  // ==============================
-  // 🧩 HELPERS
-  // ==============================
   const getDisplayStatus = (status: string): string => {
     const statusMap: { [key: string]: string } = {
       'pending': 'Pending',
@@ -129,9 +122,6 @@ export function useOrders() {
     return colors[status] || 'bg-gray-100 text-gray-800'
   }
 
-  // ==============================
-  // 📦 MODAL HANDLERS
-  // ==============================
   const openOrderDetails = (order: Order) => {
     selectedOrder.value = order
     isModalOpen.value = true
@@ -142,9 +132,6 @@ export function useOrders() {
     selectedOrder.value = null
   }
 
-  // ==============================
-  // 🔗 API HANDLERS
-  // ==============================
   const fetchOrders = async () => {
     isLoading.value = true
     backendError.value = ''
@@ -166,8 +153,6 @@ export function useOrders() {
         router.push("/login")
         return
       }
-
-      console.log('🔄 Fetching orders from:', '/admin/orders')
       
       const response = await axiosInstance.get('/admin/orders', {
         timeout: 10000, // 10 second timeout
@@ -181,18 +166,14 @@ export function useOrders() {
 
       if (response.data && (response.data.data || response.data.orders)) {
         orders.value = response.data.data || response.data.orders || []
-        console.log('✅ Orders fetched successfully:', orders.value.length)
       } else {
-        console.warn('⚠️ Unexpected response structure:', response.data)
         throw new Error(response.data?.message || 'Invalid response format from server')
       }
     } catch (err: any) {
-      console.error('❌ Error fetching orders:', err)
       
       if (err.code === 'ECONNABORTED') {
         backendError.value = "Request timeout. Please check your connection."
       } else if (err.response) {
-        // Server responded with error status
         const status = err.response.status
         const message = err.response.data?.message || err.response.statusText
         
@@ -215,10 +196,8 @@ export function useOrders() {
             backendError.value = `Error ${status}: ${message}`
         }
       } else if (err.request) {
-        // Request was made but no response received
         backendError.value = "Cannot connect to server. Please check your internet connection."
       } else {
-        // Something else happened
         backendError.value = err.message || "Failed to load orders. Please try again."
       }
     } finally {
@@ -230,18 +209,15 @@ export function useOrders() {
     isLoading.value = true
     backendError.value = ''
     try {
-      // Client-side filtering
       if (!status) {
         await fetchOrders()
         return
       }
 
-      // First, make sure we have all orders
       if (orders.value.length === 0) {
         await fetchOrders()
       }
 
-      // Map display status to backend status
       const statusMap: { [key: string]: string } = {
         'Pending': 'pending',
         'To Pick-Up': 'to_pickup',
@@ -252,7 +228,6 @@ export function useOrders() {
       
       const backendStatus = statusMap[status] || status.toLowerCase()
       
-      // Filter orders client-side
       const filtered = orders.value.filter(order => order.status === backendStatus)
       orders.value = filtered
       
@@ -264,109 +239,131 @@ export function useOrders() {
     }
   }
 
-  // ✅ FIXED: Correct endpoint to match PHP controller
-async function updateOrderStatus(orderId: number, action: string) {
-  try {
-    const response = await axiosInstance.put(
-      `/admin/orders/${orderId}/update-stats`,
-      { id: orderId, action } // ✅ backend expects "action"
-    );
-    console.log("✅ Update success:", response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ Backend error:", error.response?.data || error.message);
-    throw new Error("Failed to update order status");
+  async function updateOrderStatus(orderId: number, action: string) {
+    try {
+      const response = await axiosInstance.put(
+        `/admin/orders/${orderId}/update-stats`,
+        { id: orderId, action } 
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error("Failed to update order status");
+    }
   }
-}
 
-
-
-  // ==============================
-  // ⚙️ ACTION FLOW WITH CONFIRMATION - MATCHING BACKEND LOGIC
-  // ==============================
   const getActionButtons = (status: string) => {
     const normalizedStatus = status.toLowerCase().replace(' ', '_')
     
     switch (normalizedStatus) {
       case 'pending':
-        return ['approve', 'cancel'] // Approve → to_pickup, Cancel → cancelled
+        return ['approve', 'cancel'] 
       case 'picked_up':
       case 'picked up':
-        return ['mark_preparing'] // Mark as Preparing → preparing
+        return ['mark_preparing'] 
       case 'preparing':
-        return ['mark_to_deliver'] // Mark as To Deliver → to_deliver
+        return ['mark_to_deliver'] 
       case 'to_deliver':
       case 'completed':
       case 'cancelled':
-        return [] // No actions for these statuses
+        return []
       default:
         return []
     }
   }
 
-  // Confirmation messages for each action
+  // Get confirmation message for SweetAlert
   const getConfirmationMessage = (action: string, orderId: number, currentStatus: string): string => {
     const messages: { [key: string]: string } = {
-      'approve': `Are you sure you want to APPROVE Order #${orderId}? This will change status from "${getDisplayStatus(currentStatus)}" to "To Pick-Up".`,
-      'cancel': `Are you sure you want to CANCEL Order #${orderId}? This will change status from "${getDisplayStatus(currentStatus)}" to "Cancelled". This action cannot be undone.`,
-      'mark_preparing': `Are you sure you want to mark Order #${orderId} as PREPARING? This will change status from "${getDisplayStatus(currentStatus)}" to "Preparing".`,
-      'mark_to_deliver': `Are you sure you want to mark Order #${orderId} as READY FOR DELIVERY? This will change status from "${getDisplayStatus(currentStatus)}" to "To Deliver".`
+      'approve': `Are you sure you want to APPROVE Order #${orderId}?`,
+      'cancel': `Are you sure you want to CANCEL Order #${orderId}? This action cannot be undone.`,
+      'mark_preparing': `Are you sure you want to mark Order #${orderId} as PREPARING?`,
+      'mark_to_deliver': `Are you sure you want to mark Order #${orderId} as TO DELIVER?`
     }
     return messages[action] || `Are you sure you want to perform this action on Order #${orderId}?`
   }
 
-  // Action display names for confirmation
-  const getActionDisplayName = (action: string): string => {
-    const names: { [key: string]: string } = {
-      'approve': 'Approve',
-      'cancel': 'Cancel',
-      'mark_preparing': 'Mark as Preparing',
-      'mark_to_deliver': 'Mark for Delivery'
+  // Get SweetAlert configuration based on action
+  const getSwalConfig = (action: string, orderId: number) => {
+    const configs: { [key: string]: any } = {
+      'approve': {
+        title: 'Approve Order?',
+        text: getConfirmationMessage(action, orderId, ''),
+        icon: 'question',
+        confirmButtonText: 'Yes, Approve!',
+        confirmButtonColor: '#10B981',
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+        iconColor: '#10B981'
+      },
+      'cancel': {
+        title: 'Cancel Order?',
+        text: getConfirmationMessage(action, orderId, ''),
+        icon: 'warning',
+        confirmButtonText: 'Yes, Cancel!',
+        confirmButtonColor: '#EF4444',
+        showCancelButton: true,
+        cancelButtonText: 'Keep Order',
+        iconColor: '#EF4444'
+      },
+      'mark_preparing': {
+        title: 'Mark as Preparing?',
+        text: getConfirmationMessage(action, orderId, ''),
+        icon: 'info',
+        confirmButtonText: 'Yes, Mark Preparing!',
+        confirmButtonColor: '#3B82F6',
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+        iconColor: '#3B82F6'
+      },
+      'mark_to_deliver': {
+        title: 'Mark for Delivery?',
+        text: getConfirmationMessage(action, orderId, ''),
+        icon: 'info',
+        confirmButtonText: 'Yes, Mark for Delivery!',
+        confirmButtonColor: '#8B5CF6',
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+        iconColor: '#8B5CF6'
+      }
     }
-    return names[action] || action
+    
+    return configs[action] || {
+      title: 'Confirm Action',
+      text: getConfirmationMessage(action, orderId, ''),
+      icon: 'question',
+      confirmButtonText: 'Confirm',
+      confirmButtonColor: '#6B7280',
+      showCancelButton: true,
+      cancelButtonText: 'Cancel'
+    }
   }
 
-  const handleAction = async (orderId: number, action: string, currentStatus: string) => {
+  // Modified handleAction to work with SweetAlert (returns a promise)
+  const handleAction = async (orderId: number, action: string, currentStatus: string): Promise<boolean> => {
     try {
       console.log('Handling action:', { orderId, action, currentStatus })
       
-      // Show confirmation dialog
-      const confirmationMessage = getConfirmationMessage(action, orderId, currentStatus)
-      const actionName = getActionDisplayName(action)
-      
-      if (!confirm(`${confirmationMessage}\n\nClick OK to ${actionName.toLowerCase()} this order.`)) {
-        console.log('Action cancelled by user')
-        return
-      }
-
-      console.log('User confirmed action, proceeding...')
-      
-      // Send the exact action name that backend expects with order ID in body
       const result = await updateOrderStatus(orderId, action)
       
-      // Refresh the orders list to get updated data
       await fetchOrders()
       
-      // Use the success message from backend
-      backendError.value = `✅ ${result.message || `Order #${orderId} successfully ${getActionDisplayName(action).toLowerCase()}ed`}`
+      backendError.value = `${result.message || `Order #${orderId} successfully processed`}`
       
-      // Clear success message after 3 seconds
       setTimeout(() => {
-        if (backendError.value.includes('✅')) {
+        if (backendError.value.includes('successfully')) {
           backendError.value = ''
         }
       }, 3000)
       
+      return true
+      
     } catch (error: any) {
       console.error('Error handling action:', error)
-      // Show the specific backend error message
       backendError.value = error.message || 'Failed to update order status. Please try again.'
+      return false
     }
   }
 
-  // ==============================
-  // 🔍 FILTERING & INITIAL LOAD
-  // ==============================
   const filteredOrders = computed(() => {
     if (!searchQuery.value) return orders.value
     const query = searchQuery.value.toLowerCase()
@@ -378,7 +375,6 @@ async function updateOrderStatus(orderId: number, action: string) {
     )
   })
 
-  // Add retry logic for better reliability
   const fetchWithRetry = async (retries = 3, delay = 1000) => {
     for (let i = 0; i < retries; i++) {
       try {
@@ -423,13 +419,14 @@ async function updateOrderStatus(orderId: number, action: string) {
     closeModal,
     fetchOrders: fetchOrdersWithCheck,
     filterByStatus,
-    handleAction,
+    handleAction, // Now returns a promise for SweetAlert integration
     getActionButtons,
     getDisplayStatus,
     formatDate,
     getProductName,
     getCustomerName,
     formatPrice,
-    getStatusColor
+    getStatusColor,
+    getSwalConfig // Export this for use in the component
   }
 }

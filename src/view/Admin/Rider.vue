@@ -122,13 +122,13 @@ onMounted(() => {
 <template>
   <AdminLayout>
     <div class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Riders</h1>
+      <h1 class="text-2xl sm:text-3xl font-bold my-12 text-primary">Riders</h1>
 
       <!-- Search and Add Rider Row -->
       <div class="mb-4 flex justify-between items-center">
         <button
           @click="showAddRiderModal = true"
-          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition"
         >
           + Add Rider
         </button>
@@ -137,7 +137,7 @@ onMounted(() => {
           v-model="search"
           type="text"
           placeholder="Search"
-          class="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -147,7 +147,7 @@ onMounted(() => {
       </div>
 
       <!-- Table -->
-      <div v-else class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
+      <div v-else class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden mt-12">
         <div class="max-h-[400px] overflow-y-auto">
           <table class="w-full text-sm">
             <thead class="sticky top-0 bg-gray-50 z-10">

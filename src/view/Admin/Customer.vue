@@ -76,7 +76,7 @@ onMounted(fetchCustomers)
 
 <template>
   <AdminLayout>
-    <div class="p-4 sm:p-6 max-w-full mx-auto w-full">
+    <div class="p-4 sm:p-6 max-w-full mx-auto w-full ">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-primary">Customers</h1>
       </div>

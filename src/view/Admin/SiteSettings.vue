@@ -6,7 +6,6 @@ import Modal from '@/components/Modal.vue'
 import axiosInstance from '@/utils/axios'
 import { handleLogout } from '@/utils/auth'
 
-const activeMenu = ref('gallons-details')
 const gallons = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null) 
