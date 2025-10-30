@@ -53,20 +53,22 @@ function formatStatus(status: string) {
 }
 
 function viewOrderDetails(order: any) {
-
   const firstItem = order.items?.[0] || {};
+
+  // Use the raw status from the order, don't format it
+  // The modal expects backend format (lowercase with underscores)
+  const rawStatus = order.status?.toLowerCase() || 'pending';
 
   selectedOrder.value = {
     orderId: order.order_id?.toString() ?? "N/A",
-    status: formatStatus(order.status),
+    status: rawStatus, // Use raw status instead of formatted
     pickUpDateTime: getDisplayDate(order),
     gallonType: firstItem.gallon_name || firstItem.product_name || "Unknown Gallon",
     quantity: firstItem.quantity ?? 0,
     totalAmount: parseFloat(order.total_price ?? 0),
-    paymentMethod: order.payment_method || "Cash",
-    imageUrl: firstItem.gallon_image || "/default-gallon.png",
+    paymentMethod: order.payment_method,
+    imageUrl: firstItem.gallon_image,
   };
-
   isModalOpen.value = true;
 }
 
@@ -103,7 +105,6 @@ onMounted(async () => {
   }
 });
 
-// ✅ Computed filtered orders (search)
 const filteredOrders = computed(() => {
   const query = search.value.trim().toLowerCase();
   if (!query) return orders.value;
@@ -127,7 +128,6 @@ const filteredOrders = computed(() => {
   });
 });
 </script>
-
 
 
 <template>

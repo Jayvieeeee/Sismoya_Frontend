@@ -17,12 +17,9 @@ const tabs = [
 
 <template>
   <CustomerLayout>
-    <div class="min-h-screen p-4 md:p-8">
-      
-      <div class="max-w-4xl mx-auto mb-6">
-        <h2 class="text-2xl md:text-3xl font-bold text-primary">Account Settings</h2>
-      </div>
 
+    <div class="min-h-screen p-4 md:p-8">
+      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Account Settings</h1>
       <!-- Content Container -->
       <div class="flex justify-center">
         <div class="bg-white rounded-3xl border-2 p-4 md:p-6 w-full max-w-4xl">

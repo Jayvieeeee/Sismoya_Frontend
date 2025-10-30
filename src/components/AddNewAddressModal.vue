@@ -23,7 +23,6 @@ const address = ref("");
 const isDefault = ref(false);
 const isLoading = ref(false);
 
-// 👀 Watch for mode changes (prefill data if editing)
 watch(
   () => props.existingAddress,
   (val) => {
@@ -56,7 +55,6 @@ async function handleSave() {
     };
 
     if (props.mode === "edit" && props.existingAddress?.id) {
-      // ✏️ Update existing address
       const response = await axiosInstance.put(
         `/addresses/${props.existingAddress.id}`,
         payload
@@ -68,7 +66,6 @@ async function handleSave() {
         alert(response.data.message || "Failed to update address");
       }
     } else {
-      // ➕ Add new address
       const response = await axiosInstance.post("/addresses", payload);
       if (response.data.success) {
         emit("address-saved");

@@ -57,7 +57,7 @@ const showDateTimeModal = ref(false)
 
 // -------------------- Order Details --------------------
 const pickUpTime = ref("")
-const paymentMethod = ref("Paypal") // Default payment method
+const paymentMethod = ref("Cash") 
 
 // Computed totals
 const totalAmount = computed(() => props.products.reduce((sum, p) => sum + (p.price * p.qty), 0))
@@ -125,7 +125,7 @@ async function handleAddressAdded(newAddress?: Address) {
 }
 
 // Payment map
-const paymentMethodMap = { Paypal: "Paypal", "Cash on Pickup": "CASH" }
+const paymentMethodMap = { Paypal: "Paypal", "Cash": "CASH" }
 const getBackendPaymentMethod = () => paymentMethodMap[paymentMethod.value as keyof typeof paymentMethodMap] || paymentMethod.value
 
 // Images
@@ -198,10 +198,6 @@ const handlePayPalClosed = () => {
   pendingPayPalOrderId.value = null;
 }
 
-// Function to show order placed modal after successful PayPal payment
-const showOrderPlaced = () => {
-  orderPlacedModal.value = true;
-}
 </script>
 
 <template>
@@ -266,8 +262,8 @@ const showOrderPlaced = () => {
         <label class="font-semibold text-sm">Payment Method:</label>
         <div class="relative w-2/4">
           <select v-model="paymentMethod" class="w-full border border-black text-center text-sm rounded-lg px-3 py-1 appearance-none cursor-pointer">
+            <option>Cash</option>
             <option>Paypal</option>
-            <option>Cash on Pickup</option>
           </select>
           <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">&#11167;</span>
         </div>

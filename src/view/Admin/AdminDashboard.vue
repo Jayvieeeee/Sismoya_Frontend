@@ -322,12 +322,9 @@ async function fetchDashboardData() {
     })
     
     if (!resp?.data?.success) {
-      console.warn("Dashboard API returned no success flag", resp.data)
       return
     }
     const d = resp.data.data
-
-    console.log("Dashboard data received:", d)
 
     // Update current date and time
     currentDate.value = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })

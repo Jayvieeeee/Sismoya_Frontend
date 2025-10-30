@@ -12,6 +12,10 @@ import accountSettingsIcon from "@/assets/icons/accountSettings.png"
 import logoutIcon from "@/assets/icons/logout.png"
 import siteIcon from "@/assets/icons/site.png"
 
+defineOptions({
+  inheritAttrs: false, 
+})
+
 interface MenuItem {
   name: string
   icon: string
@@ -58,7 +62,7 @@ async function confirmLogout() {
 </script>
 
 <template>
-  <div class="relative font-montserrat">
+  <div class="relative font-montserrat" v-bind="$attrs">
     <!-- Hamburger Button -->
     <button
       v-if="!isOpen"

@@ -46,7 +46,7 @@ function openModal(product: ModalProduct, action: "cart" | "order") {
 
 function closeModal() {
   showModal.value = false
-  productForImmediateOrder.value = null // Reset when closing modal
+  productForImmediateOrder.value = null 
 }
 
 // Add to cart - adds to cart store
@@ -90,7 +90,6 @@ async function handleAddMore(item: ModalProduct) {
 
 function handleOrderNow(item: ModalProduct) {
   
-
   productForImmediateOrder.value = { ...item }
   
   showModal.value = false
@@ -100,11 +99,9 @@ function handleOrderNow(item: ModalProduct) {
 // Get products for OrderSummaryModal based on context
 const productsForOrderSummary = computed((): ModalProduct[] => {
   if (productForImmediateOrder.value) {
-    // For "Order Now" - use the single product with selected quantity
-    console.log("📦 Immediate order product:", productForImmediateOrder.value);
     return [productForImmediateOrder.value]
   } else {
-    // For cart checkout - use all cart items (future implementation)
+    // For cart checkout 
     return cartStore.itemsForDisplay.map(item => ({
       id: item.gallon_id || 0,
       gallon_id: item.gallon_id,
@@ -147,9 +144,7 @@ function handleOrderSuccess() {
     <div class="flex-1 p-4 sm:p-6 md:p-10">
       <!-- Header -->
       <div class="flex flex-row items-center justify-between mb-8 gap-4">
-        <h2 class="text-3xl sm:text-4xl font-semibold text-primary text-center sm:text-left">
-          Gallon
-        </h2>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Gallons</h1>
         <img
           :src="Cart"
           @click="goToAddToCartPage"

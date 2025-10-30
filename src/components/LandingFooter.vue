@@ -6,7 +6,7 @@
         
         <div class="md:w-1/3">
           <img src="/images/Sismoya_Logo.png" alt="Sismoya Logo" class="h-16 mb-6" />
-          <p class="text-lg font-medium leading-relaxed mb-12">
+          <p class="text-sm font-medium leading-relaxed mb-12">
             Pure water delivered with care and commitment. Because your health 
             deserves only the best.
           </p>
@@ -14,8 +14,8 @@
         </div>
 
         <div>
-          <h3 class="text-lg font-semibold mb-4">SITE MAP</h3>
-          <ul class="space-y-2">
+          <h3 class="text-sm font-semibold mb-4">SITE MAP</h3>
+          <ul class="space-y-2 text-sm">
             <li><a href="#home" class="hover:text-button">Home</a></li>
             <li><a href="#services" class="hover:text-button">Services</a></li>
             <li><a href="#contact" class="hover:text-button">Contact Us</a></li>
@@ -25,8 +25,8 @@
         </div>
 
         <div>
-          <h3 class="text-lg font-semibold mb-7">CONTACT US</h3>
-          <ul class="space-y-8">
+          <h3 class="text-sm font-semibold mb-7">CONTACT US</h3>
+          <ul class="space-y-8 text-sm">
             <li class="flex items-center space-x-5">
               <img src="/icons/phone_white.png" alt="Phone" class="h-[25px]" />
               <span>09422617079</span>

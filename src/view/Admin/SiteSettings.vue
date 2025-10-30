@@ -88,27 +88,20 @@ const handleImageUpload = async (e: Event) => {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    // Automatically set image_url from backend response
     if (res.data.url) {
       selectedGallon.image_url = res.data.url
-      console.log('Image uploaded:', selectedGallon.image_url)
     } else if (res.data.path) {
-      // fallback if backend uses "path" instead of "url"
       selectedGallon.image_url = res.data.path
-      console.log(' Image uploaded (path):', selectedGallon.image_url)
     } else {
       alert('Upload failed: No image URL returned from server.')
     }
   } catch (err) {
-    console.error(' Image upload failed:', err)
     alert('Image upload failed. Please check your server.')
   } finally {
     uploading.value = false
   }
 }
 
-
-// 💾 Save Gallon
 const handleSave = async () => {
   try {
     if (isUpdate.value) {
@@ -132,7 +125,7 @@ const handleDelete = async (gallon_id: number) => {
     const res = await axiosInstance.delete(`/gallons/${gallon_id}`)
 
     if (res.data.success) {
-      await fetchGallons() // <-- Force re-fetch list
+      await fetchGallons() 
     } else {
       alert(res.data.message || 'Delete failed.')
     }
@@ -141,14 +134,14 @@ const handleDelete = async (gallon_id: number) => {
     alert('Failed to delete gallon.')
   }
 }
-
-
 </script>
 
 <template>
   <AdminLayout>
     <div class="min-h-screen p-8">
-      <h1 class="text-3xl font-bold text-cyan-600 mb-20">Site Settings</h1>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Site Settings</h1>
+      </div>
 
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden flex">
         <div class="flex-1 p-8">

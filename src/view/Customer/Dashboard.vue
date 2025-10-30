@@ -79,21 +79,18 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// Get status color class
 const getStatusColor = (status: string) => {
-  const colors: { [key: string]: string } = {
-    pending: "text-amber-600 font-semibold",
-    to_pickup: "text-blue-600 font-medium",
-    to_pick_up: "text-blue-600 font-medium", 
-    picked_up: "text-gray-700 font-medium",
-    "picked up": "text-gray-700 font-medium",
-    preparing: "text-purple-600 font-semibold",
-    to_deliver: "text-indigo-600 font-medium",
-    completed: "text-green-600 font-semibold",
-    cancelled: "text-red-600 font-semibold",
-  };
-
-  return colors[status.toLowerCase()] || "text-gray-600 font-normal";
-};
+  const colors: Record<string, string> = {
+    'pending': 'text-orange-500',
+    'preparing': 'text-blue-500',
+    'completed': 'text-green-600',
+    'cancelled': 'text-red-500',
+    'to_pickup': 'text-purple-500',
+    'to_deliver': 'text-cyan-500'
+  }
+  return colors[status] || 'text-gray-500'
+}
 
 // Optional: Format the status text for display
 const formatStatus = (status: string) => {
@@ -127,9 +124,8 @@ const formatOrderItems = (order: LatestOrder) => {
   return "No items";
 };
 
-// UPDATED: Open modal with order details - INCLUDES PAYMENT METHOD AND TIME
+
 const viewOrderDetails = (order: LatestOrder) => {
-  console.log('Order data for modal:', order);
   
   let gallonType = "Round Gallon";
   let quantity = 1;
@@ -161,25 +157,23 @@ const viewOrderDetails = (order: LatestOrder) => {
   selectedOrder.value = {
     orderId: order.id?.toString() ?? "N/A",
     status: order.status,
-    pickUpDateTime: formatDate(order.created_at), // This will now include time
+    pickUpDateTime: formatDate(order.created_at), 
     gallonType: gallonType,
     quantity: quantity,
     totalAmount: parseFloat(order.total_amount?.toString() ?? "0"),
-    paymentMethod: paymentMethod, // Now uses actual payment method if available
+    paymentMethod: paymentMethod,
     imageUrl: imageUrl,
   };
   
-  console.log('Modal data:', selectedOrder.value);
   isModalOpen.value = true;
 };
 
-// Close modal
+
 const closeModal = () => {
   isModalOpen.value = false;
   selectedOrder.value = null;
 };
 
-// Compute stats from user orders - FIXED STATUS FILTERING
 const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
   
   const pending = userOrders.filter((o) => 
@@ -204,7 +198,6 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
   };
 };
 
-// error handling
 const handleDashboardError = async (err: any) => {
 
   if (err.response?.status === 401) {
@@ -223,7 +216,6 @@ const handleDashboardError = async (err: any) => {
   }
 };
 
-// UPDATED: Fallback local stats with proper status filtering
 const fallbackToLocalStats = async () => {
   try {
     const profile = await getProfile();
@@ -250,7 +242,7 @@ const fallbackToLocalStats = async () => {
             order.items.map((item: any) => 
               `${item.quantity}x ${item.gallon_name || 'Round Gallon'}`
             ).join(', ') : 'Round Gallon',
-          items: order.items // IMPORTANT: Include items array
+          items: order.items
         }));
 
       error.value = null;
@@ -260,7 +252,6 @@ const fallbackToLocalStats = async () => {
   }
 };
 
-// UPDATED: Fixed dashboard data fetching with proper items mapping
 const fetchDashboardData = async () => {
   try {
     loading.value = true;
@@ -304,10 +295,9 @@ const fetchDashboardData = async () => {
         status: order.status,
         created_at: order.created_at,
         order_items: order.order_items,
-        items: order.items // IMPORTANT: Ensure items array is included
+        items: order.items 
       }));
     } else {
-      // FIXED: Include items array in fallback mapping
       latestOrders.value = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 3)
@@ -320,11 +310,9 @@ const fetchDashboardData = async () => {
             order.items.map((item: any) => 
               `${item.quantity}x ${item.gallon_name || 'Round Gallon'}`
             ).join(', ') : 'Round Gallon',
-          items: order.items // IMPORTANT: Include items array here too
+          items: order.items 
         }));
     }
-
-    console.log('Latest orders:', latestOrders.value); // Debug log
 
   } catch (err: any) {
     await handleDashboardError(err);
@@ -333,7 +321,6 @@ const fetchDashboardData = async () => {
   }
 };
 
-// Navigation
 const viewAllOrders = () => router.push("/orderHistory");
 const retryLoad = () => fetchDashboardData();
 
@@ -372,7 +359,6 @@ onMounted(() => fetchDashboardData());
               </span>
             </p>
 
-            <!-- GALLON IMG HERE - COMPACT -->
             <div class="mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 shadow-lg">
               <div class="flex justify-center items-center">
                 <img 
@@ -382,7 +368,6 @@ onMounted(() => fetchDashboardData());
               </div>
             </div>
 
-            <!-- Stats - COMPACT -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
                 <p class="text-xl font-bold text-yellow-600">{{ stats.pending }}</p>
@@ -402,7 +387,7 @@ onMounted(() => fetchDashboardData());
               </div>
             </div>
 
-            <!-- Recent Orders - FIT CONTENT -->
+            <!-- Recent Orders  -->
             <div class="bg-white shadow rounded-xl p-4">
               <div class="flex justify-between items-center mb-3">
                 <h2 class="text-lg font-bold text-gray-800">Recent Orders</h2>
@@ -421,7 +406,6 @@ onMounted(() => fetchDashboardData());
                 No orders found.
               </div>
 
-              <!-- TABLE FIT CONTENT -->
               <div v-else>
                 <table class="w-full text-left border-collapse text-sm">
                   <thead class="bg-gray-50">

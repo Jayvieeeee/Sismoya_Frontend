@@ -214,13 +214,4 @@ const toggleStatus = () => {
     emit('toggle-status', riderToUpdate)
   }
 }
-
-// Debug: log the delivery history data
-watch(() => props.deliveryHistory, (newHistory) => {
-  console.log("🔍 Delivery History Data:", newHistory)
-  if (newHistory && newHistory.length > 0) {
-    console.log("🔍 First order details:", newHistory[0])
-    console.log("🔍 Available fields:", Object.keys(newHistory[0]))
-  }
-}, { immediate: true })
 </script>

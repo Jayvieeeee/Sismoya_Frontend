@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
+import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import AddNewAddressModal from "@/components/AddNewAddressModal.vue"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 import { getProfile } from "@/utils/auth"
-import { getAddresses } from "@/utils/address"
+import { getAddresses, deleteAddress } from "@/utils/address"
 
 interface Address {
   id: number
@@ -16,6 +18,10 @@ const modalOpen = ref(false)
 const modalMode = ref<"add" | "edit">("add")
 const selectedAddress = ref<Address | null>(null)
 const userName = ref("")
+
+// Confirm modal state
+const showConfirmModal = ref(false)
+const addressToDelete = ref<number | null>(null)
 
 // ------------------ Fetch user profile ------------------
 async function fetchProfile() {
@@ -31,6 +37,7 @@ async function fetchProfile() {
 async function fetchAddresses() {
   try {
     const res = await getAddresses()
+    console.log("Fetched addresses from API:", res)
 
     addresses.value = Array.isArray(res)
       ? res.map((a: any) => ({
@@ -40,9 +47,51 @@ async function fetchAddresses() {
           isDefault: a.is_default,
         }))
       : []
+    
+    console.log("Processed addresses:", addresses.value)
   } catch (error) {
     console.error("Failed to load addresses:", error)
   }
+}
+
+// ------------------ Delete Address ------------------
+function openDeleteConfirm(addressId: number) {
+  addressToDelete.value = addressId
+  showConfirmModal.value = true
+}
+
+async function confirmDelete() {
+  if (!addressToDelete.value) return
+  
+  try {
+    const result = await deleteAddress(addressToDelete.value)
+    
+    if (result.success) {
+      await fetchAddresses() // Refresh the list
+    } else {
+      console.error("Delete failed - backend response:", result)
+    }
+  } catch (error: any) {
+    
+    // Log detailed error information for debugging
+    if (error.response?.status === 404) {
+      console.error("Available addresses:", addresses.value.map(a => ({ 
+        id: a.id, 
+        label: a.label,
+        isDefault: a.isDefault 
+      })))
+    } else {
+      console.error("Delete error:", error.message)
+    }
+  } finally {
+    showConfirmModal.value = false
+    addressToDelete.value = null
+  }
+}
+
+function cancelDelete() {
+  showConfirmModal.value = false
+  addressToDelete.value = null
 }
 
 // ------------------ Modal Handling ------------------
@@ -87,26 +136,27 @@ onMounted(async () => {
         :key="address.id"
         class="border border-gray-300 rounded-xl p-4 relative hover:shadow-sm transition"
       >
-        <!-- Edit Button -->
-        <button
-          @click="openEditModal(address)"
-          class="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
-        >
-          <svg
-            class="w-5 h-5 align-middle"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <!-- Action Buttons -->
+        <div class="absolute top-4 right-4 flex gap-2">
+          <!-- Edit Button -->
+          <button
+            @click="openEditModal(address)"
+            class="text-gray-600 hover:text-blue-600 transition-colors"
+            title="Edit address"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414
-              a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
-          </svg>
-        </button>
+            <PencilSquareIcon class="w-5 h-5" />
+          </button>
+
+          <!-- Delete Button -->
+          <button
+            @click="openDeleteConfirm(address.id)"
+            class="text-red-500 hover:text-red-700 transition-colors"
+            title="Delete address"
+            :disabled="address.isDefault"
+          >
+            <TrashIcon class="w-5 h-5" />
+          </button>
+        </div>
 
         <h3 class="text-lg font-semibold mb-1">{{ address.label }}</h3>
         <p class="text-sm text-gray-700 mb-2">
@@ -138,6 +188,14 @@ onMounted(async () => {
       @close="closeModal"
       @address-saved="handleAddressSaved"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :visible="showConfirmModal"
+      title="Confirm Delete"
+      message="Are you sure you want to delete this address?"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
-

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+
 interface OrderDetails {
   orderId: string;
   status: 'Pending' | 'To Pick Up' | 'Preparing' | 'To Deliver' | 'Completed';
@@ -7,6 +9,7 @@ interface OrderDetails {
   quantity: number;
   totalAmount: number;
   paymentMethod: string;
+  deliveredAt?: string;
   imageUrl?: string;
 }
 
@@ -21,108 +24,135 @@ const emit = defineEmits<{
 
 const statusList = ['Pending', 'To Pick Up', 'Preparing', 'To Deliver', 'Completed'];
 
-function getStatusColor(status: string) {
-  const colors: Record<string, string> = {
-    'Pending': 'bg-green-500',
-    'To Pick Up': 'bg-yellow-500',
-    'Preparing': 'bg-blue-500',
-    'To Deliver': 'bg-purple-500',
-    'Completed': 'bg-gray-500'
-  };
-  return colors[status] || 'bg-gray-300';
+const statusMap: Record<string, string> = {
+  'pending': 'Pending',
+  'to_pickup': 'To Pick Up',
+  'to_pick_up': 'To Pick Up',
+  'preparing': 'Preparing',
+  'to_deliver': 'To Deliver',
+  'completed': 'Completed'
+};
+
+function getDisplayStatus(backendStatus: string): string {
+  return statusMap[backendStatus.toLowerCase()] || 'Pending';
 }
 
 function isActiveStatus(status: string, orderStatus: string) {
+  const displayOrderStatus = getDisplayStatus(orderStatus);
   const statusIndex = statusList.indexOf(status);
-  const orderStatusIndex = statusList.indexOf(orderStatus);
+  const orderStatusIndex = statusList.indexOf(displayOrderStatus);
   return statusIndex <= orderStatusIndex;
+}
+
+function getProgressLineBottom(orderStatus: string) {
+  const displayOrderStatus = getDisplayStatus(orderStatus);
+  const currentIndex = statusList.indexOf(displayOrderStatus);
+  
+  if (currentIndex === -1) return '100%';
+  
+  const progressPercentage = (currentIndex / (statusList.length - 1)) * 100;
+  
+  return `${100 - progressPercentage}%`;
 }
 </script>
 
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
     @click.self="emit('close')"
   >
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl relative">
       <!-- Close Button -->
       <button
         @click="emit('close')"
-        class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 transition text-xl font-bold z-10"
+        class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 transition"
         aria-label="Close"
       >
-        ✕
+        <XMarkIcon class="w-6 h-6" />
       </button>
 
       <!-- Title -->
-      <h2 class="text-2xl font-semibold text-center text-primary py-6">Order Details</h2>
+      <h2 class="text-2xl font-bold text-center text-primary pt-8 pb-6">Order Details</h2>
 
-      <div class="p-6 pb-12">
-        <!-- Two Column Layout - Centered with larger gap -->
-        <div class="flex justify-center items-center gap-12">
-          <!-- Left Column - Status Timeline -->
-          <div class="flex-shrink-0">
-            <div class="space-y-3">
-              <!-- Status Items -->
+      <div class="px-12 pb-12">
+        <!-- Two Column Layout -->
+        <div class="flex gap-16">
+          
+          <!-- Status Tracker --> 
+          <div class="relative flex flex-col space-y-4">
+            <!-- Background Line -->
+            <div class="absolute left-[10px] top-[20px] bottom-[55px] w-0.5 bg-gray-300"></div>
+            
+            <!-- Filled Green Progress Line -->
+            <div
+              class="absolute left-[10px] top-[20px] w-0.5 bg-green-500 transition-all duration-500"
+              :style="{ bottom: getProgressLineBottom(order.status) }"
+            ></div>
+
+            <div
+              v-for="status in statusList"
+              :key="status"
+              class="relative flex items-center gap-4"
+            >
+              <!-- Status Checkmark Circle -->
               <div
-                v-for="(status, index) in statusList"
-                :key="status"
-                class="flex items-center gap-3"
+                :class="[ 
+                  'w-6 h-6 rounded-full flex items-center justify-center relative z-10 flex-shrink-0 border-2',
+                  isActiveStatus(status, order.status) 
+                    ? 'bg-green-500 border-green-500' 
+                    : 'bg-white border-gray-300'
+                ]"
               >
-                <!-- Status Dot -->
-                <div
-                  :class="[
-                    'w-3 h-3 rounded-full flex-shrink-0',
-                    isActiveStatus(status, order.status) ? getStatusColor(status) : 'bg-gray-300'
-                  ]"
-                ></div>
-                
-                <!-- Status Label -->
-                <span
-                  :class="[
-                    'text-xs',
-                    isActiveStatus(status, order.status) ? 'font-medium text-gray-800' : 'text-gray-500'
-                  ]"
-                >
-                  {{ status }}
-                </span>
+                <CheckIcon
+                  v-if="isActiveStatus(status, order.status)"
+                  class="w-3 h-3 text-white stroke-[3]"
+                />
               </div>
+
+              <!-- Status Label -->
+              <span
+                :class="[
+                  'font-semibold whitespace-nowrap',
+                  isActiveStatus(status, order.status)
+                    ? 'text-gray-900'
+                    : 'text-gray-400'
+                ]"
+              >
+                {{ status }}
+              </span>
             </div>
           </div>
 
-          <!-- Right Column - Order Details -->
-          <div class="flex-1 space-y-4 max-w-xs">
-            <!-- Order ID -->
+          <!-- Order Details -->
+          <div class="flex-1 space-y-3 pt-2">
             <div>
-              <p class="text-sm">Order ID: {{ order.orderId }}</p>
+              <p class="font-medium text-gray-900">Order ID: {{ order.orderId }}</p>
             </div>
-
-            <!-- Pick Up DateTime -->
+            
             <div>
-              <p class="text-sm">Pick Up Date & Time: {{ order.pickUpDateTime }}</p>
+              <p class="font-medium text-gray-900">Pick Up DateTime:</p>
+              <p class="text-gray-700">{{ order.pickUpDateTime }}</p>
             </div>
-
-            <!-- Gallon with Icon -->
-            <div class="flex items-center gap-2">
-              <div class="text-sm">Gallon:</div>
-              <div class="flex items-center gap-1">
-                <span class="text-sm">{{ order.gallonType }} {{ order.quantity }}x</span>
+            
+            <div class="flex items-start gap-4">
+              <div class="flex-1">
+                <p class="font-medium text-gray-900 mb-1">Gallon :</p>
+                <p class="text-gray-700">{{ order.gallonType }} {{ order.quantity }}x</p>
+                <p class="text-gray-700">Slim Gallon 1x</p>
               </div>
             </div>
-
-            <!-- Total Amount -->
+            
             <div>
-              <p class="text-sm">Total Amount: {{ order.totalAmount.toFixed(2) }}</p>
+              <p class="font-medium text-gray-900">Total Amount: ₱{{ order.totalAmount.toFixed(2) }}</p>
             </div>
-
-            <!-- Payment Method -->
+            
             <div>
-              <p class="text-sm">Payment Method: {{ order.paymentMethod }}</p>
+              <p class="font-medium text-gray-900">Payment Method: {{ order.paymentMethod }}</p>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</template> 
+</template>

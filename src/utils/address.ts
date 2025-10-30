@@ -6,15 +6,12 @@ export interface AddressPayload {
   isDefault?: boolean
 }
 
-// 🟦 Get all addresses
 export async function getAddresses() {
   const res = await axiosInstance.get("/addresses", {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token"),
     },
   })
-
-  console.log("getAddresses raw response:", res.data)
 
   if (Array.isArray(res.data)) return res.data
   if (Array.isArray(res.data.addresses)) return res.data.addresses
@@ -30,8 +27,6 @@ export async function addAddress(data: AddressPayload) {
       Authorization: "Bearer " + localStorage.getItem("token"),
     },
   })
-
-  console.log("addAddress response:", res.data)
   return res.data
 }
 
@@ -42,7 +37,17 @@ export async function updateAddress(id: number, data: AddressPayload) {
       Authorization: "Bearer " + localStorage.getItem("token"),
     },
   })
+  return res.data
+}
 
-  console.log("updateAddress response:", res.data)
+// Delete address
+export async function deleteAddress(id: number) {
+  
+  const res = await axiosInstance.delete(`/addresses/${id}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
+  })
+  
   return res.data
 }

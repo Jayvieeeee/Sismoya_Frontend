@@ -18,8 +18,8 @@ const tabs = [
   <AdminLayout>
     <div class="min-h-screen p-4 md:p-8">
       
-      <div class="max-w-4xl mx-auto mb-6">
-        <h2 class="text-2xl md:text-3xl font-bold text-primary">Account Settings</h2>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Account Settings</h1>
       </div>
 
       <!-- Content Container -->

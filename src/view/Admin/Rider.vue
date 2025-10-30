@@ -122,7 +122,9 @@ onMounted(() => {
 <template>
   <AdminLayout>
     <div class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-      <h1 class="text-2xl sm:text-3xl font-bold my-12 text-primary">Riders</h1>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Riders</h1>
+      </div>
 
       <!-- Search and Add Rider Row -->
       <div class="mb-4 flex justify-between items-center">

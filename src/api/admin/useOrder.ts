@@ -162,8 +162,6 @@ export function useOrders() {
         }
       })
 
-      console.log('📦 Orders API Response:', response)
-
       if (response.data && (response.data.data || response.data.orders)) {
         orders.value = response.data.data || response.data.orders || []
       } else {
@@ -341,8 +339,6 @@ export function useOrders() {
   // Modified handleAction to work with SweetAlert (returns a promise)
   const handleAction = async (orderId: number, action: string, currentStatus: string): Promise<boolean> => {
     try {
-      console.log('Handling action:', { orderId, action, currentStatus })
-      
       const result = await updateOrderStatus(orderId, action)
       
       await fetchOrders()

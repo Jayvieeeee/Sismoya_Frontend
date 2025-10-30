@@ -10,6 +10,10 @@ import orderHistoryIcon from "@/assets/icons/orderHistory.png"
 import accountSettingsIcon from "@/assets/icons/accountSettings.png"
 import logoutIcon from "@/assets/icons/logout.png"
 
+defineOptions({
+  inheritAttrs: false, 
+})
+
 interface MenuItem {
   name: string
   icon: string
@@ -18,7 +22,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
-const isOpen = ref(false) // Sidebar toggle
+const isOpen = ref(false)
 const showConfirm = ref(false)
 
 const menuItems: MenuItem[] = [
@@ -31,10 +35,10 @@ const menuItems: MenuItem[] = [
 
 async function navigateTo(item: MenuItem) {
   if (item.name === "Logout") {
-    showConfirm.value = true;
+    showConfirm.value = true
   } else if (item.route) {
     router.push(item.route)
-    isOpen.value = false // Close sidebar on mobile after navigating
+    isOpen.value = false
   }
 }
 
@@ -50,12 +54,11 @@ async function confirmLogout() {
     console.error(result.message || "Logout failed.")
   }
 }
-
 </script>
 
 <template>
-  <div class="relative font-montserrat">
-    <!-- ✅ Hamburger Button (hidden when sidebar is open) -->
+  <div class="relative font-montserrat" v-bind="$attrs">
+    <!-- Hamburger Button -->
     <button
       v-if="!isOpen"
       @click="isOpen = true"
@@ -68,14 +71,14 @@ async function confirmLogout() {
       />
     </button>
 
-    <!-- ✅ Sidebar -->
+    <!-- Sidebar -->
     <aside
       :class="[
         'fixed md:static top-0 left-0 h-full w-64 bg-primary text-white flex flex-col transform transition-transform duration-300 z-40',
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       ]"
     >
-      <!-- Header / Logo -->
+      <!-- Logo Header -->
       <div class="relative flex items-center justify-center px-6 py-4">
         <img
           src="/images/Sismoya_Logo.png"
@@ -91,7 +94,6 @@ async function confirmLogout() {
         </button>
       </div>
 
-
       <!-- Menu Items -->
       <nav class="flex-1 flex flex-col justify-between py-6">
         <div>
@@ -99,7 +101,7 @@ async function confirmLogout() {
             v-for="item in menuItems.filter(i => !i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
-            :class="[ 
+            :class="[
               'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left transition',
               router.currentRoute.value.path === item.route
                 ? 'bg-[#246589]'
@@ -125,22 +127,23 @@ async function confirmLogout() {
       </nav>
     </aside>
 
-    <!-- ✅ Backdrop (click to close) -->
+    <!-- Backdrop (mobile only) -->
     <div
       v-if="isOpen"
       @click="isOpen = false"
       class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
     ></div>
-  </div>
 
+    <!-- Confirm Modal -->
     <ConfirmModal
-    v-if="showConfirm"
-    :visible="showConfirm"
-    title="Confirm Logout"
-    message="Are you sure you want to log out?"
-    @confirm="confirmLogout"
-    @cancel="showConfirm = false"
-  />
+      v-if="showConfirm"
+      :visible="showConfirm"
+      title="Confirm Logout"
+      message="Are you sure you want to log out?"
+      @confirm="confirmLogout"
+      @cancel="showConfirm = false"
+    />
+  </div>
 </template>
 
 
