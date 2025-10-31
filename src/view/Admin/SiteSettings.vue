@@ -28,7 +28,20 @@ const selectedFile = ref<File | null>(null)
 // Fetch Gallons
 const fetchGallons = async () => {
   try {
+    loading.value = true
     const res = await axiosInstance.get('/gallons')
+    console.log('Backend response structure:', res.data)
+    
+    // Log each gallon's image data for debugging
+    res.data.forEach((gallon: any) => {
+      console.log(`Gallon ${gallon.gallon_id}:`, {
+        name: gallon.name,
+        image_url: gallon.image_url,
+        image_url_length: gallon.image_url?.length,
+        full_image_url: getImageUrl(gallon.image_url)
+      })
+    })
+    
     gallons.value = res.data
   } catch (err: any) {
     console.error('Error fetching gallons:', err)
@@ -68,29 +81,27 @@ const openUpdateModal = (gallon: any) => {
   modalVisible.value = true
 }
 
-// Get Image URL
+// FIXED: Correct Image URL function
 const getImageUrl = (url: string) => {
   if (!url) return ''
   
-  console.log('Original image URL:', url)
+  console.log('Original image URL from DB:', url)
   
   // If it's already a full URL, return as is
   if (url.startsWith('http')) {
     return url
   }
   
-  // If it starts with /images/, use as is with base URL
-  if (url.startsWith('/images/')) {
-    return `${IMAGE_BASE_URL}${url}`
+  // Remove any leading/trailing slashes
+  const cleanUrl = url.replace(/^\/+|\/+$/g, '')
+  
+  // If the URL already contains 'images/', use it directly
+  if (cleanUrl.startsWith('images/')) {
+    return `${IMAGE_BASE_URL}/${cleanUrl}`
   }
   
-  // If it's just a filename without path, prepend /images/
-  if (!url.includes('/')) {
-    return `${IMAGE_BASE_URL}/images/${url}`
-  }
-  
-  // Default: prepend base URL
-  return `${IMAGE_BASE_URL}/${url}`
+  // Otherwise, prepend 'images/'
+  return `${IMAGE_BASE_URL}/images/${cleanUrl}`
 }
 
 // Upload Image
@@ -115,10 +126,14 @@ const handleImageUpload = async (e: Event) => {
   selectedFile.value = file
   previewImage.value = URL.createObjectURL(file)
   
-  console.log('Image selected:', file.name)
+  console.log('Image selected:', {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  })
 }
 
-// 💾 Save Gallon - MATCHES YOUR BACKEND STRUCTURE
+// Save Gallon
 const handleSave = async () => {
   // Validation
   if (!selectedGallon.name.trim()) {
@@ -140,7 +155,6 @@ const handleSave = async () => {
   uploading.value = true
 
   try {
-    // Always use FormData to match your backend structure
     const formData = new FormData()
     formData.append('name', selectedGallon.name)
     formData.append('size', selectedGallon.size)
@@ -154,7 +168,14 @@ const handleSave = async () => {
       formData.append('image_url', selectedGallon.image_url)
     }
 
-    console.log('Saving gallon...')
+    console.log('Saving gallon with data:', {
+      name: selectedGallon.name,
+      size: selectedGallon.size,
+      price: price,
+      hasFile: !!selectedFile.value,
+      existingImage: selectedGallon.image_url,
+      isUpdate: isUpdate.value
+    })
 
     let result;
     if (isUpdate.value && selectedGallon.gallon_id) {
@@ -184,7 +205,7 @@ const handleSave = async () => {
   }
 }
 
-// Delete 
+// Delete Gallon
 const handleDelete = async (gallon_id: number) => {
   if (!confirm('Are you sure you want to delete this gallon?')) return
 
@@ -202,49 +223,28 @@ const handleDelete = async (gallon_id: number) => {
   }
 }
 
-// Test if image exists - FIXED VERSION
-const testImageExists = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url, { method: 'HEAD' })
-    const contentType = response.headers.get('content-type')
-    return response.ok && (contentType?.startsWith('image/') || false)
-  } catch {
-    return false
-  }
+// Image loading state management
+const imageLoaded = ref<Record<number, boolean>>({})
+const imageError = ref<Record<number, boolean>>({})
+
+const handleImageLoad = (gallon_id: number) => {
+  imageLoaded.value[gallon_id] = true
+  imageError.value[gallon_id] = false
+  console.log(`Image loaded successfully for gallon ${gallon_id}`)
 }
 
-// Get working image URL
-const getWorkingImageUrl = async (url: string): Promise<string> => {
-  if (!url) return ''
+const handleImageError = (gallon_id: number, url: string) => {
+  imageLoaded.value[gallon_id] = false
+  imageError.value[gallon_id] = true
   
-  const baseUrl = getImageUrl(url)
-  
-  // Check if image exists as-is
-  if (await testImageExists(baseUrl)) {
-    return baseUrl
-  }
-  
-  return ''
+  const gallon = gallons.value.find(g => g.gallon_id === gallon_id)
+  console.error(`Image failed to load for gallon ${gallon_id}:`, {
+    stored_url: gallon?.image_url,
+    full_url: url,
+    url_length: gallon?.image_url?.length,
+    gallon_data: gallon
+  })
 }
-
-// Reactive image URLs
-const imageUrls = ref<Record<number, string>>({})
-
-// Load image URLs for all gallons
-const loadImageUrls = async () => {
-  for (const gallon of gallons.value) {
-    if (gallon.image_url && !imageUrls.value[gallon.gallon_id]) {
-      const workingUrl = await getWorkingImageUrl(gallon.image_url)
-      if (workingUrl) {
-        imageUrls.value[gallon.gallon_id] = workingUrl
-      }
-    }
-  }
-}
-
-// Watch for gallons changes and load images
-import { watch } from 'vue'
-watch(gallons, loadImageUrls, { immediate: true })
 </script>
 
 <template>
@@ -294,22 +294,25 @@ watch(gallons, loadImageUrls, { immediate: true })
                   >
                     <td class="px-4 py-4 text-gray-700 whitespace-nowrap">{{ gallon.gallon_id }}</td>
 
-                    <!-- Image -->
+                    <!-- Image with enhanced error handling -->
                     <td class="px-4 py-4 whitespace-nowrap">
-                      <div v-if="gallon.image_url && imageUrls[gallon.gallon_id]">
+                      <div v-if="gallon.image_url">
                         <img
-                          :src="imageUrls[gallon.gallon_id]"
+                          :src="getImageUrl(gallon.image_url)"
                           :alt="gallon.name"
                           class="w-14 h-14 object-cover rounded"
-                          @error="(e) => {
-                            console.error('Image failed to load:', imageUrls[gallon.gallon_id]);
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }"
-                          @load="() => console.log('Image loaded successfully:', gallon.gallon_id)"
+                          @load="handleImageLoad(gallon.gallon_id)"
+                          @error="handleImageError(gallon.gallon_id, getImageUrl(gallon.image_url))"
                         />
-                      </div>
-                      <div v-else-if="gallon.image_url" class="text-orange-500 text-xs italic">
-                        Image URL: {{ gallon.image_url }}
+                        <div v-if="imageError[gallon.gallon_id]" class="text-red-500 text-xs italic mt-1">
+                          Image not found
+                        </div>
+                        <div v-else-if="imageLoaded[gallon.gallon_id]" class="text-green-500 text-xs italic mt-1">
+                          Loaded
+                        </div>
+                        <div v-else class="text-gray-400 text-xs italic mt-1">
+                          Loading...
+                        </div>
                       </div>
                       <span v-else class="text-gray-400 text-xs italic">No image</span>
                     </td>
@@ -345,7 +348,7 @@ watch(gallons, loadImageUrls, { immediate: true })
       </div>
     </div>
 
-     <Modal
+    <Modal
       :visible="modalVisible"
       :title="isUpdate ? 'Update Gallon' : 'Add Gallon'"
       @close="modalVisible = false"
@@ -389,6 +392,7 @@ watch(gallons, loadImageUrls, { immediate: true })
 
         <div v-if="selectedGallon.image_url && !selectedFile" class="text-xs text-blue-600 bg-blue-50 p-2 rounded">
           <p>Current image URL: {{ selectedGallon.image_url }}</p>
+          <p>Full URL: {{ getImageUrl(selectedGallon.image_url) }}</p>
         </div>
 
         <div>
