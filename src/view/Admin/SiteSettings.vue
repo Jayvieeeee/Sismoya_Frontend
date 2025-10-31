@@ -44,7 +44,7 @@ const fetchGallons = async () => {
 
 onMounted(fetchGallons)
 
-//  Open Add Modal
+// Open Add Modal
 const openAddModal = () => {
   isUpdate.value = false
   Object.assign(selectedGallon, {
@@ -68,7 +68,7 @@ const openUpdateModal = (gallon: any) => {
   modalVisible.value = true
 }
 
-// Get Image URL - SIMPLIFIED
+// Get Image URL
 const getImageUrl = (url: string) => {
   if (!url) return ''
   
@@ -118,72 +118,7 @@ const handleImageUpload = async (e: Event) => {
   console.log('Image selected:', file.name)
 }
 
-// Test if image exists
-const testImageUrl = async (url: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => resolve(true)
-    img.onerror = () => resolve(false)
-    img.src = url
-  })
-}
-
-// Get working image URL with fallback
-const getWorkingImageUrl = async (url: string): Promise<string> => {
-  if (!url) return ''
-  
-  const baseUrl = getImageUrl(url)
-  
-  // If URL already has an extension, try it first
-  if (baseUrl.includes('.') && !baseUrl.endsWith('/')) {
-    const exists = await testImageUrl(baseUrl)
-    if (exists) return baseUrl
-  }
-  
-  // Try different extensions
-  const extensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
-  for (const ext of extensions) {
-    const testUrl = `${baseUrl}${ext}`
-    const exists = await testImageUrl(testUrl)
-    if (exists) {
-      console.log(`Found image with extension ${ext}: ${testUrl}`)
-      return testUrl
-    }
-  }
-  
-  // If no extension works, return the original URL
-  console.log('No working extension found for:', baseUrl)
-  return baseUrl
-}
-
-// Image component with smart loading
-const SmartImage = ({ url, alt }: { url: string, alt: string }) => {
-  const imageUrl = ref('')
-  const imageError = ref(false)
-  
-  const loadImage = async () => {
-    if (!url) {
-      imageError.value = true
-      return
-    }
-    
-    const workingUrl = await getWorkingImageUrl(url)
-    imageUrl.value = workingUrl
-  }
-  
-  loadImage()
-  
-  return {
-    imageUrl,
-    imageError,
-    onError: () => {
-      imageError.value = true
-      console.error('SmartImage: Failed to load', url)
-    }
-  }
-}
-
-// 💾 Save Gallon - FIXED UPLOAD
+// 💾 Save Gallon - MATCHES YOUR BACKEND STRUCTURE
 const handleSave = async () => {
   // Validation
   if (!selectedGallon.name.trim()) {
@@ -205,32 +140,34 @@ const handleSave = async () => {
   uploading.value = true
 
   try {
-    // Prepare gallon data
-    const gallonData = new FormData()
-    gallonData.append('name', selectedGallon.name)
-    gallonData.append('size', selectedGallon.size)
-    gallonData.append('price', price.toString())
+    // Always use FormData to match your backend structure
+    const formData = new FormData()
+    formData.append('name', selectedGallon.name)
+    formData.append('size', selectedGallon.size)
+    formData.append('price', price.toString())
     
     // Add image if selected
     if (selectedFile.value) {
-      gallonData.append('image', selectedFile.value)
-    } else if (selectedGallon.image_url) {
-      // If no new file but existing image URL, include it
-      gallonData.append('image_url', selectedGallon.image_url)
+      formData.append('image', selectedFile.value)
+    } else if (selectedGallon.image_url && isUpdate.value) {
+      // For updates without new image, keep existing image_url
+      formData.append('image_url', selectedGallon.image_url)
     }
 
-    console.log('Saving gallon data...')
+    console.log('Saving gallon...')
 
-    // Save gallon data
+    let result;
     if (isUpdate.value && selectedGallon.gallon_id) {
-      await axiosInstance.put(`/gallons/${selectedGallon.gallon_id}`, gallonData, {
+      result = await axiosInstance.put(`/gallons/${selectedGallon.gallon_id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
     } else {
-      await axiosInstance.post('/gallons', gallonData, {
+      result = await axiosInstance.post('/gallons', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
     }
+
+    console.log('Save result:', result.data)
 
     modalVisible.value = false
     await fetchGallons()
@@ -264,6 +201,50 @@ const handleDelete = async (gallon_id: number) => {
     alert('Failed to delete gallon.')
   }
 }
+
+// Test if image exists - FIXED VERSION
+const testImageExists = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' })
+    const contentType = response.headers.get('content-type')
+    return response.ok && (contentType?.startsWith('image/') || false)
+  } catch {
+    return false
+  }
+}
+
+// Get working image URL
+const getWorkingImageUrl = async (url: string): Promise<string> => {
+  if (!url) return ''
+  
+  const baseUrl = getImageUrl(url)
+  
+  // Check if image exists as-is
+  if (await testImageExists(baseUrl)) {
+    return baseUrl
+  }
+  
+  return ''
+}
+
+// Reactive image URLs
+const imageUrls = ref<Record<number, string>>({})
+
+// Load image URLs for all gallons
+const loadImageUrls = async () => {
+  for (const gallon of gallons.value) {
+    if (gallon.image_url && !imageUrls.value[gallon.gallon_id]) {
+      const workingUrl = await getWorkingImageUrl(gallon.image_url)
+      if (workingUrl) {
+        imageUrls.value[gallon.gallon_id] = workingUrl
+      }
+    }
+  }
+}
+
+// Watch for gallons changes and load images
+import { watch } from 'vue'
+watch(gallons, loadImageUrls, { immediate: true })
 </script>
 
 <template>
@@ -313,27 +294,22 @@ const handleDelete = async (gallon_id: number) => {
                   >
                     <td class="px-4 py-4 text-gray-700 whitespace-nowrap">{{ gallon.gallon_id }}</td>
 
-                    <!-- Image with smart loading -->
+                    <!-- Image -->
                     <td class="px-4 py-4 whitespace-nowrap">
-                      <div v-if="gallon.image_url">
-                        <!-- Use a simple img tag and let the browser handle it -->
+                      <div v-if="gallon.image_url && imageUrls[gallon.gallon_id]">
                         <img
-                          :src="getImageUrl(gallon.image_url)"
+                          :src="imageUrls[gallon.gallon_id]"
                           :alt="gallon.name"
                           class="w-14 h-14 object-cover rounded"
                           @error="(e) => {
-                            console.error('Image failed to load:', gallon.image_url);
-                            // Try without extension if it has one
-                            const url = getImageUrl(gallon.image_url);
-                            if (url.includes('.')) {
-                              const baseUrl = url.substring(0, url.lastIndexOf('.'));
-                              (e.target as HTMLImageElement).src = baseUrl;
-                            } else {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }
+                            console.error('Image failed to load:', imageUrls[gallon.gallon_id]);
+                            (e.target as HTMLImageElement).style.display = 'none';
                           }"
-                          @load="() => console.log('Image loaded successfully:', gallon.image_url)"
+                          @load="() => console.log('Image loaded successfully:', gallon.gallon_id)"
                         />
+                      </div>
+                      <div v-else-if="gallon.image_url" class="text-orange-500 text-xs italic">
+                        Image URL: {{ gallon.image_url }}
                       </div>
                       <span v-else class="text-gray-400 text-xs italic">No image</span>
                     </td>
@@ -409,6 +385,10 @@ const handleDelete = async (gallon_id: number) => {
         <div v-if="selectedFile" class="text-xs text-green-600 bg-green-50 p-2 rounded">
           <p>File selected: {{ selectedFile.name }}</p>
           <p>File will be uploaded when you click Save</p>
+        </div>
+
+        <div v-if="selectedGallon.image_url && !selectedFile" class="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+          <p>Current image URL: {{ selectedGallon.image_url }}</p>
         </div>
 
         <div>
