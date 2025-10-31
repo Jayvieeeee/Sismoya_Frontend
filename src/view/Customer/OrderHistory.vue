@@ -132,8 +132,8 @@ const filteredOrders = computed(() => {
 
 <template>
   <CustomerLayout>
-    <div class="p-4 sm:p-6 max-w-6xl mx-auto w-full">
-      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Orders</h1>
+    <div class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+      <h1 class="text-2xl sm:text-3xl font-bold mb-8 text-primary">Order</h1>
 
       <!-- Backend Error -->
       <div
@@ -151,14 +151,13 @@ const filteredOrders = computed(() => {
           v-model="search"
           type="text"
           placeholder="Search orders..."
-          class="w-full sm:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full sm:w-1/3 px-4 py-2 ml-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           :disabled="!!backendError"
         />
       </div>
 
-      <!-- Desktop Table with Scrollable Body Inside -->
-      <div class="hidden sm:block bg-white shadow-md rounded-xl overflow-hidden">
-        <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+      <div class="hidden sm:block bg-white w-11/12 ml-12 shadow-md rounded-xl overflow-hidden">
+        <div class="max-h-[calc(100vh-200px)] overflow-y-auto">
           <table class="w-full text-sm">
             <thead class="sticky top-0 bg-gray-50 z-10">
               <tr class="text-center border-b">

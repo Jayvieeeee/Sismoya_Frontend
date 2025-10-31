@@ -141,7 +141,7 @@ function handleOrderSuccess() {
   <div class="font-montserrat flex flex-col md:flex-row bg-gradient-to-b from-white to-secondary min-h-screen"> 
     <Sidebar class="hidden md:block" />
 
-    <div class="flex-1 p-4 sm:p-6 md:p-10">
+    <div class="flex-1 p-4 sm:p-6 md:p-12">
       <!-- Header -->
       <div class="flex flex-row items-center justify-between mb-8 gap-4">
       <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Gallons</h1>
