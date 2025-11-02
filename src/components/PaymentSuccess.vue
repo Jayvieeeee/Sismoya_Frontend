@@ -110,7 +110,7 @@ export default {
       backendResponse.value = null
 
       try {
-        console.log('🔄 Confirming payment with backend...')
+        console.log(' Confirming payment with backend...')
         
         const url = `https://sismoya.bsit3b.site/api/orders/paypal/confirm?token=${encodeURIComponent(token.value)}&PayerID=${encodeURIComponent(payer_id.value)}`
         console.log('URL:', url)
@@ -119,7 +119,7 @@ export default {
         const data = await response.json()
         
         backendResponse.value = data
-        console.log('📋 Backend response:', data)
+        console.log(' Backend response:', data)
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
@@ -128,15 +128,15 @@ export default {
         if (data.success) {
           success.value = true
           order_id.value = data.data.order_id
-          console.log('✅ Payment confirmed successfully!')
+          console.log('✅Payment confirmed successfully!')
         } else {
           errorMessage.value = data.message || 'Payment confirmation failed'
           errorDetails.value = data
-          console.error('❌ Backend returned error:', data)
+          console.error(' Backend returned error:', data)
         }
 
       } catch (error) {
-        console.error('❌ Confirmation failed:', error)
+        console.error(' Confirmation failed:', error)
         errorMessage.value = 'Unable to confirm payment with server'
         errorDetails.value = backendResponse.value || { error_type: 'Network Error', message: error.message }
       } finally {

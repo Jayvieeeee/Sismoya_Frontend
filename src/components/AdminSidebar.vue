@@ -2,8 +2,9 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import { logout } from "@/utils/auth"
-import ConfirmModal from "@/components/ConfirmModal.vue"
+import ConfirmModal from "@/components/ConfirmModal.vue" 
 
+// ICONS
 import dashboardIcon from "@/assets/icons/dashboard.png"
 import customerIcon from "@/assets/icons/customer.png"
 import riderIcon from "@/assets/icons/rider.png"
@@ -13,7 +14,7 @@ import logoutIcon from "@/assets/icons/logout.png"
 import siteIcon from "@/assets/icons/site.png"
 
 defineOptions({
-  inheritAttrs: false, 
+  inheritAttrs: false,
 })
 
 interface MenuItem {
@@ -24,16 +25,15 @@ interface MenuItem {
 }
 
 const router = useRouter()
-const isOpen = ref(false) // Sidebar toggle
+const isOpen = ref(false)
 const showConfirm = ref(false)
 
-// Admin menu items
 const menuItems: MenuItem[] = [
   { name: "Dashboard", icon: dashboardIcon, route: "/adminDashboard" },
   { name: "Orders", icon: orderHistoryIcon, route: "/adminOrders" },
   { name: "Customers", icon: customerIcon, route: "/customers" },
   { name: "Riders", icon: riderIcon, route: "/riders" },
-  { name: "Gallon Settings", icon: siteIcon, route: "/siteSettings" },
+  { name: "Gallon", icon: siteIcon, route: "/siteSettings" },
   { name: "Account Settings", icon: accountSettingsIcon, route: "/adminAccountSettings" },
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
 ]
@@ -106,7 +106,7 @@ async function confirmLogout() {
             v-for="item in menuItems.filter(i => !i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
-            :class="[ 
+            :class="[
               'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left transition',
               router.currentRoute.value.path === item.route
                 ? 'bg-[#246589]'
@@ -132,14 +132,13 @@ async function confirmLogout() {
       </nav>
     </aside>
 
-    <!-- Backdrop -->
+    <!-- Backdrop (mobile only) -->
     <div
       v-if="isOpen"
       @click="isOpen = false"
       class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
     ></div>
 
-    <!-- Logout Confirm Modal -->
     <ConfirmModal
       v-if="showConfirm"
       :visible="showConfirm"
@@ -148,6 +147,7 @@ async function confirmLogout() {
       @confirm="confirmLogout"
       @cancel="showConfirm = false"
     />
+
   </div>
 </template>
 

@@ -24,7 +24,7 @@ const tabs = [
 
       <!-- Content Container -->
       <div class="flex justify-center">
-        <div class="bg-white rounded-3xl border-2 p-4 md:p-6 w-full max-w-4xl">
+        <div class="bg-white rounded-3xl border-2 p-4 md:p-6 w-full max-w-6xl">
           <div class="flex flex-col md:flex-row gap-4 md:gap-0">
             <!-- Left Sidebar - Tab Navigation -->
             <div class="w-full md:w-60 flex-shrink-0">

@@ -18,7 +18,7 @@
           @click="goToCart"
           class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition-colors"
         >
-          Return to Cart
+          Return to Gallons
         </button>
         <button 
           @click="goHome"

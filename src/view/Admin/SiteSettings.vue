@@ -5,10 +5,11 @@ import AdminLayout from '@/Layout/AdminLayout.vue'
 import Modal from '@/components/Modal.vue'
 import axiosInstance from '@/utils/axios'
 import { handleLogout } from '@/utils/auth'
+import Swal from 'sweetalert2'
 
 const gallons = ref<any[]>([])
 const loading = ref(true)
-const error = ref<string | null>(null) 
+const error = ref<string | null>(null)
 
 const modalVisible = ref(false)
 const isUpdate = ref(false)
@@ -75,22 +76,11 @@ const openUpdateModal = (gallon: any) => {
 // Image URL function
 const getImageUrl = (url: string) => {
   if (!url) return ''
-  
-  // If it's already a full URL, return as is
-  if (url.startsWith('http')) {
-    return url
-  }
-  
-  // Remove any leading/trailing slashes
+  if (url.startsWith('http')) return url
   const cleanUrl = url.replace(/^\/+|\/+$/g, '')
-  
-  // If the URL already contains 'images/', use it directly
-  if (cleanUrl.startsWith('images/')) {
-    return `${IMAGE_BASE_URL}/${cleanUrl}`
-  }
-  
-  // Otherwise, prepend 'images/'
-  return `${IMAGE_BASE_URL}/images/${cleanUrl}`
+  return cleanUrl.startsWith('images/')
+    ? `${IMAGE_BASE_URL}/${cleanUrl}`
+    : `${IMAGE_BASE_URL}/images/${cleanUrl}`
 }
 
 // Upload Image
@@ -98,16 +88,14 @@ const handleImageUpload = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
 
-  // Validate file type
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    alert('Please select a valid image file (JPEG, PNG, GIF, WebP).')
+    Swal.fire('Invalid File', 'Please select a valid image file (JPEG, PNG, GIF, WebP).', 'warning')
     return
   }
 
-  // Validate file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    alert('Image size should be less than 5MB.')
+    Swal.fire('File Too Large', 'Image size should be less than 5MB.', 'error')
     return
   }
 
@@ -115,21 +103,20 @@ const handleImageUpload = async (e: Event) => {
   previewImage.value = URL.createObjectURL(file)
 }
 
-// FIXED: Save Gallon - properly handles backend response
+// Save Gallon
 const handleSave = async () => {
-  // Validation
   if (!selectedGallon.name.trim()) {
-    alert('Please enter gallon name.')
+    Swal.fire('Missing Field', 'Please enter gallon name.', 'warning')
     return
   }
   if (!selectedGallon.size.trim()) {
-    alert('Please enter gallon size.')
+    Swal.fire('Missing Field', 'Please enter gallon size.', 'warning')
     return
   }
-  
+
   const price = parseFloat(selectedGallon.price as string)
   if (!price || price <= 0 || isNaN(price)) {
-    alert('Please enter a valid price.')
+    Swal.fire('Invalid Price', 'Please enter a valid price.', 'error')
     return
   }
 
@@ -137,75 +124,52 @@ const handleSave = async () => {
 
   try {
     const formData = new FormData()
-    
-    // Add regular form fields
     formData.append('name', selectedGallon.name)
     formData.append('size', selectedGallon.size)
     formData.append('price', price.toString())
-    
-    // Handle image properly
+
     if (selectedFile.value) {
       formData.append('image', selectedFile.value)
-      console.log('Adding new image file')
     } else if (isUpdate.value && selectedGallon.image_url) {
-      // For updates without new image, send the existing image URL
       formData.append('image_url', selectedGallon.image_url)
-      console.log('Keeping existing image URL')
     }
 
-    console.log('Sending update data...')
-
-    let result;
+    let result
     if (isUpdate.value && selectedGallon.gallon_id) {
-      console.log(`🔄 UPDATING gallon ${selectedGallon.gallon_id}`)
       result = await axiosInstance.post(`/gallons/${selectedGallon.gallon_id}`, formData, {
-        headers: { 
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
     } else {
-      console.log('🆕 CREATING new gallon')
       result = await axiosInstance.post('/gallons', formData, {
-        headers: { 
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
     }
 
-    console.log('Backend response:', result.data)
-
-    // FIXED: Handle response and update local state
     if (result.data && result.data.success) {
-      console.log('✅ Success! Gallon updated/created')
-      
-      // FIXED: If backend returns new image_url, update the selectedGallon
-      if (result.data.image_url) {
-        console.log('New image URL from backend:', result.data.image_url)
-        selectedGallon.image_url = result.data.image_url
-      }
-      
-      alert(`Gallon successfully ${isUpdate.value ? 'updated' : 'created'}!`)
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: `Gallon successfully ${isUpdate.value ? 'updated' : 'created'}!`,
+        timer: 1500,
+        showConfirmButton: false
+      })
+
       modalVisible.value = false
-      
-      // Reset file selection
       selectedFile.value = null
       previewImage.value = null
-      
       await fetchGallons()
     } else {
-      const errorMsg = result.data?.message || 'Operation failed. Please try again.'
-      alert(errorMsg)
+      Swal.fire('Error', result.data?.message || 'Operation failed. Please try again.', 'error')
     }
-    
+
   } catch (err: any) {
-    console.error('❌ Error saving gallon:', err)
-    
+    console.error('Error saving gallon:', err)
     if (err.response?.data?.message) {
-      alert('Failed to save gallon: ' + err.response.data.message)
+      Swal.fire('Error', err.response.data.message, 'error')
     } else if (err.response?.status === 500) {
-      alert('Server error. Please check backend logs.')
+      Swal.fire('Server Error', 'Please check backend logs.', 'error')
     } else {
-      alert('Failed to save gallon. Please try again.')
+      Swal.fire('Error', 'Failed to save gallon. Please try again.', 'error')
     }
   } finally {
     uploading.value = false
@@ -216,25 +180,34 @@ const handleSave = async () => {
 const handleDelete = async (gallon_id: number) => {
   const gallon = gallons.value.find(g => g.gallon_id === gallon_id)
   if (!gallon) return
-  
-  if (!confirm(`Are you sure you want to delete "${gallon.name}"?`)) return
+
+  const confirm = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Delete "${gallon.name}"? This action cannot be undone.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!'
+  })
+
+  if (!confirm.isConfirmed) return
 
   try {
     const res = await axiosInstance.delete(`/gallons/${gallon_id}`)
-
     if (res.data.success) {
-      alert(`"${gallon.name}" has been deleted successfully.`)
+      Swal.fire('Deleted!', `"${gallon.name}" has been deleted.`, 'success')
       await fetchGallons()
     } else {
-      alert(res.data.message || 'Delete failed.')
+      Swal.fire('Error', res.data.message || 'Delete failed.', 'error')
     }
   } catch (err: any) {
     console.error('Error deleting gallon:', err)
-    alert('Failed to delete gallon. Please try again.')
+    Swal.fire('Error', 'Failed to delete gallon. Please try again.', 'error')
   }
 }
 
-// Clear image selection
+// Clear Image
 const clearImage = () => {
   selectedFile.value = null
   previewImage.value = isUpdate.value && selectedGallon.image_url 
@@ -242,6 +215,7 @@ const clearImage = () => {
     : null
 }
 </script>
+
 
 <template>
   <AdminLayout>
