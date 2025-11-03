@@ -138,13 +138,14 @@ function handleOrderSuccess() {
 </script>
 
 <template>
-  <div class="font-montserrat flex flex-col md:flex-row bg-gradient-to-b from-white to-secondary min-h-screen"> 
-    <Sidebar class="hidden md:block" />
+  <div class="font-montserrat flex bg-gradient-to-b from-white to-secondary min-h-screen max-h-screen overflow-hidden">
+    <Sidebar class="hidden md:block flex-shrink-0" />
 
-    <div class="flex-1 p-4 sm:p-6 md:p-12">
+    <!-- Scrollable main content -->
+    <div class="flex-1 flex flex-col overflow-y-auto max-h-screen p-4 sm:p-6 md:p-12">
       <!-- Header -->
-      <div class="flex flex-row items-center justify-between mb-8 gap-4">
-      <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-primary">Gallons</h1>
+      <div class="flex flex-row items-center justify-between mb-8 gap-4 sticky top-0s z-10 py-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Gallons</h1>
         <img
           :src="Cart"
           @click="goToAddToCartPage"
@@ -153,53 +154,51 @@ function handleOrderSuccess() {
         />
       </div>
 
-    <!-- ✅ Container Cards -->
-    <div class="flex justify-center items-center min-h-[80vh] px-6 sm:px-10">
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 xl:gap-14 place-items-center w-full max-w-7xl"
-      >
+      <!-- ✅ Scrollable Content Area -->
+      <div class="flex justify-center items-start px-6 sm:px-10 pb-10">
         <div
-          v-for="container in containers"
-          :key="container.id"
-          class="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center text-center w-full max-w-xs hover:shadow-lg transition"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 xl:gap-14 place-items-center w-full max-w-7xl"
         >
-          <!-- ✅ Image from backend -->
-          <img
-            :src="`https://sismoya.bsit3b.site/api${container.image_url}`"
-            :alt="container.type"
-            class="w-32 h-32 sm:w-40 sm:h-40 object-contain mb-6"
-          />
+          <div
+            v-for="container in containers"
+            :key="container.id"
+            class="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center text-center w-full max-w-xs hover:shadow-lg transition"
+          >
+            <!-- Image -->
+            <img
+              :src="`https://sismoya.bsit3b.site/api${container.image_url}`"
+              :alt="container.type"
+              class="w-32 h-32 sm:w-40 sm:h-40 object-contain mb-6"
+            />
 
-          <div class="text-sm sm:text-base space-y-1">
-            <p class="font-semibold">Type: {{ container.type }}</p>
-            <p>Liters: {{ container.liters }} liters</p>
-            <p>Price: ₱{{ container.price.toFixed(2) }}</p>
-          </div>
+            <div class="text-sm sm:text-base space-y-1">
+              <p class="font-semibold">Type: {{ container.type }}</p>
+              <p>Liters: {{ container.liters }} liters</p>
+              <p>Price: ₱{{ container.price.toFixed(2) }}</p>
+            </div>
 
-          <div class="flex flex-col sm:flex-row gap-4 mt-6 w-full">
-            <button
-              @click="openModal(container, 'cart')"
-              class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition text-sm sm:text-base"
-            >
-              Add to Cart
-            </button>
+            <div class="flex flex-col sm:flex-row gap-4 mt-6 w-full">
+              <button
+                @click="openModal(container, 'cart')"
+                class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition text-sm sm:text-base"
+              >
+                Add to Cart
+              </button>
 
-            <button
-              @click="openModal(container, 'order')"
-              class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition text-sm sm:text-base"
-            >
-              Order Now
-            </button>
+              <button
+                @click="openModal(container, 'order')"
+                class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition text-sm sm:text-base"
+              >
+                Order Now
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-      
-    </div>
   </div>
 
-  <!-- Order Modal -->
+  <!-- Modals -->
   <OrderModal
     :isOpen="showModal"
     :product="selectedProduct"
@@ -209,7 +208,6 @@ function handleOrderSuccess() {
     @order-now="handleOrderNow"
   />
 
-  <!-- Order Summary Modal -->
   <OrderSummaryModal
     :isOpen="showSummaryModal"
     :products="productsForOrderSummary"

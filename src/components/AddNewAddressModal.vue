@@ -62,6 +62,7 @@ async function handleSave() {
       if (response.data.success) {
         emit("address-saved");
         emit("close");
+        window.location.reload();
       } else {
         alert(response.data.message || "Failed to update address");
       }

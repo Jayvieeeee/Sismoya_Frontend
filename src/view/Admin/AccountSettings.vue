@@ -18,15 +18,13 @@ const tabs = [
   <AdminLayout>
     <div class="min-h-screen p-4 md:p-8">
       
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Account Settings</h1>
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-primary mb-4">Account Settings</h1>
       </div>
 
-      <!-- Content Container -->
       <div class="flex justify-center">
         <div class="bg-white rounded-3xl border-2 p-4 md:p-6 w-full max-w-6xl">
           <div class="flex flex-col md:flex-row gap-4 md:gap-0">
-            <!-- Left Sidebar - Tab Navigation -->
             <div class="w-full md:w-60 flex-shrink-0">
               <TabNavigation
                 :tabs="tabs"

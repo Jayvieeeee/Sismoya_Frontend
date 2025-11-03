@@ -166,7 +166,7 @@ const handlePlaceOrder = async () => {
     if (paymentMethod.value === "Paypal") {
       pendingPayPalOrderId.value = res.data.order_id;
       showPayPalModal.value = true;
-      emit('close'); // close order summary
+      emit('close');
     } else {
       // For Cash on Pickup, show success modal immediately
       orderPlacedModal.value = true;
@@ -197,6 +197,20 @@ const handlePayPalClosed = () => {
   showPayPalModal.value = false;
   pendingPayPalOrderId.value = null;
 }
+
+function resetOrderData() {
+  selectedAddress.value = null
+  pickUpTime.value = ""
+  paymentMethod.value = "Cash"
+  showAddressModal.value = false
+  showAddAddressModal.value = false
+  showDateTimeModal.value = false
+  showPayPalModal.value = false
+  orderPlacedModal.value = false
+  errorMessage.value = ""
+  showError.value = false
+}
+
 
 </script>
 
@@ -271,7 +285,7 @@ const handlePayPalClosed = () => {
 
       <!-- Actions -->
       <div class="flex justify-between gap-4">
-        <button @click="emit('close')" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-gray-400 transition-colors font-medium">Back</button>
+        <button  @click="() => { emit('close'); resetOrderData(); }" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-gray-400 transition-colors font-medium">Back</button>
         <button @click="handlePlaceOrder" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition-colors font-medium">Place Order</button>
       </div>
     </div>

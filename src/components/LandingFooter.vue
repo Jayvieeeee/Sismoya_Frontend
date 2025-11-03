@@ -1,5 +1,5 @@
 <template>
-  <footer class="bg-primary text-white pt-10 pb-2 font-montserrat">
+  <footer class="bg-[#1e5e7d] text-white pt-10 pb-2 font-montserrat">
     <div class="container mx-auto px-3 lg:px-6">
       
       <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-10">
@@ -19,7 +19,6 @@
             <li><a href="#home" class="hover:text-button">Home</a></li>
             <li><a href="#services" class="hover:text-button">Services</a></li>
             <li><a href="#contact" class="hover:text-button">Contact Us</a></li>
-            <li><a href="#app" class="hover:text-button">Download App</a></li>
             <li><a href="#login" class="hover:text-button">Login</a></li>
           </ul>
         </div>

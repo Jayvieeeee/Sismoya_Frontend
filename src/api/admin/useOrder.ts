@@ -2,6 +2,7 @@ import { ref, onMounted, computed } from 'vue'
 import axiosInstance from "@/utils/axios"
 import { useRouter } from "vue-router"
 import { getProfile, logout } from "@/utils/auth"
+import dayjs from "dayjs"
 
 export interface Order {
   id: number
@@ -22,7 +23,7 @@ export interface Order {
     | 'picked up'
     | 'preparing'
     | 'to_deliver'
-    | 'completed'
+    | 'delivered'
     | 'cancelled'
   payment_method?: string
   payment_status?: string
@@ -48,7 +49,7 @@ export function useOrders() {
       'Pending': 0,
       'To Pick-Up': 0,
       'To Deliver': 0,
-      'Completed': 0
+      'Delivered': 0
     }
 
     orders.value.forEach(order => {
@@ -62,7 +63,7 @@ export function useOrders() {
       { label: 'Pending', count: statusCounts.Pending, color: 'bg-orange-100 text-orange-800' },
       { label: 'To Pick-Up', count: statusCounts['To Pick-Up'], color: 'bg-blue-100 text-blue-800' },
       { label: 'To Deliver', count: statusCounts['To Deliver'], color: 'bg-purple-100 text-purple-800' },
-      { label: 'Completed', count: statusCounts.Completed, color: 'bg-green-100 text-green-800' }
+      { label: 'Delivered', count: statusCounts.Delivered, color: 'bg-green-100 text-green-800' }
     ]
   })
 
@@ -75,29 +76,19 @@ export function useOrders() {
       'picked up': 'Picked Up',
       'preparing': 'Preparing',
       'to_deliver': 'To Deliver',
-      'completed': 'Completed',
+      'delivered': 'Delivered',
       'cancelled': 'Cancelled'
     }
     return statusMap[status] || status
   }
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A'
-    try {
-      const d = new Date(dateString)
-      if (isNaN(d.getTime())) return 'Invalid Date'
-      return d.toLocaleString("en-PH", {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      })
-    } catch {
-      return dateString || 'N/A'
-    }
-  }
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A'
+  const parsed = dayjs(dateString, "MM-DD-YYYY hh:mma")
+  return parsed.isValid()
+    ? parsed.format("MM/DD/YYYY hh:mm A")
+    : dateString
+}
 
   const getProductName = (order: Order) => order.products || order.product || "Water Gallon"
   const getCustomerName = (order: Order) => order.customer_name || order.customerName || "Customer"
@@ -116,7 +107,7 @@ export function useOrders() {
       'picked up': 'bg-gray-100 text-gray-800',
       'preparing': 'bg-purple-100 text-purple-800',
       'to_deliver': 'bg-indigo-100 text-indigo-800',
-      'completed': 'bg-green-100 text-green-800',
+      'delivered': 'bg-green-100 text-green-800',
       'cancelled': 'bg-red-100 text-red-800'
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
@@ -144,7 +135,6 @@ export function useOrders() {
         return
       }
 
-      // Validate token first
       try {
         await getProfile()
       } catch (profileError) {
@@ -153,9 +143,9 @@ export function useOrders() {
         router.push("/login")
         return
       }
-      
+
       const response = await axiosInstance.get('/admin/orders', {
-        timeout: 10000, // 10 second timeout
+        timeout: 10000,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -168,13 +158,11 @@ export function useOrders() {
         throw new Error(response.data?.message || 'Invalid response format from server')
       }
     } catch (err: any) {
-      
       if (err.code === 'ECONNABORTED') {
         backendError.value = "Request timeout. Please check your connection."
       } else if (err.response) {
         const status = err.response.status
         const message = err.response.data?.message || err.response.statusText
-        
         switch (status) {
           case 401:
             backendError.value = "Session expired. Please login again."
@@ -220,15 +208,13 @@ export function useOrders() {
         'Pending': 'pending',
         'To Pick-Up': 'to_pickup',
         'To Deliver': 'to_deliver',
-        'Completed': 'completed',
+        'Delivered': 'delivered',
         'Cancelled': 'cancelled'
       }
-      
+
       const backendStatus = statusMap[status] || status.toLowerCase()
-      
-      const filtered = orders.value.filter(order => order.status === backendStatus)
-      orders.value = filtered
-      
+      orders.value = orders.value.filter(order => order.status === backendStatus)
+
     } catch (err: any) {
       console.error('Error filtering orders:', err)
       backendError.value = "Failed to filter orders."
@@ -241,7 +227,7 @@ export function useOrders() {
     try {
       const response = await axiosInstance.put(
         `/admin/orders/${orderId}/update-stats`,
-        { id: orderId, action } 
+        { id: orderId, action }
       );
       return response.data;
     } catch (error: any) {
@@ -251,17 +237,16 @@ export function useOrders() {
 
   const getActionButtons = (status: string) => {
     const normalizedStatus = status.toLowerCase().replace(' ', '_')
-    
     switch (normalizedStatus) {
       case 'pending':
-        return ['approve', 'cancel'] 
+        return ['approve', 'cancel']
       case 'picked_up':
       case 'picked up':
-        return ['mark_preparing'] 
+        return ['mark_preparing']
       case 'preparing':
-        return ['mark_to_deliver'] 
+        return ['mark_to_deliver']
       case 'to_deliver':
-      case 'completed':
+      case 'delivered':
       case 'cancelled':
         return []
       default:
@@ -269,8 +254,7 @@ export function useOrders() {
     }
   }
 
-  // Get confirmation message for SweetAlert
-  const getConfirmationMessage = (action: string, orderId: number, currentStatus: string): string => {
+  const getConfirmationMessage = (action: string, orderId: number): string => {
     const messages: { [key: string]: string } = {
       'approve': `Are you sure you want to APPROVE Order #${orderId}?`,
       'cancel': `Are you sure you want to CANCEL Order #${orderId}? This action cannot be undone.`,
@@ -280,12 +264,11 @@ export function useOrders() {
     return messages[action] || `Are you sure you want to perform this action on Order #${orderId}?`
   }
 
-  // Get SweetAlert configuration based on action
   const getSwalConfig = (action: string, orderId: number) => {
     const configs: { [key: string]: any } = {
       'approve': {
         title: 'Approve Order?',
-        text: getConfirmationMessage(action, orderId, ''),
+        text: getConfirmationMessage(action, orderId),
         icon: 'question',
         confirmButtonText: 'Yes, Approve!',
         confirmButtonColor: '#10B981',
@@ -295,7 +278,7 @@ export function useOrders() {
       },
       'cancel': {
         title: 'Cancel Order?',
-        text: getConfirmationMessage(action, orderId, ''),
+        text: getConfirmationMessage(action, orderId),
         icon: 'warning',
         confirmButtonText: 'Yes, Cancel!',
         confirmButtonColor: '#EF4444',
@@ -305,7 +288,7 @@ export function useOrders() {
       },
       'mark_preparing': {
         title: 'Mark as Preparing?',
-        text: getConfirmationMessage(action, orderId, ''),
+        text: getConfirmationMessage(action, orderId),
         icon: 'info',
         confirmButtonText: 'Yes, Mark Preparing!',
         confirmButtonColor: '#3B82F6',
@@ -315,7 +298,7 @@ export function useOrders() {
       },
       'mark_to_deliver': {
         title: 'Mark for Delivery?',
-        text: getConfirmationMessage(action, orderId, ''),
+        text: getConfirmationMessage(action, orderId),
         icon: 'info',
         confirmButtonText: 'Yes, Mark for Delivery!',
         confirmButtonColor: '#8B5CF6',
@@ -324,10 +307,9 @@ export function useOrders() {
         iconColor: '#8B5CF6'
       }
     }
-    
     return configs[action] || {
       title: 'Confirm Action',
-      text: getConfirmationMessage(action, orderId, ''),
+      text: getConfirmationMessage(action, orderId),
       icon: 'question',
       confirmButtonText: 'Confirm',
       confirmButtonColor: '#6B7280',
@@ -336,23 +318,17 @@ export function useOrders() {
     }
   }
 
-  // Modified handleAction to work with SweetAlert (returns a promise)
-  const handleAction = async (orderId: number, action: string, currentStatus: string): Promise<boolean> => {
+  const handleAction = async (orderId: number, action: string): Promise<boolean> => {
     try {
       const result = await updateOrderStatus(orderId, action)
-      
       await fetchOrders()
-      
       backendError.value = `${result.message || `Order #${orderId} successfully processed`}`
-      
       setTimeout(() => {
         if (backendError.value.includes('successfully')) {
           backendError.value = ''
         }
       }, 3000)
-      
       return true
-      
     } catch (error: any) {
       console.error('Error handling action:', error)
       backendError.value = error.message || 'Failed to update order status. Please try again.'
@@ -375,9 +351,7 @@ export function useOrders() {
     for (let i = 0; i < retries; i++) {
       try {
         await fetchOrders()
-        if (orders.value.length > 0 || !backendError.value) {
-          break // Success
-        }
+        if (orders.value.length > 0 || !backendError.value) break
       } catch (error) {
         if (i === retries - 1) throw error
         await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
@@ -393,7 +367,6 @@ export function useOrders() {
     return true
   }
 
-  // Enhanced fetch with network check
   const fetchOrdersWithCheck = async () => {
     if (!checkNetworkStatus()) return
     await fetchWithRetry().catch(error => {
@@ -415,7 +388,7 @@ export function useOrders() {
     closeModal,
     fetchOrders: fetchOrdersWithCheck,
     filterByStatus,
-    handleAction, // Now returns a promise for SweetAlert integration
+    handleAction,
     getActionButtons,
     getDisplayStatus,
     formatDate,
@@ -423,6 +396,6 @@ export function useOrders() {
     getCustomerName,
     formatPrice,
     getStatusColor,
-    getSwalConfig // Export this for use in the component
+    getSwalConfig
   }
 }

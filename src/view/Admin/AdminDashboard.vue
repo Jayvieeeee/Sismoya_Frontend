@@ -270,6 +270,8 @@ function buildOrderStatusList() {
   if (map["preparing"] || map["preparing"] === 0) list.push({ label: "Preparing", value: map["preparing"], color: "#3b82f6" })
   if (map["completed"] || map["completed"] === 0) list.push({ label: "Completed", value: map["completed"], color: "#10b981" })
   if (map["cancelled"] || map["cancelled"] === 0) list.push({ label: "Cancelled", value: map["cancelled"], color: "#ef4444" })
+  if (map["to_pickup"] || map["to_pickup"] === 0) list.push({ label: "To Pickup", value: map["to_pickup"], color: "#8b5cf6" })
+  if (map["to_deliver"] || map["to_deliver"] === 0) list.push({ label: "To Deliver", value: map["to_deliver"], color: "#06b6d4" })
   
   orderStatusList.value = list
 }
@@ -330,25 +332,39 @@ async function fetchDashboardData() {
     currentDate.value = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     currentTime.value = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
 
-    // Stats card values
+    // Stats card values - Map backend fields to frontend expectations
     stats.value = [
-      { label: "Completed Orders Today", value: d.stats?.completed_today ?? 0 },
-      { label: "Total Sales Today", value: formatCurrency(d.stats?.total_sales_today ?? 0) },
-      { label: "Pending Orders", value: d.stats?.pending_orders ?? 0 },
-      { label: "Total Customers", value: d.stats?.total_customers ?? 0 }
+      { 
+        label: "Completed Orders Today", 
+        value: d.completed_orders_today || d.completedOrdersToday || d.stats?.completed_today || d.completed_today || 0 
+      },
+      { 
+        label: "Total Sales Today", 
+        value: formatCurrency(d.total_sales_today || d.totalSalesToday || d.stats?.total_sales_today || d.total_sales_today || 0) 
+      },
+      { 
+        label: "Pending Orders", 
+        value: d.pending_orders || d.pendingOrders || d.stats?.pending_orders || d.pending_orders || 0 
+      },
+      { 
+        label: "Total Customers", 
+        value: d.total_customers || d.totalCustomers || d.stats?.total_customers || d.total_customers || 0 
+      }
     ]
 
-    ordersToPickUp.value = d.orders_to_pickup ?? 0
-    ordersToDeliver.value = d.orders_to_deliver ?? 0
+    // Orders to pickup/deliver - handle different possible field names
+    ordersToPickUp.value = d.orders_to_pickup || d.ordersToPickup || d.pickup_orders || d.to_pickup || 0
+    ordersToDeliver.value = d.orders_to_deliver || d.ordersToDeliver || d.delivery_orders || d.to_deliver || 0
 
-    // Process sales data with dynamic labels
+    // Process sales data - handle different possible structures
     const normalizeArray = (arr: any[], targetLength: number) => {
       const out: number[] = []
       for (let i = 0; i < targetLength; i++) {
         const item = arr[i]
         if (item == null) { out.push(0); continue }
         if (typeof item === "object") {
-          out.push(Number(item.total ?? item.value ?? 0))
+          // Handle objects like {period: '...', total: 123} or {date: '...', amount: 123}
+          out.push(Number(item.total ?? item.amount ?? item.value ?? item.revenue ?? item.sales ?? 0))
         } else {
           out.push(Number(item))
         }
@@ -356,36 +372,53 @@ async function fetchDashboardData() {
       return out
     }
 
+    // Sales data - try multiple possible field structures
+    const salesData = d.sales_revenue || d.salesRevenue || d.sales || d.revenue || d.sales_data || {}
+    
     // Use dynamic label lengths
-    salesDaily.value = normalizeArray(d.sales_revenue?.daily ?? [], labels.value.daily.length)
-    salesWeekly.value = normalizeArray(d.sales_revenue?.weekly ?? [], labels.value.weekly.length)
-    salesMonthly.value = normalizeArray(d.sales_revenue?.monthly ?? [], labels.value.monthly.length)
+    salesDaily.value = normalizeArray(
+      salesData.daily || salesData.today || salesData.last_7_days || d.daily_sales || [], 
+      labels.value.daily.length
+    )
+    salesWeekly.value = normalizeArray(
+      salesData.weekly || salesData.weeks || salesData.last_5_weeks || d.weekly_sales || [], 
+      labels.value.weekly.length
+    )
+    salesMonthly.value = normalizeArray(
+      salesData.monthly || salesData.months || salesData.last_12_months || d.monthly_sales || [], 
+      labels.value.monthly.length
+    )
 
-    // Build order status map
+    // Build order status map - handle multiple possible field structures
+    const statusData = d.order_status_distribution || d.orderStatus || d.orders_by_status || d.status_distribution || {}
+    
     orderStatusMap.value = {
-      pending: d.order_status_distribution?.pending ?? 0,
-      preparing: d.order_status_distribution?.preparing ?? 0,
-      completed: d.order_status_distribution?.completed ?? 0,
-      cancelled: d.order_status_distribution?.cancelled ?? 0,
-      to_pickup: d.order_status_distribution?.to_pickup ?? 0,
-      to_deliver: d.order_status_distribution?.to_deliver ?? 0
+      pending: statusData.pending || d.pending_orders || 0,
+      preparing: statusData.preparing || statusData.preparation || 0,
+      completed: statusData.completed || d.completed_orders_today || 0,
+      cancelled: statusData.cancelled || statusData.canceled || 0,
+      to_pickup: statusData.to_pickup || statusData.pickup || d.orders_to_pickup || 0,
+      to_deliver: statusData.to_deliver || statusData.delivery || d.orders_to_deliver || 0
     }
     buildOrderStatusList()
 
-    recentOrders.value = (d.recent_orders ?? []).map((o: any) => {
-      const orderItems = o.order_items || ''
-      const customerName = extractCustomerName(orderItems) || 'Customer'
+    // Recent orders - handle multiple possible field structures
+    const ordersData = d.recent_orders || d.recentOrders || d.latest_orders || d.orders || []
+    
+    recentOrders.value = ordersData.map((o: any) => {
+      const orderItems = o.order_items || o.items || o.products || ''
+      const customerName = extractCustomerName(orderItems) || o.customer_name || o.customer?.name || 'Customer'
       
       return {
-        id: o.order_id,
+        id: o.order_id || o.id || o.orderId || 0,
         name: customerName,
-        date: new Date(o.created_at).toLocaleDateString("en-US", { 
+        date: new Date(o.created_at || o.order_date || o.date || new Date()).toLocaleDateString("en-US", { 
           month: "short", 
           day: "numeric",
           year: "numeric"
         }),
-        status: o.status,
-        amount: Number(o.total_price) || 0
+        status: o.status || o.order_status || 'pending',
+        amount: Number(o.total_price || o.amount || o.total || o.price || 0)
       }
     })
 

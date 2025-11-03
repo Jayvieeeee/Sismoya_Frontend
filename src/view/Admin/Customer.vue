@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from "vue"
 import AdminLayout from "@/Layout/AdminLayout.vue"
 import axiosInstance from "@/utils/axios"
 import CustomerInfoModal from "@/components/CustomerInfoModal.vue"
+import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
 
 const search = ref("")
@@ -102,24 +103,27 @@ onMounted(fetchCustomers)
       </div>
 
       <div v-else>
-        <div class="bg-white shadow-md rounded-xl p-6 mb-6 inline-block">
+        <div class="bg-white shadow-md rounded-xl p-6 inline-block">
           <div class="text-2xl text-center font-bold text-primary">
             {{ totalCustomers }}
           </div>
           <div class="text-gray-600 text-sm">Total Customers</div>
         </div>
 
-        <div class="mb-4 flex justify-end">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Search by Customer"
-            class="w-1/2 sm:w-1/4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div class="flex justify-end w-full">
+          <div class="relative w-full sm:w-72 mb-4">
+            <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-3" />
+            <input
+              v-model="search"
+              type="text"
+              placeholder="Search"
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+            />
+          </div>
         </div>
 
         <div class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
-          <div class="max-h-[400px] overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-100">
+          <div class="max-h-[435px] overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-100">
             <table
               class="min-w-[900px] w-full text-sm text-center border-collapse"
             >

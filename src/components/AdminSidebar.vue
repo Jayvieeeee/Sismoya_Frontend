@@ -33,7 +33,7 @@ const menuItems: MenuItem[] = [
   { name: "Orders", icon: orderHistoryIcon, route: "/adminOrders" },
   { name: "Customers", icon: customerIcon, route: "/customers" },
   { name: "Riders", icon: riderIcon, route: "/riders" },
-  { name: "Gallon", icon: siteIcon, route: "/siteSettings" },
+  { name: "Gallons", icon: siteIcon, route: "/siteSettings" },
   { name: "Account Settings", icon: accountSettingsIcon, route: "/adminAccountSettings" },
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
 ]
@@ -84,7 +84,7 @@ async function confirmLogout() {
       ]"
     >
       <!-- Logo -->
-      <div class="relative flex items-center justify-center px-6 py-4">
+      <div class="relative flex items-center justify-center px-6 py-2">
         <img
           src="/images/Sismoya_Logo.png"
           alt="Logo"
@@ -132,7 +132,6 @@ async function confirmLogout() {
       </nav>
     </aside>
 
-    <!-- Backdrop (mobile only) -->
     <div
       v-if="isOpen"
       @click="isOpen = false"

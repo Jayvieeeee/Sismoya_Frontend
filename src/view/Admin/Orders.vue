@@ -6,6 +6,7 @@ import AdminOrderDetails from "@/components/AdminOrderDetails.vue"
 import Modal from "@/components/Modal.vue"
 import { ref } from 'vue'
 import Swal from 'sweetalert2'
+import type { SweetAlertOptions } from 'sweetalert2'
 
 const {
   searchQuery,
@@ -43,9 +44,8 @@ const closeMessageModal = () => {
   modalTitle.value = ''
 }
 
-// Get SweetAlert configuration based on action
-const getSwalConfig = (action: string, orderId: number) => {
-  const configs: { [key: string]: any } = {
+const getSwalConfig = (action: string, orderId: number): SweetAlertOptions => {
+  const configs: Record<string, SweetAlertOptions> = {
     'approve': {
       title: 'Approve Order?',
       text: `Are you sure you want to APPROVE Order #${orderId}?`,
@@ -87,7 +87,7 @@ const getSwalConfig = (action: string, orderId: number) => {
       iconColor: '#8B5CF6'
     }
   }
-  
+
   return configs[action] || {
     title: 'Confirm Action',
     text: `Are you sure you want to perform this action on Order #${orderId}?`,
@@ -101,17 +101,14 @@ const getSwalConfig = (action: string, orderId: number) => {
 
 const handleActionWithSweetAlert = async (orderId: string | number, action: string, status: string) => {
   const numericOrderId = typeof orderId === 'string' ? parseInt(orderId, 10) : orderId
-  
   const swalConfig = getSwalConfig(action, numericOrderId)
-  
-  const result = await Swal.fire(swalConfig)
-  
+
+  const result = await Swal.fire(swalConfig as SweetAlertOptions)
+
   if (result.isConfirmed) {
     try {
-      // Call the original handleAction
-      await handleAction(numericOrderId, action, status)
-      
-      // Show success message
+      await handleAction(numericOrderId, action)
+
       Swal.fire({
         title: 'Success!',
         text: 'Action completed successfully',
@@ -120,9 +117,7 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
         timer: 2000,
         showConfirmButton: false
       })
-      
     } catch (error: any) {
-      // Show error message
       Swal.fire({
         title: 'Error!',
         text: error.message || 'An error occurred while processing your request',
@@ -136,7 +131,7 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
 
 <template>
   <AdminLayout>
-    <div class="min-h-screen pb-16">
+    <div class="min-h-screen pb-16 font-rem">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Header -->
         <div class="mb-8">
@@ -144,60 +139,57 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 bg-[#077ebe] p-4 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div
             v-for="stat in stats"
             :key="stat.label"
-            class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+            class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer"
             @click="filterByStatus(stat.label)"
           >
             <div class="flex flex-col items-center justify-center text-center">
-              <p class="text-3xl text-primary mb-2">{{ stat.count }}</p>
-              <p class="text-base font-medium text-gray-600">{{ stat.label }}</p>
+              <p class="text-2xl text-primary font-bold mb-1">{{ stat.count }}</p>
+              <p class="text-sm font-medium text-gray-600">{{ stat.label }}</p>
             </div>
           </div>
         </div>
 
         <!-- Search and Filter Section -->
-        <div class="rounded-xl p-6 mb-2">
-          <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div class="relative flex-1 w-full sm:max-w-md">
-              <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"/>
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Search order"
-                class="w-2/5 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
-              />
-            </div>
-            <div class="flex gap-3 w-full sm:w-auto">
-              <!-- Filter Button with Dropdown -->
-              <div class="relative">
-                <button 
-                  @click="isFilterOpen = !isFilterOpen"
-                  class="flex items-center gap-2 px-4 py-3 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition font-medium"
-                  :disabled="!!backendError"
-                >
-                  <FunnelIcon class="w-5 h-5" />
-                  <span>Filter</span>
-                </button>
-                
-                <!-- Dropdown Menu -->
-                <div 
-                  v-if="isFilterOpen" 
-                  class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-                  @click="isFilterOpen = false"
-                >
-                  <div class="py-1">
-                    <button @click="fetchOrders()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Orders</button>
-                    <button @click="filterByStatus('pending')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pending</button>
-                    <button @click="filterByStatus('to_pick_up')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">To Pick-Up</button>
-                    <button @click="filterByStatus('preparing')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Preparing</button>
-                    <button @click="filterByStatus('to_deliver')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">To Deliver</button>
-                    <button @click="filterByStatus('completed')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Completed</button>
-                    <button @click="filterByStatus('cancelled')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Cancelled</button>
-                  </div>
-                </div>
+         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6 my-4">
+          <div class="relative w-full sm:w-72">
+            <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-3" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search orders..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+            />
+          </div>
+
+          <!-- Filter Button -->
+          <div class="relative self-end sm:self-auto">
+            <button
+              @click="isFilterOpen = !isFilterOpen"
+              class="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-medium"
+              :disabled="!!backendError"
+            >
+              <FunnelIcon class="w-5 h-5" />
+              <span>Filter</span>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div
+              v-if="isFilterOpen"
+              class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+              @click="isFilterOpen = false"
+            >
+              <div class="py-1">
+                <button @click="fetchOrders()" class="dropdown-btn">All Orders</button>
+                <button @click="filterByStatus('pending')" class="dropdown-btn">Pending</button>
+                <button @click="filterByStatus('to_pick_up')" class="dropdown-btn">To Pick-Up</button>
+                <button @click="filterByStatus('preparing')" class="dropdown-btn">Preparing</button>
+                <button @click="filterByStatus('to_deliver')" class="dropdown-btn">To Deliver</button>
+                <button @click="filterByStatus('completed')" class="dropdown-btn">Completed</button>
+                <button @click="filterByStatus('cancelled')" class="dropdown-btn">Cancelled</button>
               </div>
             </div>
           </div>
@@ -206,23 +198,23 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
         <!-- Orders Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div v-if="isLoading" class="flex justify-center items-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary"></div>
           </div>
 
-          <div v-else class="overflow-x-auto max-h-[330px] overflow-y-auto">
+          <div v-else class="overflow-x-auto max-h-[400px] overflow-y-auto">
             <table class="w-full">
-              <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                <tr class="text-center">
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Order ID</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Name</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Amount</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date & Time</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Order Status</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">View Details</th>
-                  <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
+      <thead class="bg-gray-50 border-b sticky top-0 z-10 text-sm">
+        <tr class="text-center">
+          <th class="py-3 px-4 font-normal whitespace-nowrap">Order ID</th>
+          <th class="py-3 px-4 font-normal whitespace-nowrap">Customer Name</th>
+          <th class="py-3 px-4 font-normal whitespace-nowrap">Product</th>
+          <th class="py-3 px-4 font-normal whitespace-nowrap">Total Amount</th>
+          <th class="py-3 px-4 font-normal whitespace-nowrap">Date & Time</th>
+          <th class="py-3 px-8 font-normal whitespace-nowrap">Order Status</th>
+          <th class="py-3 px-8 font-normal whitespace-nowrap">View Details</th>
+          <th class="py-3 px-4 font-normal whitespace-nowrap">Action</th>
+        </tr>
+      </thead>
 
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="orders.length === 0">
@@ -235,68 +227,60 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
                 <tr
                   v-for="order in orders"
                   :key="`${order.order_id}-${order.status}`"
-                  class="hover:bg-gray-50 transition-colors text-center"
-                >
-                  <td class="px-6 py-4 text-sm font-medium">#{{ order.order_id || order.id }}</td>
-                  <td class="px-6 py-4 text-sm">{{ getCustomerName(order) }}</td>
-                  <td class="px-6 py-4 text-sm">{{ getProductName(order) }}</td>
-                  <td class="px-6 py-4 text-sm">{{ formatPrice(order.total_price || order.totalAmount) }}</td>
-                  <td class="px-6 py-4 text-sm">{{ formatDate(order.date_time || order.created_at) }}</td>
+                  class="hover:bg-gray-50 transition-colors text-center text-sm">
+                  <td class="table-cell">#{{ order.order_id || order.id }}</td>
+                  <td class="table-cell">{{ getCustomerName(order) }}</td>
+                  <td class="table-cell">{{ getProductName(order) }}</td>
+                  <td class="table-cell">{{ formatPrice(order.total_price || order.totalAmount) }}</td>
+                  <td class="table-cell">{{ formatDate(order.date_time || order.created_at) }}</td>
                   <td class="px-6 py-4">
                     <span :class="[getStatusColor(order.status), 'px-3 py-1 rounded-full text-xs font-medium']">
                       {{ getDisplayStatus(order.status) }}
                     </span>
                   </td>
-
-                  <!-- View Details Column -->
-                  <td class="px-6 py-4">
-                    <button 
+                  <td class="px-3 py-4">
+                    <button
                       @click="openOrderDetails(order)"
-                      class="px-3 py-1.5 text-sm underline text-blue-600 hover:text-blue-800 font-medium transition"
+                      class="px-4 py-1.5 text-sm underline font-medium transition"
                     >
                       View Details
                     </button>
                   </td>
-
-                  <!-- Action Column -->
                   <td class="px-4 py-3 whitespace-nowrap">
                     <div class="flex flex-col gap-1 items-center">
-                      <!-- Approve Button -->
-                      <button
-                        v-if="getActionButtons(order.status).includes('approve')"
-                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'approve', order.status)"
-                        class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition font-medium w-full"
-                      >
-                        Approve
-                      </button>
-                      
-                      <!-- Cancel Button -->
-                      <button
-                        v-if="getActionButtons(order.status).includes('cancel')"
-                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'cancel', order.status)"
-                        class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition font-medium w-full"
-                      >
-                        Cancel
-                      </button>
+                    <button
+                      v-if="getActionButtons(order.status).includes('approve')"
+                      @click="handleActionWithSweetAlert(order.order_id || order.id, 'approve', order.status)"
+                      class="w-36 bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 rounded-lg transition"
+                    >
+                      Approve
+                    </button>
 
-                      <!-- Mark as Preparing Button -->
-                      <button
-                        v-if="getActionButtons(order.status).includes('mark_preparing')"
-                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'mark_preparing', order.status)"
-                        class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition font-medium w-full"
-                      >
-                        Mark as Preparing
-                      </button>
+                    <button
+                      v-if="getActionButtons(order.status).includes('cancel')"
+                      @click="handleActionWithSweetAlert(order.order_id || order.id, 'cancel', order.status)"
+                      class="w-36 bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 rounded-lg transition"
+                    >
+                      Cancel
+                    </button>
 
-                      <!-- Mark for Delivery Button -->
-                      <button
-                        v-if="getActionButtons(order.status).includes('mark_to_deliver')"
-                        @click="handleActionWithSweetAlert(order.order_id || order.id, 'mark_to_deliver', order.status)"
-                        class="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded transition font-medium w-full"
-                      >
-                        Mark for Delivery
-                      </button>
-                    </div>
+                    <button
+                      v-if="getActionButtons(order.status).includes('mark_preparing')"
+                      @click="handleActionWithSweetAlert(order.order_id || order.id, 'mark_preparing', order.status)"
+                      class="w-36 bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 rounded-lg transition"
+                    >
+                      Mark as Preparing
+                    </button>
+
+                    <button
+                      v-if="getActionButtons(order.status).includes('mark_to_deliver')"
+                      @click="handleActionWithSweetAlert(order.order_id || order.id, 'mark_to_deliver', order.status)"
+                      class="w-36 bg-sky-500 hover:bg-sky-600 text-white font-medium py-1.5 rounded-lg transition"
+                    >
+                      Mark for Delivery
+                    </button>
+                  </div>
+
                   </td>
                 </tr>
               </tbody>
@@ -307,20 +291,19 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
     </div>
 
     <!-- Order Details Modal -->
-    <AdminOrderDetails 
-      :isOpen="isModalOpen" 
+    <AdminOrderDetails
+      :isOpen="isModalOpen"
       :selectedOrder="selectedOrder"
       @close="closeModal"
     />
 
-    <!-- Message Modal for backend responses (fallback) -->
+    <!-- Message Modal -->
     <Modal
       :visible="showMessageModal"
       :title="modalTitle"
       @close="closeMessageModal"
     >
       <p>{{ modalMessage }}</p>
-      
       <template #actions>
         <button
           @click="closeMessageModal"
@@ -330,6 +313,6 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
         </button>
       </template>
     </Modal>
-
   </AdminLayout>
 </template>
+

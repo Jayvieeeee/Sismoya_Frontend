@@ -18,12 +18,12 @@ interface Order {
     | 'picked up'
     | 'preparing'
     | 'to_deliver'
-    | 'completed'
+    | 'delivered'
     | 'cancelled'
   payment_method?: string
   payment_status?: string
-  customer_phone?: string
-  delivery_address?: string
+  contact_no?: string
+  address?: string
   special_instructions?: string
 }
 
@@ -144,12 +144,12 @@ const closeModal = () => {
 
             <!-- Contact No -->
             <div>
-              <p class="text-sm">Contact No: {{ selectedOrder.customer_phone || 'N/A' }}</p>
+              <p class="text-sm">Contact No: {{ selectedOrder.contact_no || 'N/A' }}</p>
             </div>
 
             <!-- Address -->
             <div>
-              <p class="text-sm">Address: {{ selectedOrder.delivery_address || 'N/A' }}</p>
+              <p class="text-sm">Address: {{ selectedOrder.address || 'N/A' }}</p>
             </div>
 
             <!-- Pick Up DateTime -->

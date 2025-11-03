@@ -219,88 +219,97 @@ const clearImage = () => {
 
 <template>
   <AdminLayout>
-    <div class="min-h-screen p-8">
-      <div class="flex justify-between items-center mb-6">
+    <div class="min-h-screen p-4 sm:p-8">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-3">
         <h1 class="text-2xl sm:text-3xl font-bold text-primary">Site Settings</h1>
       </div>
 
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-        <div class="p-8">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-semibold text-gray-800">Gallon Details</h2>
+        <div class="p-4 sm:p-8">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Gallon Details</h2>
+
             <button
               @click="openAddModal"
-              class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm"
+              class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm sm:text-base"
             >
-              <PlusIcon class="w-4 h-4" />
+              <PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Add New Gallon</span>
             </button>
           </div>
 
-          <div v-if="loading" class="text-gray-500">Loading gallons...</div>
-          <div v-else-if="error" class="text-red-500">Error: {{ error }}</div>
+          <!-- Loading & Error States -->
+          <div v-if="loading" class="text-gray-500 py-6 text-center">Loading gallons...</div>
+          <div v-else-if="error" class="text-red-500 py-6 text-center">Error: {{ error }}</div>
 
-          <div v-else class="rounded-lg overflow-hidden">
-            <div class="overflow-auto max-h-[400px]">
-              <table class="min-w-full text-sm">
-                <thead class="sticky top-0 bg-white z-10">
-                  <tr class="border-b border-gray-200">
-                    <th class="px-4 py-3 text-left text-gray-600 font-medium">ID</th>
-                    <th class="px-4 py-3 text-left text-gray-600 font-medium">Image</th>
-                    <th class="px-4 py-3 text-left text-gray-600 font-medium">Name</th>
-                    <th class="px-4 py-3 text-left text-gray-600 font-medium">Size</th>
-                    <th class="px-4 py-3 text-left text-gray-600 font-medium">Price</th>
-                    <th class="px-4 py-3 text-center text-gray-600 font-medium">Actions</th>
-                  </tr>
-                </thead>
+          <!-- Responsive Scrollable Table -->
+          <div class="overflow-y-auto h-[440px] rounded-lg">
+            <table class="min-w-full text-sm text-left">
+              <thead class="bg-gray-50">
+                <tr class="border-b border-gray-200">
+                  <th class="px-4 py-3 font-medium text-gray-700">ID</th>
+                  <th class="px-4 py-3 font-medium text-gray-700">Image</th>
+                  <th class="px-4 py-3 font-medium text-gray-700">Name</th>
+                  <th class="px-4 py-3 font-medium text-gray-700">Size</th>
+                  <th class="px-4 py-3 font-medium text-gray-700">Price</th>
+                  <th class="px-4 py-3 font-medium text-gray-700 text-center">Actions</th>
+                </tr>
+              </thead>
 
-                <tbody>
-                  <tr
-                    v-for="gallon in gallons"
-                    :key="gallon.gallon_id"
-                    class="border-b border-gray-100 hover:bg-gray-50 transition"
-                  >
-                    <td class="px-4 py-4 text-gray-700">{{ gallon.gallon_id }}</td>
-                    <td class="px-4 py-4">
-                      <div v-if="gallon.image_url">
-                        <img
-                          :src="getImageUrl(gallon.image_url)"
-                          :alt="gallon.name"
-                          class="w-14 h-14 object-cover rounded border"
-                        />
-                      </div>
-                      <span v-else class="text-gray-400 text-xs italic">No image</span>
-                    </td>
-                    <td class="px-4 py-4 text-gray-700 font-medium">{{ gallon.name }}</td>
-                    <td class="px-4 py-4 text-gray-700">{{ gallon.size }}</td>
-                    <td class="px-4 py-4 text-gray-700 font-semibold">₱{{ parseFloat(gallon.price).toFixed(2) }}</td>
-                    <td class="px-4 py-4">
-                      <div class="flex justify-center gap-2">
-                        <button
-                          @click="openUpdateModal(gallon)"
-                          class="p-2 rounded-lg hover:bg-blue-50 transition"
-                          :title="`Edit ${gallon.name}`"
-                        >
-                          <PencilSquareIcon class="w-5 h-5 text-blue-600" />
-                        </button>
-                        <button
-                          @click="handleDelete(gallon.gallon_id)"
-                          class="p-2 rounded-lg hover:bg-red-50 transition"
-                          :title="`Delete ${gallon.name}`"
-                        >
-                          <TrashIcon class="w-5 h-5 text-red-600" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+              <tbody>
+                <tr
+                  v-for="gallon in gallons"
+                  :key="gallon.gallon_id"
+                  class="border-b border-gray-100 hover:bg-gray-50 transition"
+                >
+                  <td class="px-4 py-3 text-gray-700 whitespace-nowrap">{{ gallon.gallon_id }}</td>
+
+                  <td class="px-4 py-3">
+                    <div v-if="gallon.image_url" class="flex items-center justify-center">
+                      <img
+                        :src="getImageUrl(gallon.image_url)"
+                        :alt="gallon.name"
+                        class="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded border"
+                      />
+                    </div>
+                    <span v-else class="text-gray-400 text-xs italic">No image</span>
+                  </td>
+
+                  <td class="px-4 py-3 text-gray-700 font-medium whitespace-nowrap">{{ gallon.name }}</td>
+                  <td class="px-4 py-3 text-gray-700 whitespace-nowrap">{{ gallon.size }}</td>
+                  <td class="px-4 py-3 text-gray-700 font-semibold whitespace-nowrap">
+                    ₱{{ parseFloat(gallon.price).toFixed(2) }}
+                  </td>
+
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex justify-center gap-2">
+                      <button
+                        @click="openUpdateModal(gallon)"
+                        class="p-2 rounded-lg hover:bg-blue-50 transition"
+                        :title="`Edit ${gallon.name}`"
+                      >
+                        <PencilSquareIcon class="w-5 h-5 text-blue-600" />
+                      </button>
+
+                      <button
+                        @click="handleDelete(gallon.gallon_id)"
+                        class="p-2 rounded-lg hover:bg-red-50 transition"
+                        :title="`Delete ${gallon.name}`"
+                      >
+                        <TrashIcon class="w-5 h-5 text-red-600" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Modal Component -->
     <Modal
       :visible="modalVisible"
       :title="isUpdate ? `Update Gallon #${selectedGallon.gallon_id}` : 'Add New Gallon'"

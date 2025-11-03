@@ -20,7 +20,7 @@ interface User {
 
 interface DashboardStats {
   pending: number;
-  completed: number;
+  delivered: number;
   cancelled: number;
   total: number;
 }
@@ -47,7 +47,7 @@ interface UserOrder {
 const user = ref<User | null>(null);
 const stats = ref<DashboardStats>({
   pending: 0,
-  completed: 0,
+  delivered: 0,
   cancelled: 0,
   total: 0,
 });
@@ -182,9 +182,10 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
     o.status.toLowerCase() === "to deliver"
   ).length;
   
-  const completed = userOrders.filter((o) => 
-    o.status.toLowerCase() === "completed"
+  const delivered = userOrders.filter((o) => 
+    o.status.toLowerCase() === "delivered"
   ).length;
+
   
   const cancelled = userOrders.filter((o) => 
     o.status.toLowerCase() === "cancelled"
@@ -192,7 +193,7 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
 
   stats.value = {
     pending,
-    completed,
+    delivered,
     cancelled,
     total: userOrders.length,
   };
@@ -368,18 +369,14 @@ onMounted(() => fetchDashboardData());
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
                 <p class="text-xl font-bold text-yellow-600">{{ stats.pending }}</p>
                 <p class="text-gray-500 text-sm font-medium">Pending Orders</p>
               </div>
               <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-                <p class="text-xl font-bold text-green-600">{{ stats.completed }}</p>
+                <p class="text-xl font-bold text-green-600">{{ stats.delivered }}</p>
                 <p class="text-gray-500 text-sm font-medium">Completed Orders</p>
-              </div>
-              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-                <p class="text-xl font-bold text-red-600">{{ stats.cancelled }}</p>
-                <p class="text-gray-500 text-sm font-medium">Cancelled Orders</p>
               </div>
               <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
                 <p class="text-xl font-bold text-blue-600">{{ stats.total }}</p>

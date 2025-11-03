@@ -9,6 +9,7 @@ interface OrderDetails {
   quantity: number;
   totalAmount: number;
   paymentMethod: string;
+  paymentStatus: string;
   deliveredAt?: string;
   imageUrl?: string;
 }
