@@ -16,6 +16,7 @@ const showError = ref(false);
 const errorMessage = ref("");
 const showPayPalModal = ref(false);
 const pendingPayPalOrderId = ref<number | null>(null);
+const pendingPayPalAmount = ref<string>("0.00");
 const orderPlacedModal = ref(false);
 
 // -------------------- Types --------------------
@@ -64,6 +65,14 @@ const totalAmount = computed(() => props.products.reduce((sum, p) => sum + (p.pr
 const totalQuantity = computed(() => props.products.reduce((sum, p) => sum + p.qty, 0))
 
 // -------------------- Functions --------------------
+// Clear form function
+const clearForm = () => {
+  pickUpTime.value = ""
+  paymentMethod.value = "Cash"
+  // Note: We don't clear selectedAddress as it's persisted from user profile
+  console.log('Form cleared')
+}
+
 const autoSelectAddress = (addressList: Address[]) => {
   if (addressList.length === 0) {
     selectedAddress.value = null
@@ -142,39 +151,83 @@ function getImageUrl(imageUrl: string | undefined | null): string {
 
 // Validation
 function validateOrder(): boolean {
-  if (!selectedAddress.value) { errorMessage.value = "Please select an address."; showError.value = true; return false }
-  if (!pickUpTime.value) { errorMessage.value = "Please select a pickup time."; showError.value = true; return false }
-  if (!paymentMethod.value) { errorMessage.value = "Please select a payment method."; showError.value = true; return false }
+  if (!selectedAddress.value) { 
+    errorMessage.value = "Please select an address."; 
+    showError.value = true; 
+    return false 
+  }
+  if (!pickUpTime.value) { 
+    errorMessage.value = "Please select a pickup time."; 
+    showError.value = true; 
+    return false 
+  }
+  if (!paymentMethod.value) { 
+    errorMessage.value = "Please select a payment method."; 
+    showError.value = true; 
+    return false 
+  }
+  if (totalAmount.value <= 0) {
+    errorMessage.value = "Order total must be greater than 0."; 
+    showError.value = true; 
+    return false 
+  }
   return true
 }
 
 const handlePlaceOrder = async () => {
-  if (!customer.value || !props.products.length) return;
+  console.log('=== PLACE ORDER DEBUG ===');
+  console.log('Total Amount:', totalAmount.value);
+  console.log('Total Amount Fixed:', totalAmount.value.toFixed(2));
+  console.log('Payment Method:', paymentMethod.value);
+  console.log('Products:', props.products);
+  
+  if (!customer.value || !props.products.length) {
+    errorMessage.value = "No customer or products found.";
+    showError.value = true;
+    return;
+  }
+  
   if (!validateOrder()) return;
 
-  const items = props.products.map(p => ({ gallon_id: p.id, quantity: p.qty, total_price: p.price * p.qty }));
+  const items = props.products.map(p => ({ 
+    gallon_id: p.id, 
+    quantity: p.qty, 
+    total_price: parseFloat((p.price * p.qty).toFixed(2))
+  }));
+  
   const payload = { 
     userId: customer.value.user_id, 
     pickup_datetime: pickUpTime.value, 
     payment_method: getBackendPaymentMethod(), 
-    address_id: selectedAddress.value?.id || null, items };
+    address_id: selectedAddress.value?.id || null, 
+    items,
+    total_amount: parseFloat(totalAmount.value.toFixed(2)) // Explicitly send total amount
+  };
+
+  console.log('Order Payload:', payload);
 
   try {
     const res = await axiosInstance.post("/orders", payload);
+    console.log('Order Response:', res.data);
+    
     if (!res.data.success) throw new Error(res.data.message || "Order failed");
 
     if (paymentMethod.value === "Paypal") {
+      // Store both order ID and amount for PayPal
       pendingPayPalOrderId.value = res.data.order_id;
+      pendingPayPalAmount.value = totalAmount.value.toFixed(2);
       showPayPalModal.value = true;
-      emit('close');
+      // Don't clear form yet for PayPal - wait for payment completion
+      emit('close'); // close order summary
     } else {
-      // For Cash on Pickup, show success modal immediately
+      // For Cash on Pickup, show success modal immediately and clear form
       orderPlacedModal.value = true;
+      clearForm(); // Clear form after successful order
       emit('place-order', payload);
       emit('close');
     }
   } catch (err: any) {
-    console.error(err);
+    console.error('Order Error:', err);
     errorMessage.value = err.response?.data?.message || err.message || "Order failed. Please try again.";
     showError.value = true;
   }
@@ -182,8 +235,11 @@ const handlePlaceOrder = async () => {
 
 // -------------------- PayPal Handlers --------------------
 const handlePayPalSuccess = (data: any) => {
-  console.log('PayPal payment initiated successfully, waiting for completion...');
-  // The OrderPlacedModal will be shown when PayPal redirects back to our success page
+  console.log('PayPal payment initiated successfully:', data);
+  // Show success message or redirect
+  orderPlacedModal.value = true;
+  clearForm(); // Clear form after successful PayPal payment
+  showPayPalModal.value = false;
 }
 
 const handlePayPalError = (error: string) => {
@@ -191,26 +247,30 @@ const handlePayPalError = (error: string) => {
   errorMessage.value = error;
   showError.value = true;
   showPayPalModal.value = false;
+  // Don't clear form on PayPal error - user might want to try again
 }
 
 const handlePayPalClosed = () => {
+  console.log('PayPal modal closed');
   showPayPalModal.value = false;
   pendingPayPalOrderId.value = null;
+  pendingPayPalAmount.value = "0.00";
+  // Don't clear form when PayPal modal is closed without payment
 }
 
-function resetOrderData() {
-  selectedAddress.value = null
-  pickUpTime.value = ""
-  paymentMethod.value = "Cash"
-  showAddressModal.value = false
-  showAddAddressModal.value = false
-  showDateTimeModal.value = false
-  showPayPalModal.value = false
-  orderPlacedModal.value = false
-  errorMessage.value = ""
-  showError.value = false
+// Clear form when modal is closed
+const handleClose = () => {
+  clearForm();
+  emit('close');
 }
 
+// Watch for modal open/close to reset form when opening
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    // Modal opened - ensure form is fresh
+    clearForm();
+  }
+})
 
 </script>
 
@@ -219,7 +279,7 @@ function resetOrderData() {
     <div class="bg-white rounded-2xl px-12 py-5 shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
 
       <!-- Close -->
-      <button @click="emit('close')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl">✕</button>
+      <button @click="handleClose" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl">✕</button>
 
       <!-- Title -->
       <h2 class="text-center text-xl font-semibold text-primary mb-6">Order Summary</h2>
@@ -285,8 +345,14 @@ function resetOrderData() {
 
       <!-- Actions -->
       <div class="flex justify-between gap-4">
-        <button  @click="() => { emit('close'); resetOrderData(); }" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-gray-400 transition-colors font-medium">Back</button>
-        <button @click="handlePlaceOrder" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition-colors font-medium">Place Order</button>
+        <button @click="handleClose" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-gray-400 transition-colors font-medium">Back</button>
+        <button 
+          @click="handlePlaceOrder" 
+          :disabled="totalAmount <= 0"
+          class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          Place Order
+        </button>
       </div>
     </div>
   </div>
@@ -317,7 +383,7 @@ function resetOrderData() {
   <!-- PayPal Modal -->
   <PayPalModal 
     :isOpen="showPayPalModal"
-    :amount="totalAmount.toFixed(2)"
+    :amount="pendingPayPalAmount"
     :orderId="pendingPayPalOrderId || undefined"
     @payment-success="handlePayPalSuccess"
     @payment-error="handlePayPalError"

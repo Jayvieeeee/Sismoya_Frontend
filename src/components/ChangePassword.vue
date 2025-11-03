@@ -11,7 +11,7 @@ const newPassword = ref("")
 const confirmPassword = ref("")
 const loading = ref(false)
 
-// Visibility toggles
+// Visibility toggles - default to false (password hidden)
 const showOld = ref(false)
 const showNew = ref(false)
 const showConfirm = ref(false)
@@ -89,7 +89,7 @@ async function handleChangePassword() {
             @click="showOld = !showOld"
             class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
           >
-            <component :is="showOld ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+            <component :is="showOld ? EyeIcon : EyeSlashIcon" class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -111,7 +111,7 @@ async function handleChangePassword() {
             @click="showNew = !showNew"
             class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
           >
-            <component :is="showNew ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+            <component :is="showNew ? EyeIcon : EyeSlashIcon" class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -133,7 +133,7 @@ async function handleChangePassword() {
             @click="showConfirm = !showConfirm"
             class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
           >
-            <component :is="showConfirm ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+            <component :is="showConfirm ? EyeIcon : EyeSlashIcon" class="w-5 h-5" />
           </button>
         </div>
       </div>

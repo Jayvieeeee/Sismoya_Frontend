@@ -112,7 +112,7 @@ export default {
         
         const res = await axiosInstance.post(`/orders/paypal/create`, {
           order_id: props.orderId,
-          total_amount: parseFloat(props.amount).toFixed(2)
+          amount: parseFloat(props.amount).toFixed(2)
         })
 
         const data = res.data

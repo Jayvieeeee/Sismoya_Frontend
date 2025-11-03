@@ -5,7 +5,6 @@ import Swal from "sweetalert2"
 import Cart from "@/assets/icons/cart.png"
 import plusIcon from "@/assets/icons/plus.png"
 import minusIcon from "@/assets/icons/minus.png"
-import trashIcon from "@/assets/icons/trash.png"
 import CustomerLayout from "@/Layout/CustomerLayout.vue"
 import OrderSummary from "@/components/OrderSummaryModal.vue"
 import type { ModalProduct } from "@/types"
@@ -16,6 +15,7 @@ import {
   removeFromCartBackend,
   clearSelectedItemsBackend
 } from "@/api/cartApi"
+import { TrashIcon } from "@heroicons/vue/24/outline"
 
 const IMAGE_BASE_URL = "https://sismoya.bsit3b.site/api"
 const router = useRouter()
@@ -241,21 +241,35 @@ const getDisplayText = (value: any, fallback: string = "N/A"): string => value |
                 </div>
               </div>
 
-        
-                <div
-                  v-if="loadingImages.has(item.cart_item_id)"
-                  class="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-primary"
-                ></div>
+              <!-- Right side - Image and Delete Button -->
+              <div class="flex items-center gap-2">
+                <!-- Image Container -->
+                <div class="relative">
+                  <div
+                    v-if="loadingImages.has(item.cart_item_id)"
+                    class="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-primary"
+                  ></div>
 
-                <img
-                  v-if="!hasImageError(item)"
-                  :src="getImageUrl(item)"
-                  @error="handleImageError($event, item)"
-                  @load="handleImageLoad($event, item)"
-                  alt="Product"
-                  class="w-20 h-20 object-cover rounded-full transition-opacity duration-300"
-                  :class="loadingImages.has(item.cart_item_id) ? 'opacity-0' : 'opacity-100'"
-                />
+                  <img
+                    v-if="!hasImageError(item)"
+                    :src="getImageUrl(item)"
+                    @error="handleImageError($event, item)"
+                    @load="handleImageLoad($event, item)"
+                    alt="Product"
+                    class="w-20 h-20 object-cover rounded-full transition-opacity duration-300"
+                    :class="loadingImages.has(item.cart_item_id) ? 'opacity-0' : 'opacity-100'"
+                  />
+                </div>
+
+                <!-- Delete Button -->
+                <button
+                  @click="removeItem(item)"
+                  class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-full transition-colors duration-200"
+                  aria-label="Remove item from cart"
+                >
+                  <TrashIcon class="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <!-- Checkout Section -->
@@ -290,7 +304,6 @@ const getDisplayText = (value: any, fallback: string = "N/A"): string => value |
     </div>
   </CustomerLayout>
 
-  <!-- ✅ Integrated Order Summary Modal -->
   <OrderSummary
     :isOpen="showOrderSummary"
     :products="selectedProducts"

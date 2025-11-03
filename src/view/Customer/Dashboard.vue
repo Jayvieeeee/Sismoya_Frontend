@@ -16,6 +16,8 @@ interface User {
   email: string;
   contact_no: string;
   role: string;
+  email_verified_at: string | null;
+  is_verified?: boolean;
 }
 
 interface DashboardStats {
@@ -55,6 +57,8 @@ const stats = ref<DashboardStats>({
 const latestOrders = ref<LatestOrder[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
+const emailVerificationLoading = ref(false);
+const emailVerificationSent = ref(false);
 
 // Modal state
 const isModalOpen = ref(false);
@@ -125,42 +129,30 @@ const formatOrderItems = (order: LatestOrder) => {
   return "No items";
 };
 
-
 const viewOrderDetails = (order: LatestOrder) => {
-  
   let gallonType = "Round Gallon";
   let quantity = 1;
   let imageUrl = undefined;
-  let paymentMethod = "Cash"; // Default to Cash
-  let paymentStatus = "unpaid"; // 🔥 ADD: Default payment status
+  let paymentMethod = "Cash";
+  let paymentStatus = "unpaid";
 
-  // Try to extract from items array first
   if (order.items && Array.isArray(order.items) && order.items.length > 0) {
     const firstItem = order.items[0];
     gallonType = firstItem.gallon_name || firstItem.product_name || "Round Gallon";
     quantity = firstItem.quantity || 1;
     imageUrl = firstItem.gallon_image || undefined;
-    
-    // Try to get payment method from item or order
     paymentMethod = firstItem.payment_method || order.payment_method || "Cash";
-    // 🔥 ADD: Get payment status from the order
     paymentStatus = order.payment_status || "unpaid";
-  } 
-  // If no items array, try to parse from order_items string
-  else if (order.order_items) {
+  } else if (order.order_items) {
     const match = order.order_items.match(/(\d+)x\s*(.+)/);
     if (match) {
       quantity = parseInt(match[1]) || 1;
       gallonType = match[2].trim() || "Round Gallon";
     }
-    
-    // Try to get payment method from order
     paymentMethod = order.payment_method || "Cash";
-    // 🔥 ADD: Get payment status from the order
     paymentStatus = order.payment_status || "unpaid";
   }
 
-  // 🔥 ADD: Format payment status for display
   const formatPaymentStatus = (status: string) => {
     const statusMap: Record<string, string> = {
       'unpaid': 'Unpaid',
@@ -180,13 +172,12 @@ const viewOrderDetails = (order: LatestOrder) => {
     quantity: quantity,
     totalAmount: parseFloat(order.total_amount?.toString() ?? "0"),
     paymentMethod: paymentMethod,
-    paymentStatus: formatPaymentStatus(paymentStatus), // 🔥 ADD: Include formatted payment status
+    paymentStatus: formatPaymentStatus(paymentStatus),
     imageUrl: imageUrl,
   };
   
   isModalOpen.value = true;
 };
-
 
 const closeModal = () => {
   isModalOpen.value = false;
@@ -194,7 +185,6 @@ const closeModal = () => {
 };
 
 const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
-  
   const pending = userOrders.filter((o) => 
     o.status.toLowerCase() === "pending" || 
     o.status.toLowerCase() === "to pick up" || 
@@ -205,7 +195,6 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
     o.status.toLowerCase() === "delivered"
   ).length;
 
-  
   const cancelled = userOrders.filter((o) => 
     o.status.toLowerCase() === "cancelled"
   ).length;
@@ -219,7 +208,6 @@ const computeStatsFromOrders = async (userOrders: UserOrder[]) => {
 };
 
 const handleDashboardError = async (err: any) => {
-
   if (err.response?.status === 401) {
     error.value = "Please login again to view your dashboard";
     localStorage.removeItem("token");
@@ -270,6 +258,68 @@ const fallbackToLocalStats = async () => {
   } catch (fallbackErr) {
     error.value = "Unable to load dashboard data. Please try again later.";
   }
+};
+
+// Email verification function - UPDATED with token
+const sendEmailVerification = async () => {
+  try {
+    emailVerificationLoading.value = true;
+    emailVerificationSent.value = false;
+    
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    // Make request with token in headers
+    const response = await axiosInstance.get("/verify-email", {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data?.success) {
+      emailVerificationSent.value = true;
+      // Show success message
+      alert("Verification email sent! Please check your inbox and spam folder.");
+    } else {
+      alert("Failed to send verification email. Please try again.");
+    }
+  } catch (err: any) {
+    console.error("Email verification error:", err);
+    const errorMessage = err.response?.data?.message || "Failed to send verification email. Please try again.";
+    
+    if (err.response?.status === 400 && err.response?.data?.message?.includes("already verified")) {
+      // If already verified, refresh user data
+      await fetchUserProfile();
+    } else if (err.response?.status === 401) {
+      alert("Session expired. Please login again.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      router.push("/login");
+    } else {
+      alert(errorMessage);
+    }
+  } finally {
+    emailVerificationLoading.value = false;
+  }
+};
+
+// Fetch user profile to check verification status
+const fetchUserProfile = async () => {
+  try {
+    const profile = await getProfile();
+    user.value = profile;
+  } catch (err) {
+    console.error("Failed to fetch user profile:", err);
+  }
+};
+
+// Check if user needs email verification
+const needsEmailVerification = () => {
+  return user.value && !user.value.email_verified_at && !user.value.is_verified;
 };
 
 const fetchDashboardData = async () => {
@@ -374,12 +424,48 @@ onMounted(() => fetchDashboardData());
           </div>
 
           <div v-else>
-            <p class="text-lg my-4 font-semibold">
-              Welcome,
-              <span v-if="user">
-                {{ user.first_name }} {{ user.last_name }}
-              </span>
-            </p>
+            <!-- Welcome and Email Verification Row -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+              <p class="text-lg font-semibold">
+                Welcome,
+                <span v-if="user">
+                  {{ user.first_name }} {{ user.last_name }}
+                </span>
+              </p>
+              
+              <!-- Email Verification Message - IMPROVED -->
+              <div v-if="needsEmailVerification()" 
+                   class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+                <div class="flex-1">
+                  <p class="text-yellow-800 text-sm font-medium mb-1">
+                    Please verify your email address to access all features
+                  </p>
+                  <p class="text-yellow-600 text-xs" v-if="emailVerificationSent">
+                    ✅ Verification email sent! Check your inbox and spam folder.
+                  </p>
+                  <p class="text-yellow-600 text-xs" v-else>
+                    We've sent a verification link to <strong>{{ user?.email }}</strong>
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    @click="sendEmailVerification"
+                    :disabled="emailVerificationLoading"
+                    class="bg-yellow-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    <span v-if="emailVerificationLoading">Sending...</span>
+                    <span v-else>{{ emailVerificationSent ? 'Resend' : 'Send Verification' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Email Verified Success Message -->
+              <div v-else-if="user?.email_verified_at" 
+                   class="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                <span class="text-green-600">✅</span>
+                <p class="text-green-800 text-sm font-medium">Email verified</p>
+              </div>
+            </div>
 
             <div class="mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 shadow-lg">
               <div class="flex justify-center items-center">
@@ -405,7 +491,7 @@ onMounted(() => fetchDashboardData());
               </div>
             </div>
 
-            <!-- Recent Orders  -->
+            <!-- Recent Orders - Non-scrollable -->
             <div class="bg-white shadow rounded-xl p-4">
               <div class="flex justify-between items-center mb-3">
                 <h2 class="text-lg font-bold text-gray-800">Recent Orders</h2>

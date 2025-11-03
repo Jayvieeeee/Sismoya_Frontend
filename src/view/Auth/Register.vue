@@ -5,6 +5,7 @@ import { registerUser } from "@/api/registerApi"
 import LandingPageLayout from "@/Layout/LandingPageLayout.vue"
 import SuccessModal from "@/components/SuccessModal.vue"
 import gallonImg from "@/assets/images/gallon.png"
+import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline"
 
 const router = useRouter()
 
@@ -14,9 +15,11 @@ const lastName = ref("")
 const username = ref("")
 const email = ref("")
 const password = ref("")
+const confirmPassword = ref("")
 const contactNo = ref("")
 const address = ref("")
 const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 const role = ref("user")
 
 // Status & errors
@@ -24,10 +27,24 @@ const errors = ref<Record<string, string>>({})
 const successVisible = ref(false)
 const isLoading = ref(false)
 
+const validatePasswords = () => {
+  if (password.value !== confirmPassword.value) {
+    errors.value.confirmPassword = "Passwords do not match"
+    return false
+  }
+  return true
+}
+
 const handleRegister = async () => {
-  if (isLoading.value) return // Prevent double click
+  if (isLoading.value) return
 
   errors.value = {}
+  
+  // Frontend password matching validation
+  if (!validatePasswords()) {
+    return
+  }
+
   try {
     isLoading.value = true
 
@@ -36,14 +53,14 @@ const handleRegister = async () => {
       last_name: lastName.value,
       username: username.value,
       email: email.value,
-      password: password.value,
+      password: password.value, // Only send the password field to backend
       contact_no: contactNo.value,
       address: address.value,
       role: role.value,
     }
 
     await registerUser(payload)
-    successVisible.value = true // ✅ show success modal
+    successVisible.value = true
   } catch (err: any) {
     if (err.response?.data?.errors) {
       errors.value = err.response.data.errors
@@ -61,7 +78,13 @@ function goToLogin() {
 
 function handleOk() {
   successVisible.value = false
-  router.push("/login") // ✅ Redirect after OK
+  router.push("/login")
+}
+
+function clearError(field: string) {
+  if (errors.value[field]) {
+    delete errors.value[field]
+  }
 }
 </script>
 
@@ -160,6 +183,7 @@ function handleOk() {
           <div class="mb-4 relative">
             <input
               v-model="password"
+              @input="clearError('confirmPassword')"
               :type="showPassword ? 'text' : 'password'"
               placeholder="Password"
               class="w-full pl-4 pr-10 py-3 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -168,54 +192,38 @@ function handleOk() {
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <svg
-                v-if="!showPassword"
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
-              <svg
-                v-else
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.958 9.958 0 012.223-3.592m3.412-2.406A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.958 9.958 0 01-4.043 5.197M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 3l18 18"
-                />
-              </svg>
+              <EyeSlashIcon v-if="showPassword" class="h-5 w-5" />
+              <EyeIcon v-else class="h-5 w-5" />
             </button>
 
             <p v-if="errors.password" class="text-red-500 text-xs mt-1">
               {{ errors.password }}
+            </p>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="mb-4 relative">
+            <input
+              v-model="confirmPassword"
+              @input="clearError('confirmPassword')"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              placeholder="Confirm Password"
+              class="w-full pl-4 pr-10 py-3 text-sm bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <!-- Toggle -->
+            <button
+              type="button"
+              @click="showConfirmPassword = !showConfirmPassword"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <EyeSlashIcon v-if="showConfirmPassword" class="h-5 w-5" />
+              <EyeIcon v-else class="h-5 w-5" />
+            </button>
+
+            <p v-if="errors.confirmPassword" class="text-red-500 text-xs mt-1">
+              {{ errors.confirmPassword }}
             </p>
           </div>
 

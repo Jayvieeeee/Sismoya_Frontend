@@ -3,7 +3,7 @@ import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 interface OrderDetails {
   orderId: string;
-  status: 'Pending' | 'To Pick Up' | 'Preparing' | 'To Deliver' | 'Completed';
+  status: 'Pending' | 'To Pick Up' | 'Preparing' | 'To Deliver' | 'Completed' | 'Cancelled';
   pickUpDateTime: string;
   gallonType: string;
   quantity: number;
@@ -31,7 +31,8 @@ const statusMap: Record<string, string> = {
   'to_pick_up': 'To Pick Up',
   'preparing': 'Preparing',
   'to_deliver': 'To Deliver',
-  'completed': 'Completed'
+  'completed': 'Completed',
+  'cancelled': 'Cancelled'
 };
 
 function getDisplayStatus(backendStatus: string): string {
@@ -54,6 +55,10 @@ function getProgressLineBottom(orderStatus: string) {
   const progressPercentage = (currentIndex / (statusList.length - 1)) * 100;
   
   return `${100 - progressPercentage}%`;
+}
+
+function isCancelled(orderStatus: string): boolean {
+  return getDisplayStatus(orderStatus) === 'Cancelled';
 }
 </script>
 
@@ -82,47 +87,68 @@ function getProgressLineBottom(orderStatus: string) {
           
           <!-- Status Tracker --> 
           <div class="relative flex flex-col space-y-4">
-            <!-- Background Line -->
-            <div class="absolute left-[10px] top-[20px] bottom-[90px] w-0.5 bg-gray-300"></div>
+            <!-- Background Line - Only show if NOT cancelled -->
+            <div 
+              v-if="!isCancelled(order.status)"
+              class="absolute left-[10px] top-[20px] bottom-[90px] w-0.5 bg-gray-300"
+            ></div>
             
             <!-- Filled Green Progress Line -->
             <div
+              v-if="!isCancelled(order.status)"
               class="absolute left-[10px] top-[20px] w-0.5 bg-green-500 transition-all duration-500"
               :style="{ bottom: getProgressLineBottom(order.status) }"
             ></div>
 
-            <div
-              v-for="status in statusList"
-              :key="status"
-              class="relative flex items-center gap-4"
-            >
-              <!-- Status Checkmark Circle -->
+            <!-- Normal Status Progress -->
+            <template v-if="!isCancelled(order.status)">
               <div
-                :class="[ 
-                  'w-6 h-6 rounded-full flex items-center justify-center relative z-10 flex-shrink-0 border-2',
-                  isActiveStatus(status, order.status) 
-                    ? 'bg-green-500 border-green-500' 
-                    : 'bg-white border-gray-300'
-                ]"
+                v-for="status in statusList"
+                :key="status"
+                class="relative flex items-center gap-4"
               >
-                <CheckIcon
-                  v-if="isActiveStatus(status, order.status)"
-                  class="w-3 h-3 text-white stroke-[3]"
-                />
-              </div>
+                <!-- Status Checkmark Circle -->
+                <div
+                  :class="[ 
+                    'w-6 h-6 rounded-full flex items-center justify-center relative z-10 flex-shrink-0 border-2',
+                    isActiveStatus(status, order.status) 
+                      ? 'bg-green-500 border-green-500' 
+                      : 'bg-white border-gray-300'
+                  ]"
+                >
+                  <CheckIcon
+                    v-if="isActiveStatus(status, order.status)"
+                    class="w-3 h-3 text-white stroke-[3]"
+                  />
+                </div>
 
-              <!-- Status Label -->
-              <span
-                :class="[
-                  'font-semibold whitespace-nowrap',
-                  isActiveStatus(status, order.status)
-                    ? 'text-gray-900'
-                    : 'text-gray-400'
-                ]"
-              >
-                {{ status }}
-              </span>
-            </div>
+                <!-- Status Label -->
+                <span
+                  :class="[
+                    'font-semibold whitespace-nowrap',
+                    isActiveStatus(status, order.status)
+                      ? 'text-gray-900'
+                      : 'text-gray-400'
+                  ]"
+                >
+                  {{ status }}
+                </span>
+              </div>
+            </template>
+
+            <!-- Cancelled Status - Simple Circle with X -->
+            <template v-else>
+              <div class="relative flex items-center gap-4">
+                <!-- Circle with X -->
+                <div class="w-6 h-6 rounded-full flex items-center justify-center relative z-10 flex-shrink-0 border-2 bg-red-500 border-red-500">
+                  <XMarkIcon class="w-3 h-3 text-white stroke-[3]" />
+                </div>
+                <!-- Cancel Text -->
+                <span class="font-semibold whitespace-nowrap text-red-600">
+                  Cancel
+                </span>
+              </div>
+            </template>
           </div>
 
           <!-- Order Details -->
@@ -151,7 +177,7 @@ function getProgressLineBottom(orderStatus: string) {
             <div>
               <p class="font-medium text-gray-900">Payment Method: {{ order.paymentMethod }}</p>
             </div>
-                        <div>
+            <div>
               <p class="font-medium text-gray-900">Payment Status: {{ order.paymentStatus }}</p>
             </div>
           </div>

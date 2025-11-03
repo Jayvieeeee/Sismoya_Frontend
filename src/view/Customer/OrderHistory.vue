@@ -5,12 +5,14 @@ import CustomerLayout from "@/Layout/CustomerLayout.vue";
 import OrderDetailsModal from "@/components/OrderDetailsModal.vue";
 import { useRouter } from "vue-router";
 import { getProfile } from "@/utils/auth";
+import Swal from 'sweetalert2';
 
 const router = useRouter();
 const orders = ref<any[]>([]);
 const loading = ref(true);
 const search = ref("");
 const backendError = ref("");
+const cancelLoading = ref<string | null>(null);
 
 const isModalOpen = ref(false);
 const selectedOrder = ref<any>(null);
@@ -31,7 +33,6 @@ function getDisplayDate(order: any) {
     : formatDate(order.created_at);
 }
 
-
 function getProductName(order: any) {
   if (order.items?.length) {
     const item = order.items[0];
@@ -48,25 +49,87 @@ function formatStatus(status: string) {
     case "preparing": return "Preparing";
     case "to deliver": return "To Deliver";
     case "completed": return "Completed";
+    case "cancelled": return "Cancelled";
     default: return "Pending";
+  }
+}
+
+function canCancelOrder(order: any) {
+  const status = order.status?.toLowerCase();
+  return status === 'pending';
+}
+
+async function cancelOrder(order: any) {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `You want to cancel order #${order.order_id}.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, cancel it!',
+    cancelButtonText: 'No, keep it'
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  cancelLoading.value = order.order_id;
+
+  try {
+    const response = await axiosInstance.post(`/orders/${order.order_id}/cancel`);
+    
+    if (response.data.success) {
+      // Update the order status locally
+      const orderIndex = orders.value.findIndex(o => o.order_id === order.order_id);
+      if (orderIndex !== -1) {
+        orders.value[orderIndex].status = 'cancelled';
+      }
+      
+      await Swal.fire({
+        title: 'Cancelled!',
+        text: `Order #${order.order_id} has been cancelled successfully.`,
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+      });
+    } else {
+      await Swal.fire({
+        title: 'Error!',
+        text: `Failed to cancel Order #${order.order_id}: ${response.data.message || 'Unknown error'}`,
+        icon: 'error',
+        confirmButtonColor: '#3085d6',
+      });
+    }
+  } catch (err: any) {
+    console.error('Failed to cancel order:', err);
+    const errorMessage = err.response?.data?.message || 'Failed to cancel order. Please try again.';
+    
+    await Swal.fire({
+      title: 'Error!',
+      text: `Failed to cancel Order #${order.order_id}: ${errorMessage}`,
+      icon: 'error',
+      confirmButtonColor: '#3085d6',
+    });
+  } finally {
+    cancelLoading.value = null;
   }
 }
 
 function viewOrderDetails(order: any) {
   const firstItem = order.items?.[0] || {};
 
-  // Use the raw status from the order, don't format it
-  // The modal expects backend format (lowercase with underscores)
   const rawStatus = order.status?.toLowerCase() || 'pending';
 
   selectedOrder.value = {
     orderId: order.order_id?.toString() ?? "N/A",
-    status: rawStatus, // Use raw status instead of formatted
+    status: rawStatus,
     pickUpDateTime: getDisplayDate(order),
     gallonType: firstItem.gallon_name || firstItem.product_name || "Unknown Gallon",
     quantity: firstItem.quantity ?? 0,
     totalAmount: parseFloat(order.total_price ?? 0),
     paymentMethod: order.payment_method,
+    paymentStatus: order.payment_status,
     imageUrl: firstItem.gallon_image,
   };
   isModalOpen.value = true;
@@ -129,7 +192,6 @@ const filteredOrders = computed(() => {
 });
 </script>
 
-
 <template>
   <CustomerLayout>
     <div class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
@@ -166,18 +228,19 @@ const filteredOrders = computed(() => {
                 <th class="py-3 px-4 font-semibold">Total Amount</th>
                 <th class="py-3 px-4 font-semibold">Date</th>
                 <th class="py-3 px-4 font-semibold">Status</th>
-                <th class="py-3 px-4 font-semibold">Action</th>
+                <th class="py-3 px-4 font-semibold">View Details</th>
+                <th class="py-3 px-4 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               <!-- Loading -->
               <tr v-if="loading">
-                <td colspan="6" class="text-center py-6">Loading orders...</td>
+                <td colspan="7" class="text-center py-6">Loading orders...</td>
               </tr>
 
               <!-- Backend Error -->
               <tr v-else-if="backendError && orders.length === 0">
-                <td colspan="6" class="text-center py-8">
+                <td colspan="7" class="text-center py-8">
                   <div class="flex flex-col items-center text-gray-500">
                     <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -191,7 +254,7 @@ const filteredOrders = computed(() => {
 
               <!-- Empty -->
               <tr v-else-if="orders.length === 0">
-                <td colspan="6" class="text-center py-6 text-gray-500">No orders found.</td>
+                <td colspan="7" class="text-center py-6 text-gray-500">No orders found.</td>
               </tr>
 
               <!-- Data Rows -->
@@ -202,7 +265,7 @@ const filteredOrders = computed(() => {
                 class="border-t hover:bg-gray-50 text-center"
               >
                 <td class="py-3 px-4">{{ order.order_id }}</td>
-                <td class="py-3 px-4">{{ getProductName(order) }}</td> <!-- Now shows actual product name -->
+                <td class="py-3 px-4">{{ getProductName(order) }}</td>
                 <td class="py-3 px-4">₱{{ order.total_price?.toFixed(2) }}</td>
                 <td class="py-3 px-4">{{ formatDate(order.pickup_datetime) }}</td>
                 <td
@@ -217,6 +280,7 @@ const filteredOrders = computed(() => {
                 {{ order.status.replaceAll('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) }}
                 </td>
 
+                <!-- View Details Column -->
                 <td class="py-3 px-4">
                   <button 
                     @click="viewOrderDetails(order)"
@@ -224,6 +288,19 @@ const filteredOrders = computed(() => {
                   >
                     View Details
                   </button>
+                </td>
+
+                <!-- Actions Column -->
+                <td class="py-3 px-4">
+                  <button 
+                    v-if="canCancelOrder(order)"
+                    @click="cancelOrder(order)"
+                    :disabled="cancelLoading === order.order_id"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 text-sm font-medium"
+                  >
+                    {{ cancelLoading === order.order_id ? 'Cancelling...' : 'Cancel' }}
+                  </button>
+                  <span v-else class="text-gray-400">-</span>
                 </td>
               </tr>
             </tbody>
@@ -265,18 +342,27 @@ const filteredOrders = computed(() => {
             </span>
           </div>
 
-          <p class="text-gray-700"><strong>Product:</strong> {{ getProductName(order) }}</p> <!-- Now shows actual product name -->
+          <p class="text-gray-700"><strong>Product:</strong> {{ getProductName(order) }}</p>
           <p class="text-gray-700"><strong>Total:</strong> ₱{{ order.total_price?.toFixed(2) }}</p>
           <p class="text-gray-700"><strong>Date:</strong> {{ formatDate(order.created_at) }}</p>
           <p class="text-gray-700"><strong>Payment:</strong> {{ order.payment_method?.charAt(0).toUpperCase() + order.payment_method?.slice(1) }}</p>
 
-          <div class="mt-3 text-right">
+          <div class="mt-3 flex justify-between items-center">
             <button 
               @click="viewOrderDetails(order)"
               class="text-blue-600 underline hover:text-blue-800 text-sm"
             >
               View Details
             </button>
+
+        <button 
+          v-if="canCancelOrder(order)"
+          @click="cancelOrder(order)"
+          :disabled="cancelLoading === order.order_id"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 text-sm font-medium"
+        >
+          {{ cancelLoading === order.order_id ? 'Cancelling...' : 'Cancel' }}
+        </button>
           </div>
         </div>
       </div>
