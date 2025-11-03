@@ -83,7 +83,7 @@ function getProgressLineBottom(orderStatus: string) {
           <!-- Status Tracker --> 
           <div class="relative flex flex-col space-y-4">
             <!-- Background Line -->
-            <div class="absolute left-[10px] top-[20px] bottom-[55px] w-0.5 bg-gray-300"></div>
+            <div class="absolute left-[10px] top-[20px] bottom-[90px] w-0.5 bg-gray-300"></div>
             
             <!-- Filled Green Progress Line -->
             <div
@@ -150,6 +150,9 @@ function getProgressLineBottom(orderStatus: string) {
             
             <div>
               <p class="font-medium text-gray-900">Payment Method: {{ order.paymentMethod }}</p>
+            </div>
+                        <div>
+              <p class="font-medium text-gray-900">Payment Status: {{ order.paymentStatus }}</p>
             </div>
           </div>
         </div>

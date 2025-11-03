@@ -32,7 +32,8 @@ interface LatestOrder {
   created_at: string;
   order_items: string;
   items?: any[];
-  payment_method?: string; // Add this
+  payment_method?: string;
+  payment_status?: string; 
 }
 
 interface UserOrder {
@@ -131,6 +132,7 @@ const viewOrderDetails = (order: LatestOrder) => {
   let quantity = 1;
   let imageUrl = undefined;
   let paymentMethod = "Cash"; // Default to Cash
+  let paymentStatus = "unpaid"; // 🔥 ADD: Default payment status
 
   // Try to extract from items array first
   if (order.items && Array.isArray(order.items) && order.items.length > 0) {
@@ -141,6 +143,8 @@ const viewOrderDetails = (order: LatestOrder) => {
     
     // Try to get payment method from item or order
     paymentMethod = firstItem.payment_method || order.payment_method || "Cash";
+    // 🔥 ADD: Get payment status from the order
+    paymentStatus = order.payment_status || "unpaid";
   } 
   // If no items array, try to parse from order_items string
   else if (order.order_items) {
@@ -152,7 +156,21 @@ const viewOrderDetails = (order: LatestOrder) => {
     
     // Try to get payment method from order
     paymentMethod = order.payment_method || "Cash";
+    // 🔥 ADD: Get payment status from the order
+    paymentStatus = order.payment_status || "unpaid";
   }
+
+  // 🔥 ADD: Format payment status for display
+  const formatPaymentStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'unpaid': 'Unpaid',
+      'paid': 'Paid',
+      'pending': 'Pending',
+      'failed': 'Failed',
+      'refunded': 'Refunded'
+    };
+    return statusMap[status.toLowerCase()] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
 
   selectedOrder.value = {
     orderId: order.id?.toString() ?? "N/A",
@@ -162,6 +180,7 @@ const viewOrderDetails = (order: LatestOrder) => {
     quantity: quantity,
     totalAmount: parseFloat(order.total_amount?.toString() ?? "0"),
     paymentMethod: paymentMethod,
+    paymentStatus: formatPaymentStatus(paymentStatus), // 🔥 ADD: Include formatted payment status
     imageUrl: imageUrl,
   };
   
@@ -296,7 +315,9 @@ const fetchDashboardData = async () => {
         status: order.status,
         created_at: order.created_at,
         order_items: order.order_items,
-        items: order.items 
+        items: order.items, 
+        payment_method: order.payment_method, 
+        payment_status: order.payment_status
       }));
     } else {
       latestOrders.value = userOrders

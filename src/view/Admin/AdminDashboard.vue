@@ -37,7 +37,7 @@ interface Order {
   id: number
   name: string
   date: string
-  status: "completed" | "pending" | "cancelled" | "preparing" | "to_pickup" | "to_deliver" | string
+  status: "pending" | "cancelled" | "preparing" | "to_pickup" | "to_deliver" | "delivered" | string
   amount?: number | null
 }
 
@@ -163,7 +163,7 @@ function renderBarChart() {
           data,
           backgroundColor: "rgba(59,130,246,0.9)",
           borderRadius: 6,
-          barThickness: 22,
+          barThickness: 18,
         }
       ]
     },
@@ -183,7 +183,7 @@ function renderBarChart() {
           grid: { display: false },
           ticks: { 
             color: "#6B7280", 
-            font: { size: 11 },
+            font: { size: 12 },
             maxRotation: 45,
             minRotation: 45
           }
@@ -193,7 +193,8 @@ function renderBarChart() {
           grid: { color: "rgba(0,0,0,0.04)" },
           ticks: {
             callback: (val) => (Number(val) >= 1000 ? `₱${Number(val)/1000}k` : `${Number(val)}`),
-            color: "#6B7280"
+            color: "#6B7280",
+            font: { size: 12 }
           }
         }
       }
@@ -236,12 +237,12 @@ function renderDoughnutChart() {
           backgroundColor: nonZeroColors,
           borderWidth: 2,
           borderColor: '#ffffff',
-          hoverOffset: 8,
+          hoverOffset: 6,
         }
       ]
     },
     options: {
-      cutout: "70%" as any,
+      cutout: "60%" as any,
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -266,12 +267,13 @@ function buildOrderStatusList() {
   const map = orderStatusMap.value
   const list = []
   
+  // Ensure all statuses are included
   if (map["pending"] || map["pending"] === 0) list.push({ label: "Pending", value: map["pending"], color: "#f97316" })
   if (map["preparing"] || map["preparing"] === 0) list.push({ label: "Preparing", value: map["preparing"], color: "#3b82f6" })
-  if (map["completed"] || map["completed"] === 0) list.push({ label: "Completed", value: map["completed"], color: "#10b981" })
   if (map["cancelled"] || map["cancelled"] === 0) list.push({ label: "Cancelled", value: map["cancelled"], color: "#ef4444" })
   if (map["to_pickup"] || map["to_pickup"] === 0) list.push({ label: "To Pickup", value: map["to_pickup"], color: "#8b5cf6" })
   if (map["to_deliver"] || map["to_deliver"] === 0) list.push({ label: "To Deliver", value: map["to_deliver"], color: "#06b6d4" })
+  if (map["delivered"] || map["delivered"] === 0) list.push({ label: "Delivered", value: map["delivered"], color: "#10b981" })
   
   orderStatusList.value = list
 }
@@ -281,10 +283,10 @@ const formatStatus = (status: string) => {
   const statusMap: Record<string, string> = {
     'pending': 'Pending',
     'preparing': 'Preparing',
-    'completed': 'Completed',
     'cancelled': 'Cancelled',
     'to_pickup': 'To Pickup',
-    'to_deliver': 'To Deliver'
+    'to_deliver': 'To Deliver',
+    'delivered': 'Delivered'
   }
   return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1)
 }
@@ -294,10 +296,10 @@ const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     'pending': 'text-orange-500',
     'preparing': 'text-blue-500',
-    'completed': 'text-green-600',
     'cancelled': 'text-red-500',
     'to_pickup': 'text-purple-500',
-    'to_deliver': 'text-cyan-500'
+    'to_deliver': 'text-cyan-500',
+    'delivered': 'text-green-600'
   }
   return colors[status] || 'text-gray-500'
 }
@@ -332,29 +334,29 @@ async function fetchDashboardData() {
     currentDate.value = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     currentTime.value = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
 
-    // Stats card values - Map backend fields to frontend expectations
     stats.value = [
       { 
-        label: "Completed Orders Today", 
-        value: d.completed_orders_today || d.completedOrdersToday || d.stats?.completed_today || d.completed_today || 0 
+        label: "Delivered Orders Today", 
+        value: d.stats?.completed_today || d.stats?.delivered_today || 0 
       },
       { 
         label: "Total Sales Today", 
-        value: formatCurrency(d.total_sales_today || d.totalSalesToday || d.stats?.total_sales_today || d.total_sales_today || 0) 
+        value: formatCurrency(d.stats?.total_sales_today || 0) 
       },
       { 
         label: "Pending Orders", 
-        value: d.pending_orders || d.pendingOrders || d.stats?.pending_orders || d.pending_orders || 0 
+        value: d.stats?.pending_orders || 0 
       },
       { 
         label: "Total Customers", 
-        value: d.total_customers || d.totalCustomers || d.stats?.total_customers || d.total_customers || 0 
+        value: d.stats?.total_customers || 0 
       }
     ]
 
-    // Orders to pickup/deliver - handle different possible field names
-    ordersToPickUp.value = d.orders_to_pickup || d.ordersToPickup || d.pickup_orders || d.to_pickup || 0
-    ordersToDeliver.value = d.orders_to_deliver || d.ordersToDeliver || d.delivery_orders || d.to_deliver || 0
+    // Fix these too:
+    ordersToPickUp.value = d.order_status_distribution?.to_pickup || 0
+    ordersToDeliver.value = d.order_status_distribution?.to_deliver || 0
+
 
     // Process sales data - handle different possible structures
     const normalizeArray = (arr: any[], targetLength: number) => {
@@ -363,7 +365,6 @@ async function fetchDashboardData() {
         const item = arr[i]
         if (item == null) { out.push(0); continue }
         if (typeof item === "object") {
-          // Handle objects like {period: '...', total: 123} or {date: '...', amount: 123}
           out.push(Number(item.total ?? item.amount ?? item.value ?? item.revenue ?? item.sales ?? 0))
         } else {
           out.push(Number(item))
@@ -392,13 +393,14 @@ async function fetchDashboardData() {
     // Build order status map - handle multiple possible field structures
     const statusData = d.order_status_distribution || d.orderStatus || d.orders_by_status || d.status_distribution || {}
     
+    // Ensure all statuses are included
     orderStatusMap.value = {
       pending: statusData.pending || d.pending_orders || 0,
       preparing: statusData.preparing || statusData.preparation || 0,
-      completed: statusData.completed || d.completed_orders_today || 0,
       cancelled: statusData.cancelled || statusData.canceled || 0,
       to_pickup: statusData.to_pickup || statusData.pickup || d.orders_to_pickup || 0,
-      to_deliver: statusData.to_deliver || statusData.delivery || d.orders_to_deliver || 0
+      to_deliver: statusData.to_deliver || statusData.delivery || d.orders_to_deliver || 0,
+      delivered: statusData.delivered || statusData.completed || d.delivered_orders_today || 0
     }
     buildOrderStatusList()
 
@@ -436,7 +438,7 @@ async function fetchDashboardData() {
 const startAutoRefresh = () => {
   setInterval(() => {
     fetchDashboardData()
-  }, 30000) // 30 seconds
+  }, 30000)
 }
 
 // watch activeView changes to re-render bar chart
@@ -448,146 +450,139 @@ watch(activeView, () => {
 onMounted(() => {
   fetchDashboardData()
   startAutoRefresh()
-  
-  // Update labels every minute to keep them current
   setInterval(updateLabels, 60000)
 })
 </script>
 
 <template>
   <AdminLayout>
-    <div class="p-6">
+    <!-- Main dashboard container - full height, no scroll -->
+    <div class="p-4 sm:p-6 h-screen overflow-hidden flex flex-col">
       <!-- Header row -->
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-3xl font-bold text-primary">Dashboard</h1>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 shrink-0">
+        <h1 class="text-2xl sm:text-3xl font-bold text-primary">Dashboard</h1>
         <div class="flex gap-3 items-center">
-          <div class="bg-white px-3 py-2 rounded-lg shadow text-sm">{{ currentDate }}</div>
-          <div class="bg-white px-3 py-2 rounded-lg shadow text-sm">{{ currentTime }}</div>
+          <div class="bg-white px-3 py-2 rounded-lg shadow text-sm font-medium">{{ currentDate }}</div>
+          <div class="bg-white px-3 py-2 rounded-lg shadow text-sm font-medium">{{ currentTime }}</div>
         </div>
       </div>
 
-      <!-- Stats cards -->
-      <div class="grid grid-cols-4 gap-4 mb-4">
-        <div v-for="stat in stats" :key="stat.label" class="bg-white rounded-xl p-4 shadow-sm h-24">
-          <div class="text-2xl font-semibold text-primary">{{ stat.value }}</div>
-          <div class="text-gray-500 text-xs mt-2">{{ stat.label }}</div>
+      <!-- Content area (fills remaining height) -->
+      <div class="flex-1 flex flex-col justify-between overflow-hidden">
+        <!-- Top stats -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-for="stat in stats" :key="stat.label" class="bg-white rounded-xl p-4 shadow-sm h-24 flex flex-col justify-center">
+            <div class="text-xl font-bold text-primary mb-1">{{ stat.value }}</div>
+            <div class="text-gray-600 text-sm">{{ stat.label }}</div>
+          </div>
         </div>
-      </div>
 
-      <!-- charts and order status -->
-      <div class="grid grid-cols-3 gap-4 mb-2">
-        <!-- Sales revenue card -->
-        <div class="col-span-2 bg-white rounded-xl p-4 shadow-sm min-h-[260px]">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold text-gray-700">Sales Revenue</h3>
-
-            <!-- toggles -->
-            <div class="flex gap-2">
-              <button
-                :class="{'bg-sky-500 text-white': activeView==='daily', 'bg-gray-200 text-gray-700': activeView!=='daily'}"
-                class="px-3 py-1 text-xs rounded-full transition-colors"
-                @click="activeView = 'daily'"
-              >Daily</button>
-              <button
-                :class="{'bg-sky-500 text-white': activeView==='weekly', 'bg-gray-200 text-gray-700': activeView!=='weekly'}"
-                class="px-3 py-1 text-xs rounded-full transition-colors"
-                @click="activeView = 'weekly'"
-              >Weekly</button>
-              <button
-                :class="{'bg-sky-500 text-white': activeView==='monthly', 'bg-gray-200 text-gray-700': activeView!=='monthly'}"
-                class="px-3 py-1 text-xs rounded-full transition-colors"
-                @click="activeView = 'monthly'"
-              >Monthly</button>
+        <!-- Middle charts section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 my-2">
+          <div class="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm flex flex-col justify-between">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3">
+              <h3 class="font-semibold text-gray-800 text-lg">Sales Revenue</h3>
+              <div class="flex gap-2">
+                <button
+                  :class="{'bg-sky-500 text-white': activeView==='daily', 'bg-gray-200 text-gray-700': activeView!=='daily'}"
+                  class="px-3 py-1.5 text-sm rounded-lg font-medium"
+                  @click="activeView = 'daily'"
+                >Daily</button>
+                <button
+                  :class="{'bg-sky-500 text-white': activeView==='weekly', 'bg-gray-200 text-gray-700': activeView!=='weekly'}"
+                  class="px-3 py-1.5 text-sm rounded-lg font-medium"
+                  @click="activeView = 'weekly'"
+                >Weekly</button>
+                <button
+                  :class="{'bg-sky-500 text-white': activeView==='monthly', 'bg-gray-200 text-gray-700': activeView!=='monthly'}"
+                  class="px-3 py-1.5 text-sm rounded-lg font-medium"
+                  @click="activeView = 'monthly'"
+                >Monthly</button>
+              </div>
+            </div>
+            <div class="w-full h-44">
+              <canvas ref="barCanvas" class="w-full h-full"></canvas>
             </div>
           </div>
 
-          <!-- chart canvas -->
-          <div class="w-full h-44">
-            <canvas ref="barCanvas" class="w-full h-full"></canvas>
-          </div>
-        
-        </div>
-
-        <!-- Order status -->
-        <div class="bg-white rounded-xl p-4 shadow-sm min-h-[260px]">
-          <h3 class="font-semibold text-gray-700 mb-8">Order Status</h3>
-          <div class="flex items-center gap-4">
-            <div class="w-36 h-36 relative">
-              <canvas ref="doughnutCanvas" class="w-full h-full"></canvas>
-            </div>
-
-            <div class="flex-1">
-              <div v-for="s in orderStatusList" :key="s.label" class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
-                  <div :style="{color: s.color}" class="text-lg">●</div>
-                  <div class="text-sm text-gray-600">{{ s.label }}</div>
+          <div class="bg-white rounded-xl p-5 shadow-sm flex flex-col justify-between">
+            <h3 class="font-semibold text-gray-800 text-lg mb-4">Order Status</h3>
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+              <div class="w-28 h-28">
+                <canvas ref="doughnutCanvas" class="w-full h-full"></canvas>
+              </div>
+              <div class="flex-1">
+                <div v-for="s in orderStatusList" :key="s.label" class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <div :style="{color: s.color}" class="text-lg">●</div>
+                    <div class="text-sm text-gray-700 font-medium">{{ s.label }}</div>
+                  </div>
+                  <div class="text-sm font-bold text-gray-800">{{ s.value }}</div>
                 </div>
-                <div class="text-sm font-semibold text-gray-700">{{ s.value }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4">
-        <div class="space-y-4 p-4">
-          <!-- Orders To Pick Up Card -->
-          <div class="bg-white rounded-xl p-4 shadow-sm">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="text-xs text-gray-500 mb-2">Orders To Pick Up</div>
-                <div class="text-2xl text-center font-bold text-gray-800">{{ ordersToPickUp }}</div>
-              </div>
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <img :src="OrdersToPickUp" alt="Orders to Pick Up" class="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Orders To Deliver Card -->
-          <div class="bg-white rounded-xl p-4 shadow-sm">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="text-xs text-gray-500 mb-2">Orders To Deliver</div>
-                <div class="text-2xl text-center font-bold text-gray-800">{{ ordersToDeliver }}</div>
-              </div>
-              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <img :src="OrdersToDeliver" alt="Orders to Deliver" class="w-6 h-6" />
               </div>
             </div>
           </div>
         </div>
 
-        <div class="col-span-2 bg-white rounded-xl p-4 shadow-sm">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold text-gray-700">Recent Orders</h3>
-            <div class="text-xs text-gray-500">Latest</div>
+        <!-- Bottom section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="space-y-3">
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm text-gray-600 mb-2">Orders To Pick Up</div>
+                  <div class="text-2xl font-bold text-gray-800">{{ ordersToPickUp }}</div>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <img :src="OrdersToPickUp" alt="Orders to Pick Up" class="w-6 h-6" />
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm text-gray-600 mb-2">Orders To Deliver</div>
+                  <div class="text-2xl font-bold text-gray-800">{{ ordersToDeliver }}</div>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <img :src="OrdersToDeliver" alt="Orders to Deliver" class="w-6 h-6" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="overflow-auto max-h-40">
+          <div class="lg:col-span-2 bg-white rounded-xl p-3 mb-8 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-gray-800 text-sm">Recent Orders</h3>
+              <div class="text-sm text-gray-500 font-medium">Latest</div>
+            </div>
+
             <table class="w-full text-sm">
-              <thead class="text-left text-xs text-gray-500 border-b">
+              <thead class="text-left text-gray-600 border-b">
                 <tr>
-                  <th class="pb-3">Order ID</th>
-                  <th class="pb-3">Name</th>
-                  <th class="pb-3">Date</th>
-                  <th class="pb-3">Status</th>
-                  <th class="pb-3">Amount</th>
+                  <th class="pb-3 pt-2 px-3 font-semibold">Order ID</th>
+                  <th class="pb-3 pt-2 px-3 font-semibold">Name</th>
+                  <th class="pb-3 pt-2 px-3 font-semibold">Date</th>
+                  <th class="pb-3 pt-2 px-3 font-semibold">Status</th>
+                  <th class="pb-3 pt-2 px-3 font-semibold">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="o in recentOrders" :key="o.id" class="border-b last:border-b-0">
-                  <td class="py-3 text-gray-700">#{{ o.id }}</td>
-                  <td class="py-3 text-gray-600">{{ o.name }}</td>
-                  <td class="py-3 text-gray-500">{{ o.date }}</td>
-                  <td class="py-3 font-medium" :class="getStatusColor(o.status)">
+                <tr v-for="o in recentOrders.slice(0, 3)" :key="o.id" class="border-b hover:bg-gray-50">
+                  <td class="py-3 px-3 text-gray-800 font-semibold">#{{ o.id }}</td>
+                  <td class="py-3 px-3 text-gray-700 truncate max-w-[100px]">{{ o.name }}</td>
+                  <td class="py-3 px-3 text-gray-600 whitespace-nowrap">{{ o.date }}</td>
+                  <td class="py-3 px-3 font-medium text-sm" :class="getStatusColor(o.status)">
                     {{ formatStatus(o.status) }}
                   </td>
-                  <td class="py-3 text-gray-800">{{ formatCurrency(o.amount ?? 0) }}</td>
+                  <td class="py-3 px-3 text-gray-800 font-semibold whitespace-nowrap">{{ formatCurrency(o.amount ?? 0) }}</td>
+                </tr>
+                <tr v-if="recentOrders.length === 0">
+                  <td colspan="5" class="py-6 px-3 text-center text-gray-500 text-sm">No recent orders</td>
                 </tr>
               </tbody>
             </table>
-            <div v-if="recentOrders.length === 0" class="text-center text-gray-500 py-6">No recent orders</div>
           </div>
         </div>
       </div>
@@ -596,13 +591,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* tweak scrollbar for the recent orders area for better look */
-::-webkit-scrollbar {
-  height: 8px;
-  width: 10px;
+/* Remove scrolling and fit screen height */
+.h-screen {
+  height: 100vh;
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
-  border-radius: 6px;
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* Optional subtle hover animation */
+.bg-white {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.bg-white:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 </style>

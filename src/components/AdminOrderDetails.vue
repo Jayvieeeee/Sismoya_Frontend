@@ -8,7 +8,7 @@ interface Order {
   product?: string
   total_price: number
   totalAmount?: number
-  date_time: string
+  pickup_datetime: string
   created_at: string
   status:
     | 'pending'
@@ -154,7 +154,7 @@ const closeModal = () => {
 
             <!-- Pick Up DateTime -->
             <div>
-              <p class="text-sm">Pick Up Date & Time: {{ formatDate(selectedOrder.date_time || selectedOrder.created_at) }}</p>
+              <p class="text-sm">Pick Up Date & Time: {{ formatDate(selectedOrder.pickup_datetime) }}</p>
             </div>
 
             <!-- Total Amount -->
@@ -164,7 +164,7 @@ const closeModal = () => {
 
             <!-- Payment Method -->
             <div>
-              <p class="text-sm">Payment Method: {{ (selectedOrder.payment_method || 'COD') + ' ' + (selectedOrder.payment_status === 'paid' ? 'Paid' : 'Unpaid') }}</p>
+              <p class="text-sm">Payment Method: {{ (selectedOrder.payment_status === 'paid' ? 'Paid' : 'Unpaid') }}</p>
             </div>
           </div>
         </div>

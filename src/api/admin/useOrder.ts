@@ -13,7 +13,7 @@ export interface Order {
   product?: string
   total_price: number
   totalAmount?: number
-  date_time: string
+  pickup_datetime: string
   created_at: string
   status:
     | 'pending'

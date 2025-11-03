@@ -27,6 +27,7 @@ const selectedProduct = ref<ModalProduct>({
 })
 
 const productForImmediateOrder = ref<ModalProduct | null>(null)
+const isProcessingOrder = ref(false) // 🔥 ADD THIS: Prevent duplicate orders
 
 onMounted(async () => {
   containers.value = await getContainers()
@@ -46,7 +47,14 @@ function openModal(product: ModalProduct, action: "cart" | "order") {
 
 function closeModal() {
   showModal.value = false
-  productForImmediateOrder.value = null 
+  selectedProduct.value = {
+    id: 0,
+    type: "",
+    liters: 0,
+    price: 0,
+    qty: 1,
+    image_url: "",
+  }
 }
 
 // Add to cart - adds to cart store
@@ -54,7 +62,7 @@ async function handleAddMore(item: ModalProduct) {
   try {
     await cartStore.addToCart(item.id, item.qty)
 
-    //  Success
+    // Success
     Swal.fire({
       title: 'Added to Cart!',
       text: `${item.type} (${item.qty}x) has been successfully added to your cart.`,
@@ -76,7 +84,7 @@ async function handleAddMore(item: ModalProduct) {
   } catch (error) {
     console.error('Failed to add item to cart:', error)
 
-    //  Error
+    // Error
     Swal.fire({
       title: 'Error',
       text: 'Failed to add item to cart. Please try again.',
@@ -89,17 +97,30 @@ async function handleAddMore(item: ModalProduct) {
 }
 
 function handleOrderNow(item: ModalProduct) {
+  // 🔥 FIX: Reset previous immediate order and set new one
+  productForImmediateOrder.value = null
   
-  productForImmediateOrder.value = { ...item }
-  
-  showModal.value = false
-  showSummaryModal.value = true
+  // Small delay to ensure state is cleared
+  setTimeout(() => {
+    productForImmediateOrder.value = { ...item }
+    showModal.value = false
+    showSummaryModal.value = true
+  }, 10)
 }
 
 // Get products for OrderSummaryModal based on context
 const productsForOrderSummary = computed((): ModalProduct[] => {
   if (productForImmediateOrder.value) {
-    return [productForImmediateOrder.value]
+    return [{
+      ...productForImmediateOrder.value,
+      // 🔥 Ensure we're not passing reactive references that might cause duplicates
+      id: productForImmediateOrder.value.id,
+      type: productForImmediateOrder.value.type,
+      liters: productForImmediateOrder.value.liters,
+      price: productForImmediateOrder.value.price,
+      qty: productForImmediateOrder.value.qty || 1,
+      image_url: productForImmediateOrder.value.image_url
+    }]
   } else {
     // For cart checkout 
     return cartStore.itemsForDisplay.map(item => ({
@@ -119,21 +140,42 @@ const productsForOrderSummary = computed((): ModalProduct[] => {
 })
 
 // Handle order success
-function handleOrderSuccess() {
+async function handleOrderSuccess() {
+  // 🔥 ADD: Prevent duplicate processing
+  if (isProcessingOrder.value) return
+  
+  isProcessingOrder.value = true
+  
+  try {
+    showSummaryModal.value = false
+    
+    // Show success message for immediate order
+    if (productForImmediateOrder.value) {
+      await Swal.fire({
+        title: 'Order Placed!',
+        text: `Your order for ${productForImmediateOrder.value.type} (${productForImmediateOrder.value.qty}x) has been placed successfully.`,
+        icon: 'success',
+        confirmButtonColor: '#0097b2',
+        background: '#fff',
+        color: '#333'
+      })
+    }
+    
+    // 🔥 IMPORTANT: Reset the immediate order product
+    productForImmediateOrder.value = null
+    
+  } catch (error) {
+    console.error('Error in order success:', error)
+  } finally {
+    isProcessingOrder.value = false
+  }
+}
+
+// 🔥 ADD: Handle modal close properly
+function handleSummaryModalClose() {
   showSummaryModal.value = false
   productForImmediateOrder.value = null
-  
-  // Show success message for immediate order
-  if (productForImmediateOrder.value) {
-    Swal.fire({
-      title: 'Order Placed!',
-      text: `Your order for ${productForImmediateOrder.value} (${productForImmediateOrder.value}x) has been placed successfully.`,
-      icon: 'success',
-      confirmButtonColor: '#0097b2',
-      background: '#fff',
-      color: '#333'
-    })
-  }
+  isProcessingOrder.value = false
 }
 </script>
 
@@ -211,7 +253,7 @@ function handleOrderSuccess() {
   <OrderSummaryModal
     :isOpen="showSummaryModal"
     :products="productsForOrderSummary"
-    @close="showSummaryModal = false"
+    @close="handleSummaryModalClose" 
     @place-order="handleOrderSuccess"
   />
 </template>
