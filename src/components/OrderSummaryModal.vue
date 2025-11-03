@@ -16,7 +16,7 @@ const showError = ref(false);
 const errorMessage = ref("");
 const showPayPalModal = ref(false);
 const pendingPayPalOrderId = ref<number | null>(null);
-const pendingPayPalAmount = ref<string>("0.00");
+const pendingPayPalAmount = ref<number>(0);
 const orderPlacedModal = ref(false);
 
 // -------------------- Types --------------------
@@ -195,14 +195,14 @@ const handlePlaceOrder = async () => {
     total_price: parseFloat((p.price * p.qty).toFixed(2))
   }));
   
-  const payload = { 
-    userId: customer.value.user_id, 
-    pickup_datetime: pickUpTime.value, 
-    payment_method: getBackendPaymentMethod(), 
-    address_id: selectedAddress.value?.id || null, 
-    items,
-    total_amount: parseFloat(totalAmount.value.toFixed(2)) // Explicitly send total amount
-  };
+const payload = { 
+  userId: customer.value.user_id, 
+  pickup_datetime: pickUpTime.value, 
+  payment_method: getBackendPaymentMethod(), 
+  address_id: selectedAddress.value?.id || null, 
+  items,
+  total_amount: parseFloat(totalAmount.value.toFixed(2)) 
+};
 
   console.log('Order Payload:', payload);
 
@@ -215,7 +215,7 @@ const handlePlaceOrder = async () => {
     if (paymentMethod.value === "Paypal") {
       // Store both order ID and amount for PayPal
       pendingPayPalOrderId.value = res.data.order_id;
-      pendingPayPalAmount.value = totalAmount.value.toFixed(2);
+      pendingPayPalAmount.value = parseFloat(totalAmount.value.toFixed(2));
       showPayPalModal.value = true;
       // Don't clear form yet for PayPal - wait for payment completion
       emit('close'); // close order summary
@@ -254,7 +254,7 @@ const handlePayPalClosed = () => {
   console.log('PayPal modal closed');
   showPayPalModal.value = false;
   pendingPayPalOrderId.value = null;
-  pendingPayPalAmount.value = "0.00";
+  pendingPayPalAmount.value = 0;
   // Don't clear form when PayPal modal is closed without payment
 }
 
@@ -325,11 +325,11 @@ watch(() => props.isOpen, (newVal) => {
         </div>
       </div>
 
-      <!-- Total -->
-      <div class="flex justify-between items-center mt-4 mb-4 pt-3 border-t border-gray-200">
-        <span class="text-sm font-semibold text-gray-800">Total Amount:</span>
-        <span class="text-lg font-bold">₱{{ totalAmount.toFixed(2) }}</span>
-      </div>
+    <!-- Total -->
+    <div class="flex justify-between items-center mt-4 mb-4 pt-3 border-t border-gray-200">
+      <span class="text-sm font-semibold text-gray-800">Total Amount:</span>
+      <span class="text-lg font-bold">₱{{ totalAmount.toFixed(2) }}</span>
+    </div>
 
       <!-- Payment Method -->
       <div class="flex items-center justify-between mb-6">
@@ -381,14 +381,14 @@ watch(() => props.isOpen, (newVal) => {
     @close="orderPlacedModal = false" />
 
   <!-- PayPal Modal -->
-  <PayPalModal 
-    :isOpen="showPayPalModal"
-    :amount="pendingPayPalAmount"
-    :orderId="pendingPayPalOrderId || undefined"
-    @payment-success="handlePayPalSuccess"
-    @payment-error="handlePayPalError"
-    @closed="handlePayPalClosed"
-  />
+<PayPalModal 
+  :isOpen="showPayPalModal"
+  :amount="pendingPayPalAmount"
+  :orderId="pendingPayPalOrderId"
+  @payment-success="handlePayPalSuccess"
+  @payment-error="handlePayPalError"
+  @closed="handlePayPalClosed"
+/>
 
   <ErrorModal 
     v-if="showError" 

@@ -248,7 +248,7 @@ const fallbackToLocalStats = async () => {
           created_at: order.created_at,
           order_items: order.items ? 
             order.items.map((item: any) => 
-              `${item.quantity}x ${item.gallon_name || 'Round Gallon'}`
+              `${item.quantity}x ${item.gallon_name}`
             ).join(', ') : 'Round Gallon',
           items: order.items
         }));

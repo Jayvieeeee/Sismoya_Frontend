@@ -28,7 +28,7 @@
       <!-- Amount -->
       <div class="flex justify-between items-center mb-4 px-2">
         <span class="text-gray-800 font-semibold">Total Amount:</span>
-        <span class="text-gray-800 font-semibold text-lg">₱{{ amount }}</span>
+        <span class="text-gray-800 font-semibold text-lg">₱{{ parseFloat(amount).toFixed(2) }}</span>
       </div>
 
       <!-- Error -->
