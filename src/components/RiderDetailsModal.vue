@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="modelValue"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4 font-montserrat"
   >
     <div
       class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto"

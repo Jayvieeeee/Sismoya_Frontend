@@ -82,13 +82,12 @@ const closeOrderDetails = () => {
         &times;
       </button>
 
-      <h2 class="text-xl font-semibold text-center mb-6 text-blue-600">
+      <h2 class="text-xl font-semibold text-center mb-6 text-primary">
         Customer Information
       </h2>
 
-      <!-- Loading / Error / Info Sections (same as before) -->
       <div v-if="loading" class="text-center py-6">
-        <div class="animate-spin inline-block rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <div class="animate-spin inline-block rounded-full h-6 w-6 border-b-2 border-primary"></div>
         <p class="mt-2 text-gray-600">Loading details...</p>
       </div>
 
@@ -144,7 +143,6 @@ const closeOrderDetails = () => {
           </div>
         </div>
 
-        <!-- ✅ Order History Table -->
         <div>
           <h3 class="font-semibold mb-2 text-sm">Order History</h3>
           <div class="border rounded-lg overflow-auto max-h-48" style="max-width: 100%;">

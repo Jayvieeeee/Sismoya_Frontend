@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AdminLayout from "@/Layout/AdminLayout.vue"
-import { MagnifyingGlassIcon, FunnelIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/vue/24/outline'
 import { useOrders } from "@/api/admin/useOrder"
 import AdminOrderDetails from "@/components/AdminOrderDetails.vue"
 import Swal from 'sweetalert2'
@@ -34,52 +34,20 @@ const displayedOrders = ref<any[]>([])
 
 const loadOrders = async () => {
   await fetchOrders()
-  displayedOrders.value = [...orders.value]
+  filterOrders()
 }
+
 onMounted(loadOrders)
 
-// Get the latest order for the update banner
-const latestOrder = computed(() => {
-  if (!orders.value.length) return null
-  
-  return orders.value.reduce((latest, order) => {
-    const currentDate = new Date(order.created_at || order.pickup_datetime)
-    const latestDate = new Date(latest.created_at || latest.pickup_datetime)
-    return currentDate > latestDate ? order : latest
-  })
-})
-
-// Format time ago for the latest update
-const getTimeAgo = (dateString: string) => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-  
-  if (diffInSeconds < 60) return 'Just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-  return `${Math.floor(diffInSeconds / 86400)} days ago`
-}
-
-const getStatusFromStatLabel = (label: string): string => {
-  const statusMap: Record<string, string> = {
-    'Pending Orders': 'pending',
-    'Preparing Orders': 'preparing',
-    'To Pickup Orders': 'to_pickup',
-    'To Pick-Up Orders': 'to_pickup',
-    'To Deliver Orders': 'to_deliver',
-    'Delivered Orders': 'delivered',
-    'Cancelled Orders': 'cancelled'
-  }
-  return statusMap[label] || 'all'
-}
 
 const filterOrders = () => {
   const normalize = (val: string) =>
     val?.toLowerCase().replace(/[-_\s]+/g, '_') || ''
 
+  // Make a shallow copy of current orders
   let filtered = [...orders.value]
 
+  // ✅ Filter by active status (if not "all")
   if (activeStatusFilter.value !== 'all') {
     filtered = filtered.filter(order => {
       const orderStatus = normalize(order.status)
@@ -88,6 +56,7 @@ const filterOrders = () => {
     })
   }
 
+  // ✅ Filter by search query
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim()
     filtered = filtered.filter(order =>
@@ -98,8 +67,14 @@ const filterOrders = () => {
     )
   }
 
-  displayedOrders.value = filtered
+  // ✅ Remove duplicates based on order_id (or fallback to id)
+  const uniqueOrders = new Map(
+    filtered.map(order => [order.order_id || order.id, order])
+  )
+
+  displayedOrders.value = Array.from(uniqueOrders.values())
 }
+
 
 const applyFilter = (status: string) => {
   activeStatusFilter.value = status
@@ -341,7 +316,7 @@ watch([searchQuery, activeStatusFilter], filterOrders)
 
                 <tr
                   v-for="order in displayedOrders"
-                  :key="`${order.order_id}-${order.status}`"
+                  :key="order.order_id"
                   class="hover:bg-gray-50 transition-colors text-center text-xs">
                   <td class="table-cell">{{ order.order_id }}</td>
                   <td class="table-cell">{{ getCustomerName(order) }}</td>

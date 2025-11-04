@@ -166,7 +166,6 @@ function isCancelled(orderStatus: string): boolean {
               <div class="flex-1">
                 <p class="font-medium text-gray-900 mb-1">Gallon :</p>
                 <p class="text-gray-700">{{ order.gallonType }} {{ order.quantity }}x</p>
-                <p class="text-gray-700">Slim Gallon 1x</p>
               </div>
             </div>
             

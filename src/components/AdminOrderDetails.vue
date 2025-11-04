@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+
 interface Order {
   id: number
   order_id: string
@@ -39,6 +41,48 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Status tracking
+const statusList = ['Pending', 'To Pick Up', 'Preparing', 'To Deliver', 'Completed'];
+
+const statusMap: Record<string, string> = {
+  'pending': 'Pending',
+  'to_pickup': 'To Pick Up',
+  'to_pick_up': 'To Pick Up',
+  'picked_up': 'To Pick Up', // Map picked_up to To Pick Up for consistency
+  'picked up': 'To Pick Up', // Map picked up to To Pick Up for consistency
+  'preparing': 'Preparing',
+  'to_deliver': 'To Deliver',
+  'delivered': 'Completed',
+  'completed': 'Completed',
+  'cancelled': 'Cancelled'
+};
+
+function getDisplayStatus(backendStatus: string): string {
+  return statusMap[backendStatus.toLowerCase()] || 'Pending';
+}
+
+function isActiveStatus(status: string, orderStatus: string) {
+  const displayOrderStatus = getDisplayStatus(orderStatus);
+  const statusIndex = statusList.indexOf(status);
+  const orderStatusIndex = statusList.indexOf(displayOrderStatus);
+  return statusIndex <= orderStatusIndex;
+}
+
+function getProgressLineBottom(orderStatus: string) {
+  const displayOrderStatus = getDisplayStatus(orderStatus);
+  const currentIndex = statusList.indexOf(displayOrderStatus);
+  
+  if (currentIndex === -1) return '100%';
+  
+  const progressPercentage = (currentIndex / (statusList.length - 1)) * 100;
+  
+  return `${100 - progressPercentage}%`;
+}
+
+function isCancelled(orderStatus: string): boolean {
+  return getDisplayStatus(orderStatus) === 'Cancelled';
+}
+
 // Helper functions
 const getCustomerName = (order: Order) => {
   return order.customer_name || order.customerName || "Customer"
@@ -73,21 +117,6 @@ const formatDate = (dateString: string) => {
   }
 }
 
-const getDisplayStatus = (status: string): string => {
-  const statusMap: { [key: string]: string } = {
-    'pending': 'Pending',
-    'to_pickup': 'To Pick-Up',
-    'to_pick_up': 'To Pick-Up',
-    'picked_up': 'Picked Up',
-    'picked up': 'Picked Up',
-    'preparing': 'Preparing',
-    'to_deliver': 'To Deliver',
-    'completed': 'Completed',
-    'cancelled': 'Cancelled'
-  }
-  return statusMap[status] || status
-}
-
 const getStatusColor = (status: string) => {
   const colors: { [key: string]: string } = {
     'pending': 'bg-orange-100 text-orange-800',
@@ -106,65 +135,163 @@ const getStatusColor = (status: string) => {
 const closeModal = () => {
   emit('close')
 }
+
+const getPaymentStatusDisplay = (status: string | undefined): string => {
+  if (!status) return 'Pending';
+  
+  const statusMap: { [key: string]: string } = {
+    'paid': 'Paid',
+    'unpaid': 'Unpaid',
+    'pending': 'Pending',
+    'failed': 'Failed',
+    'refunded': 'Refunded'
+  };
+  
+  return statusMap[status.toLowerCase()] || 'Pending';
+}
 </script>
 
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
     @click.self="closeModal"
   >
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative overflow-hidden">
       <!-- Close Button -->
       <button
         @click="closeModal"
-        class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 transition text-xl font-bold z-10"
+        class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 transition z-10"
         aria-label="Close"
       >
-        ✕
+        <XMarkIcon class="w-6 h-6" />
       </button>
 
       <!-- Title -->
-      <h2 class="text-2xl font-semibold text-center text-primary py-6">Order Details</h2>
+      <h2 class="text-2xl font-bold text-center text-primary pt-8 pb-6">Order Details</h2>
 
-      <div class="p-6 pb-12">
-        <!-- Two Column Layout - Centered with larger gap -->
-        <div class="flex justify-center items-center gap-12">
+      <div class="pb-8">
+        <!-- Two Column Layout -->
+        <div class="flex justify-center">
+          <!-- Left Column - Status Tracker -->
+          <div class="flex-1 max-w-[200px]" v-if="selectedOrder">
+            <div class="relative flex flex-col space-y-4">
+              <!-- Background Line - Only show if NOT cancelled -->
+              <div 
+                v-if="!isCancelled(selectedOrder.status)"
+                class="absolute left-[10px] top-[20px] bottom-[90px] w-0.5 bg-gray-300"
+              ></div>
+              
+              <!-- Filled Green Progress Line -->
+              <div
+                v-if="!isCancelled(selectedOrder.status)"
+                class="absolute left-[10px] top-[20px] w-0.5 bg-green-500 transition-all duration-500"
+                :style="{ bottom: getProgressLineBottom(selectedOrder.status) }"
+              ></div>
+
+              <!-- Normal Status Progress -->
+              <template v-if="!isCancelled(selectedOrder.status)">
+                <div
+                  v-for="status in statusList"
+                  :key="status"
+                  class="relative flex items-center gap-4"
+                >
+                  <!-- Status Checkmark Circle -->
+                  <div
+                    :class="[ 
+                      'w-6 h-6 rounded-full flex items-center justify-center relative z-10 flex-shrink-0 border-2',
+                      isActiveStatus(status, selectedOrder.status) 
+                        ? 'bg-green-500 border-green-500' 
+                        : 'bg-white border-gray-300'
+                    ]"
+                  >
+                    <CheckIcon
+                      v-if="isActiveStatus(status, selectedOrder.status)"
+                      class="w-3 h-3 text-white stroke-[3]"
+                    />
+                  </div>
+
+                  <!-- Status Label -->
+                  <span
+                    :class="[
+                      'font-semibold whitespace-nowrap text-sm',
+                      isActiveStatus(status, selectedOrder.status)
+                        ? 'text-gray-900'
+                        : 'text-gray-400'
+                    ]"
+                  >
+                    {{ status }}
+                  </span>
+                </div>
+              </template>
+
+              <!-- Cancelled Status - Simple Circle with X -->
+              <template v-else>
+                <div class="relative flex items-center gap-4">
+                  <!-- Circle with X -->
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center relative z-10 flex-shrink-0 border-2 bg-red-500 border-red-500">
+                    <XMarkIcon class="w-3 h-3 text-white stroke-[3]" />
+                  </div>
+                  <!-- Cancel Text -->
+                  <span class="font-semibold whitespace-nowrap text-red-600 text-sm">
+                    Cancelled
+                  </span>
+                </div>
+              </template>
+            </div>
+          </div>
+
           <!-- Right Column - Order Details -->
           <div class="flex-1 space-y-4 max-w-xs" v-if="selectedOrder">
             <!-- Order ID -->
             <div>
-              <p class="text-sm">Order ID: {{ selectedOrder.order_id || selectedOrder.id }}</p>
+              <p class="text-sm font-medium text-gray-900">Order ID: {{ selectedOrder.order_id || selectedOrder.id }}</p>
             </div>
 
             <!-- Customer Name -->
             <div>
-              <p class="text-sm">Customer Name: {{ getCustomerName(selectedOrder) }}</p>
+              <p class="text-sm font-medium text-gray-900">Customer Name: {{ getCustomerName(selectedOrder) }}</p>
             </div>
 
             <!-- Contact No -->
             <div>
-              <p class="text-sm">Contact No: {{ selectedOrder.contact_no || 'N/A' }}</p>
+              <p class="text-sm font-medium text-gray-900">Contact No: {{ selectedOrder.contact_no }}</p>
             </div>
 
             <!-- Address -->
             <div>
-              <p class="text-sm">Address: {{ selectedOrder.address || 'N/A' }}</p>
+              <p class="text-sm font-medium text-gray-900">Address: {{ selectedOrder.address }}</p>
             </div>
 
             <!-- Pick Up DateTime -->
             <div>
-              <p class="text-sm">Pick Up Date & Time: {{ formatDate(selectedOrder.pickup_datetime) }}</p>
+              <p class="text-sm font-medium text-gray-900">Pick Up Date & Time: {{ formatDate(selectedOrder.pickup_datetime) }}</p>
+            </div>
+
+            <!-- Products -->
+            <div>
+              <p class="text-sm font-medium text-gray-900">Products: {{ selectedOrder.products }}</p>
             </div>
 
             <!-- Total Amount -->
             <div>
-              <p class="text-sm">Total Amount: {{ formatPrice(selectedOrder.total_price || selectedOrder.totalAmount) }}</p>
+              <p class="text-sm font-medium text-gray-900">Total Amount: {{ formatPrice(selectedOrder.total_price) }}</p>
             </div>
 
-            <!-- Payment Method -->
+            <!-- Payment Status -->
+           <div>
+            <p class="text-sm font-medium text-gray-900">Payment Status: {{ getPaymentStatusDisplay(selectedOrder.payment_status) }}</p>
+          </div>
+
+            <!-- Payment Method --> 
             <div>
-              <p class="text-sm">Payment Method: {{ (selectedOrder.payment_status === 'paid' ? 'Paid' : 'Unpaid') }}</p>
+              <p class="text-sm font-medium text-gray-900">Payment Method: {{ ( selectedOrder.payment_method) }}</p>
+            </div>
+
+            <!-- Special Instructions -->
+            <div v-if="selectedOrder.special_instructions">
+              <p class="text-sm font-medium text-gray-900">Special Instructions:</p>
+              <p class="text-sm text-gray-700">{{ selectedOrder.special_instructions }}</p>
             </div>
           </div>
         </div>
