@@ -432,39 +432,6 @@ onMounted(() => fetchDashboardData());
                   {{ user.first_name }} {{ user.last_name }}
                 </span>
               </p>
-              
-              <!-- Email Verification Message - IMPROVED -->
-              <div v-if="needsEmailVerification()" 
-                   class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-                <div class="flex-1">
-                  <p class="text-yellow-800 text-sm font-medium mb-1">
-                    Please verify your email address to access all features
-                  </p>
-                  <p class="text-yellow-600 text-xs" v-if="emailVerificationSent">
-                    ✅ Verification email sent! Check your inbox and spam folder.
-                  </p>
-                  <p class="text-yellow-600 text-xs" v-else>
-                    We've sent a verification link to <strong>{{ user?.email }}</strong>
-                  </p>
-                </div>
-                <div class="flex gap-2">
-                  <button
-                    @click="sendEmailVerification"
-                    :disabled="emailVerificationLoading"
-                    class="bg-yellow-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                  >
-                    <span v-if="emailVerificationLoading">Sending...</span>
-                    <span v-else>{{ emailVerificationSent ? 'Resend' : 'Send Verification' }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Email Verified Success Message -->
-              <div v-else-if="user?.email_verified_at" 
-                   class="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-                <span class="text-green-600">✅</span>
-                <p class="text-green-800 text-sm font-medium">Email verified</p>
-              </div>
             </div>
 
             <div class="mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 shadow-lg">
