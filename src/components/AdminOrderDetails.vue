@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Order {
   id: number
-  order_id: number
+  order_id: string
   customer_name: string
   customerName?: string
   products: string

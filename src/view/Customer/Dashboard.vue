@@ -260,7 +260,17 @@ const fallbackToLocalStats = async () => {
   }
 };
 
-// Email verification function - UPDATED with token
+// Fetch user profile to check verification status
+const fetchUserProfile = async () => {
+  try {
+    const profile = await getProfile();
+    user.value = profile;
+  } catch (err) {
+    console.error("Failed to fetch user profile:", err);
+  }
+};
+
+// Email verification function - FIXED with proper string quotes
 const sendEmailVerification = async () => {
   try {
     emailVerificationLoading.value = true;
@@ -272,8 +282,8 @@ const sendEmailVerification = async () => {
       throw new Error('No authentication token found');
     }
     
-    // Make request with token in headers
-    const response = await axiosInstance.get("/verify-email", {
+    // Make POST request to send verification email - FIXED: Added quotes around Bearer
+    const response = await axiosInstance.post("/send-verification-email", {}, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -282,17 +292,17 @@ const sendEmailVerification = async () => {
     
     if (response.data?.success) {
       emailVerificationSent.value = true;
-      // Show success message
       alert("Verification email sent! Please check your inbox and spam folder.");
     } else {
-      alert("Failed to send verification email. Please try again.");
+      alert(response.data?.message || "Failed to send verification email. Please try again.");
     }
   } catch (err: any) {
     console.error("Email verification error:", err);
     const errorMessage = err.response?.data?.message || "Failed to send verification email. Please try again.";
     
-    if (err.response?.status === 400 && err.response?.data?.message?.includes("already verified")) {
-      // If already verified, refresh user data
+    if (err.response?.status === 400 && err.response?.data?.already_verified) {
+      // If already verified, show message and refresh user data
+      alert("Your email is already verified!");
       await fetchUserProfile();
     } else if (err.response?.status === 401) {
       alert("Session expired. Please login again.");
@@ -304,16 +314,6 @@ const sendEmailVerification = async () => {
     }
   } finally {
     emailVerificationLoading.value = false;
-  }
-};
-
-// Fetch user profile to check verification status
-const fetchUserProfile = async () => {
-  try {
-    const profile = await getProfile();
-    user.value = profile;
-  } catch (err) {
-    console.error("Failed to fetch user profile:", err);
   }
 };
 

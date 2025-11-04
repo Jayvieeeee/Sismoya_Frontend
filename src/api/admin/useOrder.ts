@@ -6,7 +6,7 @@ import dayjs from "dayjs"
 
 export interface Order {
   id: number
-  order_id: number
+  order_id: string
   customer_name: string
   customerName?: string
   products: string
@@ -223,7 +223,7 @@ const formatDate = (dateString: string) => {
     }
   }
 
-  async function updateOrderStatus(orderId: number, action: string) {
+  async function updateOrderStatus(orderId: string, action: string) {
     try {
       const response = await axiosInstance.put(
         `/admin/orders/${orderId}/update-stats`,
@@ -318,7 +318,7 @@ const formatDate = (dateString: string) => {
     }
   }
 
-  const handleAction = async (orderId: number, action: string): Promise<boolean> => {
+  const handleAction = async (orderId: string, action: string): Promise<boolean> => {
     try {
       const result = await updateOrderStatus(orderId, action)
       await fetchOrders()

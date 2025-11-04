@@ -126,7 +126,7 @@ const clearFilters = () => {
   displayedOrders.value = [...orders.value]
 }
 
-const getSwalConfig = (action: string, orderId: number): SweetAlertOptions => {
+const getSwalConfig = (action: string, orderId: string): SweetAlertOptions => {
   const configs: Record<string, SweetAlertOptions> = {
     approve: {
       title: 'Approve Order?',
@@ -177,14 +177,13 @@ const getSwalConfig = (action: string, orderId: number): SweetAlertOptions => {
   }
 }
 
-const handleActionWithSweetAlert = async (orderId: string | number, action: string, status: string) => {
-  const numericId = typeof orderId === 'string' ? parseInt(orderId, 10) : orderId
-  const swalConfig = getSwalConfig(action, numericId)
+const handleActionWithSweetAlert = async (orderId: string, action: string) => {
+  const swalConfig = getSwalConfig(action, orderId)
   const result = await Swal.fire(swalConfig)
 
   if (result.isConfirmed) {
     try {
-      await handleAction(numericId, action)
+      await handleAction(orderId, action)
       await loadOrders()
       filterOrders()
       Swal.fire({
@@ -205,6 +204,7 @@ const handleActionWithSweetAlert = async (orderId: string | number, action: stri
     }
   }
 }
+
 
 const getDisplayProduct = (order: any) => {
   const productName = getProductName(order)
@@ -366,7 +366,7 @@ watch([searchQuery, activeStatusFilter], filterOrders)
                       <button
                         v-for="action in getActionButtons(order.status)"
                         :key="action"
-                        @click="handleActionWithSweetAlert(order.order_id || order.id, action, order.status)"
+                        @click="handleActionWithSweetAlert(order.order_id, action)"
                         class="w-36 text-white font-medium py-1.5 rounded-lg transition"
                         :class="{
                           'bg-green-500 hover:bg-green-600': action === 'approve',
