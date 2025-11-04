@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "address-saved"): void;
+  (e: "address-added"): void;
 }>();
 
 const label = ref("");
@@ -54,22 +54,24 @@ async function handleSave() {
       is_default: isDefault.value,
     };
 
-    if (props.mode === "edit" && props.existingAddress?.id) {
-      const response = await axiosInstance.put(
-        `/addresses/${props.existingAddress.id}`,
-        payload
-      );
-      if (response.data.success) {
-        emit("address-saved");
+      if (props.mode === "edit" && props.existingAddress?.id) {
+        const response = await axiosInstance.put(
+          `/addresses/${props.existingAddress.id}`,
+          payload
+        );
+        if (response.data.success) {
+         emit("address-added")
         emit("close");
         window.location.reload();
-      } else {
-        alert(response.data.message || "Failed to update address");
-      }
-    } else {
+         emit("address-added") // tell parent to update list
+        emit("close"); // close modal
+        } else {
+          alert(response.data.message || "Failed to update address");
+        }
+      }else {
       const response = await axiosInstance.post("/addresses", payload);
       if (response.data.success) {
-        emit("address-saved");
+        emit("address-added");
         emit("close");
       } else {
         alert(response.data.message || "Failed to add address");

@@ -24,6 +24,7 @@ const router = useRouter()
 const items = ref<CartItem[]>([])
 const imageErrors = ref<Set<number>>(new Set())
 const loadingImages = ref<Set<number>>(new Set())
+const editingQuantity = ref<{ [key: number]: string }>({})
 
 // Order Summary modal
 const showOrderSummary = ref(false)
@@ -109,6 +110,78 @@ const updateQuantity = async (item: CartItem, newQuantity: number) => {
 
 const increaseQty = (item: CartItem) => updateQuantity(item, item.quantity + 1)
 const decreaseQty = (item: CartItem) => updateQuantity(item, item.quantity - 1)
+
+// New functions for editable quantity input
+const startEditing = (item: CartItem) => {
+  editingQuantity.value[item.cart_item_id] = item.quantity.toString()
+}
+
+const handleQuantityInput = (item: CartItem, event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (!target) return;
+  
+  // Only allow numbers
+  const numericValue = target.value.replace(/[^0-9]/g, '');
+  editingQuantity.value[item.cart_item_id] = numericValue;
+}
+
+const saveQuantity = async (item: CartItem) => {
+  const inputValue = editingQuantity.value[item.cart_item_id];
+  
+  if (!inputValue || inputValue === '') {
+    // If empty, revert to original quantity
+    delete editingQuantity.value[item.cart_item_id];
+    return;
+  }
+
+  const newQuantity = parseInt(inputValue, 10);
+  
+  if (isNaN(newQuantity) || newQuantity < 0) {
+    // If invalid, revert to original quantity
+    delete editingQuantity.value[item.cart_item_id];
+    return;
+  }
+
+  if (newQuantity === 0) {
+    // Handle removal if quantity is 0
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Remove Item?",
+      text: `Do you want to remove ${item.name} from the cart?`,
+      showCancelButton: true,
+      confirmButtonText: "Yes, remove it",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6"
+    });
+
+    if (result.isConfirmed) {
+      await removeFromCartBackend([item.cart_item_id]);
+      items.value = await getUserCart();
+      await Swal.fire({
+        icon: "success",
+        title: "Item Removed",
+        text: `${item.name} has been removed.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+  } else {
+    // Update quantity
+    await updateQuantity(item, newQuantity);
+  }
+  
+  delete editingQuantity.value[item.cart_item_id];
+}
+
+const handleQuantityKeypress = (event: KeyboardEvent, item: CartItem) => {
+  if (event.key === 'Enter') {
+    saveQuantity(item);
+  } else if (event.key === 'Escape') {
+    // Cancel editing on Escape
+    delete editingQuantity.value[item.cart_item_id];
+  }
+}
 
 const removeItem = async (item: CartItem) => {
   const result = await Swal.fire({
@@ -217,6 +290,7 @@ const getDisplayText = (value: any, fallback: string = "N/A"): string => value |
                   <p class="text-sm"><span class="font-semibold">Size: </span>{{ getDisplayText(item.size) }}</p>
                   <p class="text-sm"><span class="font-semibold">Price: ₱ </span>{{ formatPrice(item.price) }}</p>
 
+                  <!-- Quantity Controls with Editable Input -->
                   <div class="flex items-center gap-3 mt-2">
                     <button
                       @click="decreaseQty(item)"
@@ -225,7 +299,28 @@ const getDisplayText = (value: any, fallback: string = "N/A"): string => value |
                     >
                       <img :src="minusIcon" alt="Decrease" class="w-3 h-3" />
                     </button>
-                    <span class="font-semibold text-gray-900 w-8 text-center">{{ item.quantity }}</span>
+                    
+                    <!-- Editable Quantity Input -->
+                    <div class="relative">
+                      <input
+                        v-if="editingQuantity[item.cart_item_id] !== undefined"
+                        v-model="editingQuantity[item.cart_item_id]"
+                        @input="handleQuantityInput(item, $event)"
+                        @blur="saveQuantity(item)"
+                        @keypress="handleQuantityKeypress($event, item)"
+                        type="text"
+                        class="w-12 h-8 text-center border border-primary rounded-md font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        maxlength="3"
+                      />
+                      <span
+                        v-else
+                        @click="startEditing(item)"
+                        class="w-12 h-8 flex items-center justify-center font-semibold text-gray-900 cursor-pointer border border-transparent hover:border-gray-300 rounded-md transition-colors"
+                      >
+                        {{ item.quantity }}
+                      </span>
+                    </div>
+
                     <button
                       @click="increaseQty(item)"
                       class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors"

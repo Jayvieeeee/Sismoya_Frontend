@@ -33,12 +33,26 @@ function getDisplayDate(order: any) {
     : formatDate(order.created_at);
 }
 
-function getProductName(order: any) {
+function getProductNames(order: any) {
   if (order.items?.length) {
-    const item = order.items[0];
-    return item.gallon_name || item.product_name || "Unknown Product";
+    return order.items.map((item: any) => 
+      `${item.gallon_name || item.product_name || "Unknown Product"} x${item.quantity || 1}`
+    ).join(', ');
   }
   return "Unknown Product";
+}
+
+function getAllProducts(order: any) {
+  if (order.items?.length) {
+    return order.items.map((item: any) => ({
+      name: item.gallon_name || item.product_name || "Unknown Product",
+      quantity: item.quantity || 1,
+      price: item.price || 0,
+      total_price: item.total_price || 0,
+      image_url: item.image_url
+    }));
+  }
+  return [];
 }
 
 function formatStatus(status: string) {
@@ -117,20 +131,28 @@ async function cancelOrder(order: any) {
 }
 
 function viewOrderDetails(order: any) {
-  const firstItem = order.items?.[0] || {};
-
-  const rawStatus = order.status?.toLowerCase() || 'pending';
+  // Map backend status to modal status format
+  const statusMap: Record<string, string> = {
+    'pending': 'pending',
+    'to_pick_up': 'to_pick_up',
+    'to pick up': 'to_pick_up',
+    'preparing': 'preparing',
+    'to_deliver': 'to_deliver',
+    'to deliver': 'to_deliver',
+    'completed': 'completed',
+    'cancelled': 'cancelled'
+  };
 
   selectedOrder.value = {
-    orderId: order.order_id?.toString() ?? "N/A",
-    status: rawStatus,
+    orderId: order.order_id?.toString(),
+    status: statusMap[order.status?.toLowerCase()],
     pickUpDateTime: getDisplayDate(order),
-    gallonType: firstItem.gallon_name || firstItem.product_name || "Unknown Gallon",
-    quantity: firstItem.quantity ?? 0,
+    products: getAllProducts(order),
     totalAmount: parseFloat(order.total_price ?? 0),
     paymentMethod: order.payment_method,
     paymentStatus: order.payment_status,
-    imageUrl: firstItem.gallon_image,
+    addressLabel: order.address_label,
+    fullAddress: order.full_address
   };
   isModalOpen.value = true;
 }
@@ -177,7 +199,7 @@ const filteredOrders = computed(() => {
     const status = o.status?.toLowerCase() || "";
     const total = o.total_price?.toString().toLowerCase() || "";
     const date = getDisplayDate(o).toLowerCase();
-    const productName = getProductName(o).toLowerCase();
+    const productNames = getProductNames(o).toLowerCase();
     const payment = o.payment_method?.toLowerCase() || "";
 
     return (
@@ -185,7 +207,7 @@ const filteredOrders = computed(() => {
       status.includes(query) ||
       total.includes(query) ||
       date.includes(query) ||
-      productName.includes(query) ||
+      productNames.includes(query) ||
       payment.includes(query)
     );
   });
@@ -224,7 +246,7 @@ const filteredOrders = computed(() => {
             <thead class="sticky top-0 bg-gray-50 z-10">
               <tr class="text-center border-b">
                 <th class="py-3 px-4 font-semibold">Order ID</th>
-                <th class="py-3 px-4 font-semibold">Product</th>
+                <th class="py-3 px-4 text-left font-semibold">Products</th>
                 <th class="py-3 px-4 font-semibold">Total Amount</th>
                 <th class="py-3 px-4 font-semibold">Date</th>
                 <th class="py-3 px-4 font-semibold">Status</th>
@@ -265,7 +287,18 @@ const filteredOrders = computed(() => {
                 class="border-t hover:bg-gray-50 text-center"
               >
                 <td class="py-3 px-4">{{ order.order_id }}</td>
-                <td class="py-3 px-4">{{ getProductName(order) }}</td>
+                <td class="py-3 px-4 text-left max-w-xs">
+                  <div class="flex items-center flex-wrap space-x-1">
+                    <span v-if="order.items?.length" class="text-sm">
+                      {{ order.items[0].gallon_name || order.items[0].product_name || "Unknown Product" }} x{{ order.items[0].quantity || 1 }}
+                    </span>
+                    <span v-if="order.items.length > 1" class="text-xs text-gray-500">
+                      +{{ order.items.length - 1 }} more
+                    </span>
+                  </div>
+                </td>
+
+
                 <td class="py-3 px-4">₱{{ order.total_price?.toFixed(2) }}</td>
                 <td class="py-3 px-4">{{ formatDate(order.pickup_datetime) }}</td>
                 <td
@@ -342,7 +375,15 @@ const filteredOrders = computed(() => {
             </span>
           </div>
 
-          <p class="text-gray-700"><strong>Product:</strong> {{ getProductName(order) }}</p>
+          <div class="mb-2">
+            <strong class="text-gray-700">Products:</strong>
+            <div class="mt-1 space-y-1">
+              <div v-for="(item, index) in order.items" :key="index" class="text-sm text-gray-700">
+                • {{ item.gallon_name || item.product_name || "Unknown Product" }} x{{ item.quantity || 1 }}
+              </div>
+            </div>
+          </div>
+          
           <p class="text-gray-700"><strong>Total:</strong> ₱{{ order.total_price?.toFixed(2) }}</p>
           <p class="text-gray-700"><strong>Date:</strong> {{ formatDate(order.created_at) }}</p>
           <p class="text-gray-700"><strong>Payment:</strong> {{ order.payment_method?.charAt(0).toUpperCase() + order.payment_method?.slice(1) }}</p>
@@ -355,14 +396,14 @@ const filteredOrders = computed(() => {
               View Details
             </button>
 
-        <button 
-          v-if="canCancelOrder(order)"
-          @click="cancelOrder(order)"
-          :disabled="cancelLoading === order.order_id"
-          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 text-sm font-medium"
-        >
-          {{ cancelLoading === order.order_id ? 'Cancelling...' : 'Cancel' }}
-        </button>
+            <button 
+              v-if="canCancelOrder(order)"
+              @click="cancelOrder(order)"
+              :disabled="cancelLoading === order.order_id"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 text-sm font-medium"
+            >
+              {{ cancelLoading === order.order_id ? 'Cancelling...' : 'Cancel' }}
+            </button>
           </div>
         </div>
       </div>

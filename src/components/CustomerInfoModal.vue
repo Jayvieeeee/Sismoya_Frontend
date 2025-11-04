@@ -166,7 +166,10 @@ const closeOrderDetails = () => {
                   class="hover:bg-gray-50"
                 >
                   <td class="px-4 py-2 border">{{ order.order_id }}</td>
-                  <td class="px-4 py-2 border">{{ order.created_at }}</td>
+                  <td class="px-4 py-2 border">
+                  {{ new Date(order.pickup_datetime).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+                  </td>
+
                   <td class="px-4 py-2 border">{{ order.gallon_name }}</td>
                   <td class="px-4 py-2 border text-right">₱{{ order.total_price }}</td>
                   <td class="px-4 py-2 border capitalize">{{ order.payment_method }}</td>

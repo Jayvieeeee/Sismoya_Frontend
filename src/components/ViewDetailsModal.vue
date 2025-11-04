@@ -51,7 +51,7 @@ const closeModal = () => emit('close')
       </button>
 
       <!-- Title -->
-      <h2 class="text-2xl font-semibold text-center text-blue-600 py-6">Order Details</h2>
+      <h2 class="text-2xl font-semibold text-center text-primary py-6">Order Details</h2>
 
       <div class="p-6 space-y-4 text-sm">
         <template v-if="selectedOrder">

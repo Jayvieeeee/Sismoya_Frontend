@@ -15,16 +15,16 @@
       </button>
 
       <!-- Title -->
-      <h2 class="text-2xl font-bold text-center text-primary mb-6">
+      <h2 class="text-2xl font-semibold text-center text-primary mb-6">
         Rider Information
       </h2>
 
       <!-- Rider Info -->
       <div class="grid sm:grid-cols-2 gap-4 text-gray-700 mb-6">
-        <p><strong>Rider ID:</strong> {{ riderId || 'N/A' }}</p>
-        <p><strong>Name:</strong> {{ riderName || 'N/A' }}</p>
-        <p><strong>Contact No.:</strong> {{ contactNo || 'N/A' }}</p>
-        <p><strong>Email:</strong> {{ riderEmail || 'N/A' }}</p>
+        <p><strong>Rider ID:</strong> {{ riderId }}</p>
+        <p><strong>Name:</strong> {{ riderName }}</p>
+        <p><strong>Contact No.:</strong> {{ contactNo }}</p>
+        <p><strong>Email:</strong> {{ riderEmail }}</p>
 
         <p class="flex items-center gap-2">
           <strong>Status:</strong>
