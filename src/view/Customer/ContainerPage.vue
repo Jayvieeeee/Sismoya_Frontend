@@ -27,7 +27,7 @@ const selectedProduct = ref<ModalProduct>({
 })
 
 const productForImmediateOrder = ref<ModalProduct | null>(null)
-const isProcessingOrder = ref(false) // 🔥 ADD THIS: Prevent duplicate orders
+const isProcessingOrder = ref(false) 
 
 onMounted(async () => {
   containers.value = await getContainers()
@@ -148,18 +148,6 @@ async function handleOrderSuccess() {
   
   try {
     showSummaryModal.value = false
-    
-    // Show success message for immediate order
-    if (productForImmediateOrder.value) {
-      await Swal.fire({
-        title: 'Order Placed!',
-        text: `Your order for ${productForImmediateOrder.value.type} (${productForImmediateOrder.value.qty}x) has been placed successfully.`,
-        icon: 'success',
-        confirmButtonColor: '#0097b2',
-        background: '#fff',
-        color: '#333'
-      })
-    }
     
     // 🔥 IMPORTANT: Reset the immediate order product
     productForImmediateOrder.value = null

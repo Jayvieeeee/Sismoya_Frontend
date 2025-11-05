@@ -1,7 +1,7 @@
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
-      <h2 class="text-xl font-semibold mb-4 text-center text-gray-800">Add New Rider</h2>
+      <h2 class="text-xl font-semibold mb-4 text-center text-gray-800">Add New Delivery Boy</h2>
 
       <form @submit.prevent="submitAddRider" class="flex flex-col space-y-3">
         <!-- First Name -->

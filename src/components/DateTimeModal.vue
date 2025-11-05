@@ -166,14 +166,9 @@ const currentPhilippineTime = computed(() => {
       <button @click="emit('close')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 text-2xl font-light">✕</button>
       
       <!-- Title -->
-      <h2 class="text-center text-xl font-medium text-sky-500 mb-2">
-        DateTime Selection
+      <h2 class="text-center text-xl font-medium text-primary mb-3">
+        Date And Time Selection
       </h2>
-      
-      <!-- Current Philippine Time -->
-      <div class="text-center text-sm text-gray-600 mb-6">
-        <p>Current Philippine Time: {{ currentPhilippineTime }}</p>
-      </div>
 
       <!-- Main Content: Calendar and Time Side by Side -->
       <div class="flex gap-6 mb-8">
@@ -214,7 +209,7 @@ const currentPhilippineTime = computed(() => {
                         'bg-sky-500 text-white': selectedDate?.toDateString() === day.toDateString(),
                         'hover:bg-gray-100': selectedDate?.toDateString() !== day.toDateString() && !isPastDate(day),
                         'text-gray-400 cursor-not-allowed': isPastDate(day) || isPrevMonth(day) || isNextMonth(day),
-                        'text-gray-700': !isPrevMonth(day) && !isNextMonth(day) && !isPastDate(day)
+                        'text-gray-900': !isPrevMonth(day) && !isNextMonth(day) && !isPastDate(day)
                     }"
                     >
                     {{ day.getDate() }}
@@ -224,6 +219,7 @@ const currentPhilippineTime = computed(() => {
               </template>
             </div>
           </div>
+            <p class="text-xs mt-4 italic text-gray-500">Note: Each timeslot can accommodate up to 5 orders, and orders are processed based on route optimization (nearest to the store first).</p>
         </div>
 
         <!-- Time Selector -->

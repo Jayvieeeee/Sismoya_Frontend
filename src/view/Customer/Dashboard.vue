@@ -495,7 +495,7 @@ onMounted(() => fetchDashboardData());
                       :key="order.id"
                       class="border-b hover:bg-gray-50 transition"
                     >
-                      <td class="py-2 px-3 font-medium whitespace-nowrap">#{{ order.id }}</td>
+                      <td class="py-2 px-3 font-medium whitespace-nowrap">{{ order.id }}</td>
                       <td class="py-2 px-3 whitespace-nowrap">{{ formatOrderItems(order) }}</td>
                       <td class="py-2 px-3 font-medium whitespace-nowrap">
                         {{ formatCurrency(order.total_amount) }}

@@ -70,7 +70,6 @@ const clearForm = () => {
   pickUpTime.value = ""
   paymentMethod.value = "Cash"
   // Note: We don't clear selectedAddress as it's persisted from user profile
-  console.log('Form cleared')
 }
 
 const autoSelectAddress = (addressList: Address[]) => {
@@ -95,7 +94,6 @@ const refreshAddresses = async () => {
       : []
     autoSelectAddress(addresses.value)
   } catch (err) {
-    console.error("Failed to load addresses:", err)
     selectedAddress.value = null
   }
 }
@@ -110,7 +108,6 @@ onMounted(async () => {
     customer.value = profile
     await refreshAddresses()
   } catch (err) {
-    console.error("Failed to load profile or addresses:", err)
     selectedAddress.value = null
   }
 })
@@ -175,11 +172,6 @@ function validateOrder(): boolean {
 }
 
 const handlePlaceOrder = async () => {
-  console.log('=== PLACE ORDER DEBUG ===');
-  console.log('Total Amount:', totalAmount.value);
-  console.log('Total Amount Fixed:', totalAmount.value.toFixed(2));
-  console.log('Payment Method:', paymentMethod.value);
-  console.log('Products:', props.products);
   
   if (!customer.value || !props.products.length) {
     errorMessage.value = "No customer or products found.";
@@ -204,11 +196,9 @@ const payload = {
   total_amount: parseFloat(totalAmount.value.toFixed(2)) 
 };
 
-  console.log('Order Payload:', payload);
 
   try {
     const res = await axiosInstance.post("/orders", payload);
-    console.log('Order Response:', res.data);
     
     if (!res.data.success) throw new Error(res.data.message || "Order failed");
 
@@ -227,7 +217,6 @@ const payload = {
       emit('close');
     }
   } catch (err: any) {
-    console.error('Order Error:', err);
     errorMessage.value = err.response?.data?.message || err.message || "Order failed. Please try again.";
     showError.value = true;
   }
@@ -235,7 +224,6 @@ const payload = {
 
 // -------------------- PayPal Handlers --------------------
 const handlePayPalSuccess = (data: any) => {
-  console.log('PayPal payment initiated successfully:', data);
   // Show success message or redirect
   orderPlacedModal.value = true;
   clearForm(); // Clear form after successful PayPal payment
@@ -243,7 +231,6 @@ const handlePayPalSuccess = (data: any) => {
 }
 
 const handlePayPalError = (error: string) => {
-  console.error('PayPal payment failed:', error);
   errorMessage.value = error;
   showError.value = true;
   showPayPalModal.value = false;
@@ -251,7 +238,6 @@ const handlePayPalError = (error: string) => {
 }
 
 const handlePayPalClosed = () => {
-  console.log('PayPal modal closed');
   showPayPalModal.value = false;
   pendingPayPalOrderId.value = null;
   pendingPayPalAmount.value = 0;

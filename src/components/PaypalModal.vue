@@ -108,7 +108,6 @@ export default {
       errorMessage.value = null
 
       try {
-        console.log('Creating PayPal payment for order:', props.orderId, 'amount:', props.amount)
         
         const res = await axiosInstance.post(`/orders/paypal/create`, {
           order_id: props.orderId,
@@ -116,10 +115,8 @@ export default {
         })
 
         const data = res.data
-        console.log('PayPal API response:', data)
 
         if (data.success && data.paypal?.approve_link) {
-          console.log('Redirecting to PayPal:', data.paypal.approve_link)
           
           // Show redirecting state
           isRedirecting.value = true
@@ -132,11 +129,9 @@ export default {
           
         } else {
           errorMessage.value = data.message || 'Failed to initiate PayPal payment.'
-          console.error('PayPal Error:', errorMessage.value, data)
           emit('payment-error', errorMessage.value)
         }
       } catch (err) {
-        console.error('PayPal Exception:', err)
         errorMessage.value = err.response?.data?.message || err.message || 'PayPal payment failed. Please try again.'
         emit('payment-error', errorMessage.value)
       } finally {

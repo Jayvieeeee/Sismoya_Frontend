@@ -55,17 +55,58 @@ function getAllProducts(order: any) {
   return [];
 }
 
+// UPDATED: Added Picked Up status
 function formatStatus(status: string) {
   const normalized = status?.toLowerCase() || "";
   switch (normalized) {
     case "pending": return "Pending";
-    case "to pick up": return "To Pick Up";
+    case "to_pickup": return "To Pick Up";
+    case "picked_up": return "Picked Up"; // Added Picked Up
     case "preparing": return "Preparing";
-    case "to deliver": return "To Deliver";
+    case "to_deliver": return "To Deliver";
+    case "delivered": return "Completed";
     case "completed": return "Completed";
     case "cancelled": return "Cancelled";
-    default: return "Pending";
+    default: return status?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Pending";
   }
+}
+
+// UPDATED: Added Picked Up status
+function getStatusDisplay(status: string) {
+  const normalized = status?.toLowerCase() || "";
+  switch (normalized) {
+    case "pending": return "Pending";
+    case "to_pickup": return "To Pick Up";
+    case "picked_up": return "Picked Up"; // Added Picked Up
+    case "preparing": return "Preparing";
+    case "to_deliver": return "To Deliver";
+    case "delivered": return "Completed";
+    case "completed": return "Completed";
+    case "cancelled": return "Cancelled";
+    default: return status?.charAt(0).toUpperCase() + status?.slice(1) || "Pending";
+  }
+}
+
+// UPDATED: Added Picked Up status color
+function getStatusColor(status: string) {
+  const normalized = status?.toLowerCase() || "";
+  switch (normalized) {
+    case "pending": return "text-yellow-500";
+    case "to_pickup": return "text-blue-600";
+    case "picked_up": return "text-green-500"; // Picked Up gets green color
+    case "preparing": return "text-blue-600";
+    case "to_deliver": return "text-blue-600";
+    case "delivered": return "text-green-600";
+    case "completed": return "text-green-600";
+    case "cancelled": return "text-red-600";
+    default: return "text-gray-500";
+  }
+}
+
+// FIXED: Proper payment method formatting with null check
+function formatPaymentMethod(paymentMethod: string | undefined | null): string {
+  if (!paymentMethod) return "Unknown";
+  return paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
 }
 
 function canCancelOrder(order: any) {
@@ -131,28 +172,28 @@ async function cancelOrder(order: any) {
 }
 
 function viewOrderDetails(order: any) {
-  // Map backend status to modal status format
+  // UPDATED: Added Picked Up status mapping
   const statusMap: Record<string, string> = {
     'pending': 'pending',
-    'to_pick_up': 'to_pick_up',
-    'to pick up': 'to_pick_up',
+    'to_pickup': 'to_pick_up',
+    'picked_up': 'picked_up', // Added Picked Up mapping
     'preparing': 'preparing',
     'to_deliver': 'to_deliver',
-    'to deliver': 'to_deliver',
+    'delivered': 'completed',
     'completed': 'completed',
     'cancelled': 'cancelled'
   };
 
   selectedOrder.value = {
     orderId: order.order_id?.toString(),
-    status: statusMap[order.status?.toLowerCase()],
+    status: statusMap[order.status?.toLowerCase()] || 'pending',
     pickUpDateTime: getDisplayDate(order),
     products: getAllProducts(order),
     totalAmount: parseFloat(order.total_price ?? 0),
-    paymentMethod: order.payment_method,
-    paymentStatus: order.payment_status,
-    addressLabel: order.address_label,
-    fullAddress: order.full_address
+    paymentMethod: order.payment_method || 'Unknown',
+    paymentStatus: order.payment_status || 'unknown',
+    addressLabel: order.address_label || 'No label',
+    fullAddress: order.full_address || 'No address'
   };
   isModalOpen.value = true;
 }
@@ -196,11 +237,11 @@ const filteredOrders = computed(() => {
 
   return orders.value.filter((o) => {
     const orderId = o.order_id?.toString().toLowerCase() || "";
-    const status = o.status?.toLowerCase() || "";
+    const status = formatStatus(o.status).toLowerCase();
     const total = o.total_price?.toString().toLowerCase() || "";
     const date = getDisplayDate(o).toLowerCase();
     const productNames = getProductNames(o).toLowerCase();
-    const payment = o.payment_method?.toLowerCase() || "";
+    const payment = formatPaymentMethod(o.payment_method).toLowerCase();
 
     return (
       orderId.includes(query) ||
@@ -298,19 +339,13 @@ const filteredOrders = computed(() => {
                   </div>
                 </td>
 
-
                 <td class="py-3 px-4">₱{{ order.total_price?.toFixed(2) }}</td>
                 <td class="py-3 px-4">{{ formatDate(order.pickup_datetime) }}</td>
                 <td
                   class="py-3 px-4 font-medium"
-                  :class="{
-                    'text-yellow-500': order.status === 'pending',
-                    'text-green-600': order.status === 'completed',
-                    'text-red-600': order.status === 'cancelled',
-                    'text-blue-600': ['to_pick_up', 'to_deliver', 'preparing'].includes(order.status),
-                  }"
+                  :class="getStatusColor(order.status)"
                 >
-                {{ order.status.replaceAll('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) }}
+                  {{ getStatusDisplay(order.status) }}
                 </td>
 
                 <!-- View Details Column -->
@@ -364,14 +399,9 @@ const filteredOrders = computed(() => {
             <h2 class="font-semibold text-blue-800">Order #{{ order.order_id }}</h2>
             <span
               class="text-sm font-medium"
-              :class="{
-                'text-yellow-500': order.status === 'pending',
-                'text-green-600': order.status === 'completed',
-                'text-red-600': order.status === 'cancelled',
-                'text-blue-600': order.status === 'to_pick_up' || order.status === 'to_deliver'
-              }"
+              :class="getStatusColor(order.status)"
             >
-              {{ order.status?.charAt(0).toUpperCase() + order.status?.slice(1) }}
+              {{ getStatusDisplay(order.status) }}
             </span>
           </div>
 
@@ -386,7 +416,7 @@ const filteredOrders = computed(() => {
           
           <p class="text-gray-700"><strong>Total:</strong> ₱{{ order.total_price?.toFixed(2) }}</p>
           <p class="text-gray-700"><strong>Date:</strong> {{ formatDate(order.created_at) }}</p>
-          <p class="text-gray-700"><strong>Payment:</strong> {{ order.payment_method?.charAt(0).toUpperCase() + order.payment_method?.slice(1) }}</p>
+          <p class="text-gray-700"><strong>Payment:</strong> {{ formatPaymentMethod(order.payment_method) }}</p>
 
           <div class="mt-3 flex justify-between items-center">
             <button 

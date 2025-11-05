@@ -5,7 +5,7 @@ interface Order {
   total_price: number | string
   payment_method: string
   pickup_datetime: string
-  gallon_name: string
+  products: string 
 }
 
 interface Customer {
@@ -73,8 +73,8 @@ const closeModal = () => emit('close')
           </p>
 
           <p>
-            <span class="font-semibold">Gallon Type:</span>
-            {{ selectedOrder.gallon_name || "N/A" }}
+            <span class="font-semibold">Gallon Type: </span>
+            {{ selectedOrder.products || "N/A" }}
           </p>
 
           <p>

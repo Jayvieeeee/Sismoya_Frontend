@@ -32,6 +32,7 @@ async function handleLogin() {
     const res = await loginUser(identifier.value, password.value);
 
     if (res.error) {
+      // Use backend error message if available, otherwise fallback
       errorMessage.value = res.message || "Invalid credentials.";
       return;
     }
@@ -49,7 +50,14 @@ async function handleLogin() {
       router.push("/");
     }
   } catch (err: any) {
-    errorMessage.value = "Incorrect Username or Password.";
+    // Use backend error message if available in the error response
+    if (err.response?.data?.message) {
+      errorMessage.value = err.response.data.message;
+    } else if (err.message) {
+      errorMessage.value = err.message;
+    } else {
+      errorMessage.value = "An error occurred during login.";
+    }
   } finally {
     isLoading.value = false;
   }
@@ -78,7 +86,6 @@ function goToForgotPass() {
   router.push("/forgotpass");
 }
 </script>
-
 
 <template>
   <LandingPageLayout>
@@ -190,7 +197,7 @@ function goToForgotPass() {
 
           <!-- Global Error -->
           <p
-            v-if="identifier && password && errorMessage"
+            v-if="errorMessage"
             class="text-red-600 text-sm mb-4 text-center"
           >
             {{ errorMessage }}

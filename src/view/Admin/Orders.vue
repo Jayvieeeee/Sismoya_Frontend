@@ -5,13 +5,13 @@ import { useOrders } from "@/api/admin/useOrder"
 import AdminOrderDetails from "@/components/AdminOrderDetails.vue"
 import Swal from 'sweetalert2'
 import type { SweetAlertOptions } from 'sweetalert2'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 
 const {
   searchQuery,
-  orders,
+  orders, // This is the ref that holds the original, fetched data
   isLoading,
-  backendError,
+  backendError: _backendError,
   selectedOrder,
   isModalOpen,
   stats,
@@ -30,24 +30,56 @@ const {
 
 const isFilterOpen = ref(false)
 const activeStatusFilter = ref('all')
-const displayedOrders = ref<any[]>([])
 
-const loadOrders = async () => {
-  await fetchOrders()
-  filterOrders()
+// Create a local mutable copy of orders for sorting
+const localOrders = ref<any[]>([])
+
+// Function to sort orders by update date (newest first)
+const sortOrdersByUpdateDate = (ordersList: any[]) => {
+  return [...ordersList].sort((a, b) => {
+    // For order A - prioritize updated_at, then created_at, then pickup_datetime
+    const dateA = a.updated_at ? new Date(a.updated_at).getTime() :
+                  a.created_at ? new Date(a.created_at).getTime() :
+                  a.pickup_datetime ? new Date(a.pickup_datetime).getTime() : 0
+    
+    // For order B - prioritize updated_at, then created created_at, then pickup_datetime
+    const dateB = b.updated_at ? new Date(b.updated_at).getTime() :
+                  b.created_at ? new Date(b.created_at).getTime() :
+                  b.pickup_datetime ? new Date(b.pickup_datetime).getTime() : 0
+    
+    return dateB - dateA // Descending order (newest first)
+  })
 }
 
-onMounted(loadOrders)
+// Function to update order timestamp locally when action is performed
+const updateOrderTimestamp = (orderId: string) => {
+  const orderIndex = localOrders.value.findIndex(order =>
+    order.order_id === orderId || order.id?.toString() === orderId
+  )
+  
+  if (orderIndex !== -1) {
+    // Create updated order with current timestamp
+    const updatedOrder = {
+      ...localOrders.value[orderIndex],
+      updated_at: new Date().toISOString() // Set to current time
+    }
+    
+    // Remove the order from its current position
+    localOrders.value.splice(orderIndex, 1)
+    // Add it to the beginning (top)
+    localOrders.value.unshift(updatedOrder)
+  }
+}
 
-
-const filterOrders = () => {
+// Computed property for displayed orders that handles filtering
+const displayedOrders = computed(() => {
   const normalize = (val: string) =>
     val?.toLowerCase().replace(/[-_\s]+/g, '_') || ''
 
-  // Make a shallow copy of current orders
-  let filtered = [...orders.value]
+  // Start with the locally sorted orders
+  let filtered = [...localOrders.value]
 
-  // ✅ Filter by active status (if not "all")
+  // Filter by active status (if not "all")
   if (activeStatusFilter.value !== 'all') {
     filtered = filtered.filter(order => {
       const orderStatus = normalize(order.status)
@@ -56,7 +88,7 @@ const filterOrders = () => {
     })
   }
 
-  // ✅ Filter by search query
+  // Filter by search query
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim()
     filtered = filtered.filter(order =>
@@ -67,38 +99,22 @@ const filterOrders = () => {
     )
   }
 
-  // ✅ Remove duplicates based on order_id (or fallback to id)
+  // Remove duplicates based on order_id (or fallback to id)
   const uniqueOrders = new Map(
-    filtered.map(order => [order.order_id || order.id, order])
+    filtered.map(order => [order.order_id || order.id?.toString(), order])
   )
 
-  displayedOrders.value = Array.from(uniqueOrders.values())
-}
-
+  return Array.from(uniqueOrders.values())
+})
 
 const applyFilter = (status: string) => {
   activeStatusFilter.value = status
   isFilterOpen.value = false
-  filterOrders()
 }
-
-const getCurrentFilterLabel = computed(() => {
-  const options = [
-    { label: 'All Orders', value: 'all' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Preparing', value: 'preparing' },
-    { label: 'To Pick-Up', value: 'to_pickup' },
-    { label: 'To Deliver', value: 'to_deliver' },
-    { label: 'Delivered', value: 'delivered' },
-    { label: 'Cancelled', value: 'cancelled' }
-  ]
-  return options.find(o => o.value === activeStatusFilter.value)?.label || 'All Orders'
-})
 
 const clearFilters = () => {
   activeStatusFilter.value = 'all'
   searchQuery.value = ''
-  displayedOrders.value = [...orders.value]
 }
 
 const getSwalConfig = (action: string, orderId: string): SweetAlertOptions => {
@@ -158,9 +174,15 @@ const handleActionWithSweetAlert = async (orderId: string, action: string) => {
 
   if (result.isConfirmed) {
     try {
+      // 1. Update the timestamp and move to top LOCALLY first for immediate UI feedback
+      updateOrderTimestamp(orderId)
+      
+      // 2. Then perform the actual API action
       await handleAction(orderId, action)
+      
+      // 3. Reload orders to get the latest data/status from backend
       await loadOrders()
-      filterOrders()
+      
       Swal.fire({
         title: 'Success!',
         text: 'Action completed successfully',
@@ -179,7 +201,6 @@ const handleActionWithSweetAlert = async (orderId: string, action: string) => {
     }
   }
 }
-
 
 const getDisplayProduct = (order: any) => {
   const productName = getProductName(order)
@@ -200,7 +221,27 @@ const getDisplayProduct = (order: any) => {
   return productName
 }
 
-watch([searchQuery, activeStatusFilter], filterOrders)
+// Enhanced formatDate to show update time if available
+const formatDateTime = (order: any) => {
+  // Show update time if available, otherwise show pickup time
+  const dateTime = order.updated_at || order.pickup_datetime
+  return formatDate(dateTime)
+}
+
+const loadOrders = async () => {
+  await fetchOrders()
+}
+
+onMounted(loadOrders)
+
+// Watch for changes in the original orders and update our local sorted copy
+watch(orders, (newOrders) => {
+  if (newOrders.length > 0) {
+    localOrders.value = sortOrdersByUpdateDate(newOrders)
+  } else {
+    localOrders.value = []
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -209,6 +250,8 @@ watch([searchQuery, activeStatusFilter], filterOrders)
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-primary">Orders</h1>
+          <!-- More specific sorting info -->
+          <p class="text-sm text-gray-600 mt-1">Orders are sorted by latest update - recent actions appear at top</p>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -290,7 +333,7 @@ watch([searchQuery, activeStatusFilter], filterOrders)
                   <th class="py-3 px-4 font-normal whitespace-nowrap">Customer Name</th>
                   <th class="py-3 px-8 font-normal whitespace-nowrap">Product</th>
                   <th class="py-3 px-4 font-normal whitespace-nowrap">Total Amount</th>
-                  <th class="py-3 px-8 font-normal whitespace-nowrap">Date & Time</th>
+                  <th class="py-3 px-8 font-normal whitespace-nowrap">Last Updated</th>
                   <th class="py-3 px-8 font-normal whitespace-nowrap">Order Status</th>
                   <th class="py-3 px-8 font-normal whitespace-nowrap">View Details</th>
                   <th class="py-3 px-4 font-normal whitespace-nowrap">Action</th>
@@ -322,7 +365,7 @@ watch([searchQuery, activeStatusFilter], filterOrders)
                   <td class="table-cell">{{ getCustomerName(order) }}</td>
                   <td class="table-cell">{{ getDisplayProduct(order) }}</td>
                   <td class="table-cell">{{ formatPrice(order.total_price) }}</td>
-                  <td class="table-cell">{{ formatDate(order.pickup_datetime) }}</td>
+                  <td class="table-cell">{{ formatDateTime(order) }}</td>
                   <td class="px-6 py-4">
                     <span :class="[getStatusColor(order.status), 'px-3 py-1 rounded-full text-xs font-medium']">
                       {{ getDisplayStatus(order.status) }}

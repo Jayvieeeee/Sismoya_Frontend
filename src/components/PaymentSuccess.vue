@@ -113,13 +113,11 @@ export default {
         console.log(' Confirming payment with backend...')
         
         const url = `https://sismoya.bsit3b.site/api/orders/paypal/confirm?token=${encodeURIComponent(token.value)}&PayerID=${encodeURIComponent(payer_id.value)}`
-        console.log('URL:', url)
         
         const response = await fetch(url)
         const data = await response.json()
         
         backendResponse.value = data
-        console.log(' Backend response:', data)
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
@@ -128,15 +126,12 @@ export default {
         if (data.success) {
           success.value = true
           order_id.value = data.data.order_id
-          console.log('✅Payment confirmed successfully!')
         } else {
           errorMessage.value = data.message || 'Payment confirmation failed'
           errorDetails.value = data
-          console.error(' Backend returned error:', data)
         }
 
       } catch (error) {
-        console.error(' Confirmation failed:', error)
         errorMessage.value = 'Unable to confirm payment with server'
         errorDetails.value = backendResponse.value || { error_type: 'Network Error', message: error.message }
       } finally {
@@ -152,11 +147,6 @@ export default {
       const urlParams = new URLSearchParams(window.location.search)
       token.value = urlParams.get('token')
       payer_id.value = urlParams.get('PayerID')
-
-      console.log('🔍 PaymentSuccess mounted with:', {
-        token: token.value,
-        payer_id: payer_id.value
-      })
 
       if (token.value && payer_id.value) {
         await confirmPayment()

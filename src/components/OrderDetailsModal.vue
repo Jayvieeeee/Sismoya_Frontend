@@ -17,6 +17,8 @@ interface OrderDetails {
   paymentMethod: string
   paymentStatus: string
   deliveredAt?: string
+  addressLabel?: string
+  fullAddress?: string
 }
 
 defineProps<{
@@ -28,14 +30,18 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const statusList = ['Pending', 'To Pick Up', 'Preparing', 'To Deliver', 'Completed']
+// UPDATED: Added "Picked Up" status
+const statusList = ['Pending', 'To Pick Up', 'Picked Up', 'Preparing', 'To Deliver', 'Completed']
 
+// UPDATED: Enhanced status mapping
 const statusMap: Record<string, string> = {
   pending: 'Pending',
   to_pickup: 'To Pick Up',
+  picked_up: 'Picked Up', // Added Picked Up status
   to_pick_up: 'To Pick Up',
   preparing: 'Preparing',
   to_deliver: 'To Deliver',
+  delivered: 'Completed',
   completed: 'Completed',
   cancelled: 'Cancelled',
 }
@@ -44,19 +50,56 @@ function getDisplayStatus(backendStatus: string): string {
   return statusMap[backendStatus?.toLowerCase()] || 'Pending'
 }
 
+// UPDATED: Improved active status logic with new statuses
 function isActiveStatus(status: string, orderStatus: string) {
-  return statusList.indexOf(status) <= statusList.indexOf(getDisplayStatus(orderStatus))
+  const displayOrderStatus = getDisplayStatus(orderStatus)
+  
+  // For cancelled orders, nothing is active
+  if (displayOrderStatus === 'Cancelled') {
+    return false
+  }
+  
+  // For completed/delivered orders, all steps are active
+  if (displayOrderStatus === 'Completed') {
+    return true
+  }
+  
+  return statusList.indexOf(status) <= statusList.indexOf(displayOrderStatus)
 }
 
 function isCancelled(orderStatus: string): boolean {
   return getDisplayStatus(orderStatus) === 'Cancelled'
 }
 
+// UPDATED: Improved progress height calculation with new statuses
 function getProgressHeight(orderStatus: string) {
+  if (isCancelled(orderStatus)) return "0%"
+  
   const displayStatus = getDisplayStatus(orderStatus)
   const currentIndex = statusList.indexOf(displayStatus)
+  
   if (currentIndex < 0) return "0%"
+  
+  // If completed, show full height
+  if (displayStatus === 'Completed') return "100%"
+  
   return `${(currentIndex / (statusList.length - 1)) * 100}%`
+}
+
+// NEW: Get status color for better visual feedback
+function getStatusColor(status: string) {
+  const normalized = status?.toLowerCase()
+  switch (normalized) {
+    case 'pending': return 'text-yellow-500'
+    case 'to_pickup': return 'text-blue-600'
+    case 'picked_up': return 'text-green-500'
+    case 'preparing': return 'text-blue-600'
+    case 'to_deliver': return 'text-blue-600'
+    case 'delivered': return 'text-green-600'
+    case 'completed': return 'text-green-600'
+    case 'cancelled': return 'text-red-600'
+    default: return 'text-gray-500'
+  }
 }
 </script>
 
@@ -82,8 +125,8 @@ function getProgressHeight(orderStatus: string) {
       <div class="px-12 pb-12">
         <div class="flex gap-16">
 
-          <!-- ✅ FIXED PROGRESS TRACK -->
-          <div class="relative flex flex-col justify-between h-[260px]">
+          <!-- ✅ UPDATED PROGRESS TRACK WITH PICKED UP STATUS -->
+          <div class="relative flex flex-col justify-between h-[300px]"> <!-- Increased height for extra step -->
 
             <!-- Background Line -->
             <div
@@ -153,6 +196,7 @@ function getProgressHeight(orderStatus: string) {
             <p class="font-medium text-gray-900">Total Amount: ₱{{ order.totalAmount.toFixed(2) }}</p>
             <p class="font-medium text-gray-900">Payment Method: {{ order.paymentMethod }}</p>
             <p class="font-medium text-gray-900">Payment Status: {{ order.paymentStatus }}</p>
+          
           </div>
 
         </div>

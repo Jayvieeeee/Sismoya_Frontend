@@ -151,7 +151,7 @@ const closeOrderDetails = () => {
                 <tr>
                   <th class="px-4 py-2 border">Order ID</th>
                   <th class="px-4 py-2 border">Date</th>
-                  <th class="px-4 py-2 border">Gallon</th>
+                  <th class="px-4 py-2 border">Products</th> <!-- Changed from "Gallon" to "Products" -->
                   <th class="px-4 py-2 border">Total Price</th>
                   <th class="px-4 py-2 border">Payment Method</th>
                   <th class="px-4 py-2 border">Status</th>
@@ -170,7 +170,12 @@ const closeOrderDetails = () => {
                   {{ new Date(order.pickup_datetime).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) }}
                   </td>
 
-                  <td class="px-4 py-2 border">{{ order.gallon_name }}</td>
+                  <td class="px-4 py-2 border">
+                    <div class="max-w-xs" :title="order.products">
+                      {{ order.products }}
+                    </div>
+                  </td>
+                  
                   <td class="px-4 py-2 border text-right">₱{{ order.total_price }}</td>
                   <td class="px-4 py-2 border capitalize">{{ order.payment_method }}</td>
                   <td
@@ -210,12 +215,11 @@ const closeOrderDetails = () => {
     </div>
 
     <!-- Include the separate Order Details Modal -->
-<ViewDetailsModal
-  :isOpen="isOrderModalOpen"
-  :selectedOrder="selectedOrder"
-  :customerInfo="customer"
-  @close="closeOrderDetails"
-/>
- 
+    <ViewDetailsModal
+      :isOpen="isOrderModalOpen"
+      :selectedOrder="selectedOrder"
+      :customerInfo="customer"
+      @close="closeOrderDetails"
+    />
   </div>
 </template>
