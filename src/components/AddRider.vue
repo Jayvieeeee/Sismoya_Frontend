@@ -152,21 +152,35 @@ function resetForm() {
 }
 
 async function submitAddRider() {
+  // ✅ Frontend validation for PH contact number
+  const contact = newRider.value.contact_no.replace(/[^0-9]/g, "") // remove spaces/dashes
+
+  if (!/^09[0-9]{9}$/.test(contact)) {
+    return Swal.fire({
+      title: "Invalid Contact Number",
+      text: "Contact number must start with 09 and be exactly 11 digits.",
+      icon: "warning",
+      confirmButtonColor: "#f59e0b",
+    })
+  }
+
   try {
     saving.value = true
-    const { data } = await axiosInstance.post("/admin/add-rider", newRider.value)
+
+    // Update sanitized contact number before sending
+    const payload = { ...newRider.value, contact_no: contact }
+
+    const { data } = await axiosInstance.post("/admin/add-rider", payload)
 
     if (!data.error) {
-      // ✅ Show SweetAlert success message
       await Swal.fire({
         title: "Rider Added!",
         text: `${newRider.value.first_name} ${newRider.value.last_name} has been added successfully.`,
         icon: "success",
         confirmButtonColor: "#2563eb",
-        confirmButtonText: "OK",
       })
 
-      emit("rider-added") // reload list
+      emit("rider-added")
       closeModal()
     } else {
       Swal.fire({
@@ -177,7 +191,6 @@ async function submitAddRider() {
       })
     }
   } catch (error: any) {
-    console.error("Error adding rider:", error)
     Swal.fire({
       title: "Error",
       text: error.response?.data?.message || "Failed to add rider.",
@@ -188,4 +201,5 @@ async function submitAddRider() {
     saving.value = false
   }
 }
+
 </script>
