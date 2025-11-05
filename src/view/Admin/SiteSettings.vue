@@ -316,10 +316,7 @@ const clearImage = () => {
       @close="modalVisible = false"
       @save="handleSave"
     >
-      <div class="space-y-4 text-left">
-        <div v-if="isUpdate" class="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-          Editing Gallon ID: <span class="font-bold">{{ selectedGallon.gallon_id }}</span>
-        </div>
+      <div class="space-y-3 text-left">
 
         <div>
           <label class="block text-sm font-medium mb-1">Gallon Name:</label>

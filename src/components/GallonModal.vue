@@ -6,11 +6,6 @@
     @save="handleSave"
   >
     <div class="space-y-4">
-      <div v-if="isUpdate" class="flex items-center space-x-2">
-        <span class="text-sm text-gray-600">Gallon ID:</span>
-        <span>{{ gallon.id }}</span>
-      </div>
-
       <div>
         <label class="block text-sm font-medium">Gallon Name:</label>
         <input

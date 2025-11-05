@@ -31,64 +31,59 @@ const {
 const isFilterOpen = ref(false)
 const activeStatusFilter = ref('all')
 
-// Create a local mutable copy of orders for sorting
+// Local copy of orders to allow sort changes in real time
 const localOrders = ref<any[]>([])
 
-// Function to sort orders by update date (newest first)
+// Sort orders newest → oldest based on updated_at, then created_at, then pickup_datetime
 const sortOrdersByUpdateDate = (ordersList: any[]) => {
   return [...ordersList].sort((a, b) => {
-    // For order A - prioritize updated_at, then created_at, then pickup_datetime
-    const dateA = a.updated_at ? new Date(a.updated_at).getTime() :
-                  a.created_at ? new Date(a.created_at).getTime() :
-                  a.pickup_datetime ? new Date(a.pickup_datetime).getTime() : 0
-    
-    // For order B - prioritize updated_at, then created created_at, then pickup_datetime
-    const dateB = b.updated_at ? new Date(b.updated_at).getTime() :
-                  b.created_at ? new Date(b.created_at).getTime() :
-                  b.pickup_datetime ? new Date(b.pickup_datetime).getTime() : 0
-    
-    return dateB - dateA // Descending order (newest first)
+    const dateA = new Date(a.updated_at || a.created_at || a.pickup_datetime || 0).getTime()
+    const dateB = new Date(b.updated_at || b.created_at || b.pickup_datetime || 0).getTime()
+    return dateB - dateA
   })
 }
 
-// Function to update order timestamp locally when action is performed
+// Moves an order to the top by updating timestamp locally
 const updateOrderTimestamp = (orderId: string) => {
-  const orderIndex = localOrders.value.findIndex(order =>
+  const index = localOrders.value.findIndex(order =>
     order.order_id === orderId || order.id?.toString() === orderId
   )
-  
-  if (orderIndex !== -1) {
-    // Create updated order with current timestamp
-    const updatedOrder = {
-      ...localOrders.value[orderIndex],
-      updated_at: new Date().toISOString() // Set to current time
+  if (index !== -1) {
+    const order = {
+      ...localOrders.value[index],
+      updated_at: new Date().toISOString()
     }
-    
-    // Remove the order from its current position
-    localOrders.value.splice(orderIndex, 1)
-    // Add it to the beginning (top)
-    localOrders.value.unshift(updatedOrder)
+    localOrders.value.splice(index, 1)
+    localOrders.value.unshift(order)
   }
 }
 
-// Computed property for displayed orders that handles filtering
-const displayedOrders = computed(() => {
-  const normalize = (val: string) =>
-    val?.toLowerCase().replace(/[-_\s]+/g, '_') || ''
+// Updates order status AND moves it to the top
+const updateOrderStatusLocally = (orderId: string, newStatus: string) => {
+  const index = localOrders.value.findIndex(order =>
+    order.order_id === orderId || order.id?.toString() === orderId
+  )
+  if (index !== -1) {
+    localOrders.value[index] = {
+      ...localOrders.value[index],
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    }
+    localOrders.value = sortOrdersByUpdateDate(localOrders.value)
+  }
+}
 
-  // Start with the locally sorted orders
+// Displayed orders based on filters and search
+const displayedOrders = computed(() => {
+  const normalize = (v: string) => v?.toLowerCase().replace(/[-_\s]+/g, '_') || ''
   let filtered = [...localOrders.value]
 
-  // Filter by active status (if not "all")
   if (activeStatusFilter.value !== 'all') {
-    filtered = filtered.filter(order => {
-      const orderStatus = normalize(order.status)
-      const activeStatus = normalize(activeStatusFilter.value)
-      return orderStatus.includes(activeStatus)
-    })
+    filtered = filtered.filter(order =>
+      normalize(order.status).includes(normalize(activeStatusFilter.value))
+    )
   }
 
-  // Filter by search query
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim()
     filtered = filtered.filter(order =>
@@ -99,19 +94,15 @@ const displayedOrders = computed(() => {
     )
   }
 
-  // Remove duplicates based on order_id (or fallback to id)
-  const uniqueOrders = new Map(
+  return Array.from(new Map(
     filtered.map(order => [order.order_id || order.id?.toString(), order])
-  )
-
-  return Array.from(uniqueOrders.values())
+  ).values())
 })
 
 const applyFilter = (status: string) => {
   activeStatusFilter.value = status
   isFilterOpen.value = false
 }
-
 const clearFilters = () => {
   activeStatusFilter.value = 'all'
   searchQuery.value = ''
@@ -125,122 +116,87 @@ const getSwalConfig = (action: string, orderId: string): SweetAlertOptions => {
       icon: 'question',
       confirmButtonText: 'Yes, Approve!',
       confirmButtonColor: '#10B981',
-      showCancelButton: true,
-      cancelButtonText: 'Cancel'
+      showCancelButton: true
     },
     cancel: {
       title: 'Cancel Order?',
-      text: `Are you sure you want to CANCEL Order #${orderId}? This action cannot be undone.`,
+      text: `This cannot be undone.`,
       icon: 'warning',
       confirmButtonText: 'Yes, Cancel!',
       confirmButtonColor: '#EF4444',
-      showCancelButton: true,
-      cancelButtonText: 'Keep Order'
+      showCancelButton: true
     },
     mark_preparing: {
       title: 'Mark as Preparing?',
-      text: `Are you sure you want to mark Order #${orderId} as PREPARING?`,
       icon: 'info',
-      confirmButtonText: 'Yes, Mark Preparing!',
+      confirmButtonText: 'Mark as Preparing',
       confirmButtonColor: '#3B82F6',
-      showCancelButton: true,
-      cancelButtonText: 'Cancel'
+      showCancelButton: true
     },
     mark_to_deliver: {
       title: 'Mark for Delivery?',
-      text: `Are you sure you want to mark Order #${orderId} as TO DELIVER?`,
       icon: 'info',
-      confirmButtonText: 'Yes, Mark for Delivery!',
+      confirmButtonText: 'Mark for Delivery',
       confirmButtonColor: '#8B5CF6',
-      showCancelButton: true,
-      cancelButtonText: 'Cancel'
+      showCancelButton: true
     }
   }
+  return configs[action]
+}
 
-  return configs[action] || {
-    title: 'Confirm Action',
-    text: `Are you sure you want to perform this action on Order #${orderId}?`,
-    icon: 'question',
-    confirmButtonText: 'Confirm',
-    confirmButtonColor: '#6B7280',
-    showCancelButton: true,
-    cancelButtonText: 'Cancel'
+const getExpectedStatusAfterAction = (action: string): string => {
+  const map: Record<string, string> = {
+    approve: 'preparing',
+    mark_preparing: 'preparing',
+    mark_to_deliver: 'to_deliver',
+    cancel: 'cancelled'
   }
+  return map[action] || 'pending'
 }
 
 const handleActionWithSweetAlert = async (orderId: string, action: string) => {
-  const swalConfig = getSwalConfig(action, orderId)
-  const result = await Swal.fire(swalConfig)
+  const result = await Swal.fire(getSwalConfig(action, orderId))
+  if (!result.isConfirmed) return
 
-  if (result.isConfirmed) {
-    try {
-      // 1. Update the timestamp and move to top LOCALLY first for immediate UI feedback
-      updateOrderTimestamp(orderId)
-      
-      // 2. Then perform the actual API action
-      await handleAction(orderId, action)
-      
-      // 3. Reload orders to get the latest data/status from backend
-      await loadOrders()
-      
-      Swal.fire({
-        title: 'Success!',
-        text: 'Action completed successfully',
-        icon: 'success',
-        confirmButtonColor: '#10B981',
-        timer: 2000,
-        showConfirmButton: false
-      })
-    } catch (error: any) {
-      Swal.fire({
-        title: 'Error!',
-        text: error.message || 'An error occurred while processing your request',
-        icon: 'error',
-        confirmButtonColor: '#EF4444'
-      })
-    }
+  try {
+    const newStatus = getExpectedStatusAfterAction(action)
+
+    // 1) Run backend update first
+    await handleAction(orderId, action)
+
+    // 2) Fetch the fresh updated orders list
+    await fetchOrders()
+
+    // 3) Update UI: move updated order to top (NOW SAFE)
+    updateOrderStatusLocally(orderId, newStatus)
+    updateOrderTimestamp(orderId)
+
+    Swal.fire({
+      title: 'Success!',
+      icon: 'success',
+      timer: 1600,
+      showConfirmButton: false
+    })
+  } catch (error) {
+    console.error("Action failed:", error)
   }
 }
+
 
 const getDisplayProduct = (order: any) => {
-  const productName = getProductName(order)
-  if (order.items && Array.isArray(order.items) && order.items.length > 1) {
-    const first = order.items[0]
-    const name = first.product_name || first.gallon_name || first.name || 'Product'
-    const qty = first.quantity || 1
-    return `${qty}x ${name} +${order.items.length - 1} more`
-  }
-
-  if (order.products && order.products.includes(',')) {
-    const products = order.products.split(',')
-    if (products.length > 1) {
-      return `${products[0].trim()} + ${products.length - 1} more`
-    }
-  }
-
-  return productName
+  const name = getProductName(order)
+  if (order.items?.length > 1) return `${order.items[0].quantity}x ${order.items[0].product_name} +${order.items.length - 1} more`
+  return name
 }
 
-// Enhanced formatDate to show update time if available
-const formatDateTime = (order: any) => {
-  // Show update time if available, otherwise show pickup time
-  const dateTime = order.updated_at || order.pickup_datetime
-  return formatDate(dateTime)
-}
-
-const loadOrders = async () => {
-  await fetchOrders()
-}
+const formatDateTime = (order: any) => formatDate(order.updated_at || order.pickup_datetime)
+const loadOrders = async () => await fetchOrders()
 
 onMounted(loadOrders)
 
-// Watch for changes in the original orders and update our local sorted copy
+// Sync local list whenever backend orders change
 watch(orders, (newOrders) => {
-  if (newOrders.length > 0) {
-    localOrders.value = sortOrdersByUpdateDate(newOrders)
-  } else {
-    localOrders.value = []
-  }
+  localOrders.value = sortOrdersByUpdateDate(newOrders)
 }, { immediate: true })
 </script>
 
@@ -420,11 +376,7 @@ watch(orders, (newOrders) => {
 
 <style scoped>
 .fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
+.fade-leave-active { transition: opacity .2s }
 .fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.fade-leave-to { opacity: 0 }
 </style>

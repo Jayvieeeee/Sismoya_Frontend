@@ -107,104 +107,109 @@ const closeOrderDetails = () => {
         <!-- Saved Addresses Table -->
         <div>
           <h3 class="font-semibold mb-2 text-sm">Saved Addresses</h3>
-          <div class="border rounded-lg overflow-auto max-h-48" style="max-width: 100%;">
-            <table class="w-full text-sm text-left border-collapse min-w-[600px]">
-              <thead class="bg-gray-100 text-gray-700">
-                <tr>
-                  <th class="px-4 py-2 border">Address ID</th>
-                  <th class="px-4 py-2 border">Label</th>
-                  <th class="px-4 py-2 border">Address</th>
-                  <th class="px-4 py-2 border">Is Default</th>
-                </tr>
-              </thead>
-              <tbody v-if="savedAddresses.length">
-                <tr
-                  v-for="address in savedAddresses"
-                  :key="address.address_id"
-                  class="hover:bg-gray-50"
-                >
-                  <td class="px-4 py-2 border">{{ address.address_id }}</td>
-                  <td class="px-4 py-2 border">{{ address.label }}</td>
-                  <td class="px-4 py-2 border">{{ address.address }}</td>
-                  <td class="px-4 py-2 border text-center">
-                    <span v-if="address.is_default" class="text-green-500 font-bold">✔</span>
-                    <span v-else class="text-gray-400">—</span>
-                  </td>
-                </tr>
-              </tbody>
-              <tbody v-else>
-                <tr>
-                  <td colspan="4" class="px-4 py-3 border text-center text-gray-500 italic">
-                    No saved addresses found
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="border rounded-lg overflow-hidden" style="max-width: 100%;">
+            <div class="overflow-auto max-h-48">
+              <table class="w-full text-sm text-left border-collapse min-w-[600px]">
+                <thead class="bg-gray-100 text-gray-700 sticky top-0 z-10">
+                  <tr>
+                    <th class="px-4 py-2 border">Address ID</th>
+                    <th class="px-4 py-2 border">Label</th>
+                    <th class="px-4 py-2 border">Address</th>
+                    <th class="px-4 py-2 border">Is Default</th>
+                  </tr>
+                </thead>
+                <tbody v-if="savedAddresses.length">
+                  <tr
+                    v-for="address in savedAddresses"
+                    :key="address.address_id"
+                    class="hover:bg-gray-50"
+                  >
+                    <td class="px-4 py-2 border">{{ address.address_id }}</td>
+                    <td class="px-4 py-2 border">{{ address.label }}</td>
+                    <td class="px-4 py-2 border">{{ address.address }}</td>
+                    <td class="px-4 py-2 border text-center">
+                      <span v-if="address.is_default" class="text-green-500 font-bold">✔</span>
+                      <span v-else class="text-gray-400">—</span>
+                    </td>
+                  </tr>
+                </tbody>
+                <tbody v-else>
+                  <tr>
+                    <td colspan="4" class="px-4 py-3 border text-center text-gray-500 italic">
+                      No saved addresses found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
+        <!-- Order History Table -->
         <div>
           <h3 class="font-semibold mb-2 text-sm">Order History</h3>
-          <div class="border rounded-lg overflow-auto max-h-48" style="max-width: 100%;">
-            <table class="w-full text-sm text-left border-collapse min-w-[700px]">
-              <thead class="bg-gray-100 text-gray-700">
-                <tr>
-                  <th class="px-4 py-2 border">Order ID</th>
-                  <th class="px-4 py-2 border">Date</th>
-                  <th class="px-4 py-2 border">Products</th> <!-- Changed from "Gallon" to "Products" -->
-                  <th class="px-4 py-2 border">Total Price</th>
-                  <th class="px-4 py-2 border">Payment Method</th>
-                  <th class="px-4 py-2 border">Status</th>
-                  <th class="px-4 py-2 border">Actions</th>
-                </tr>
-              </thead>
+          <div class="border rounded-lg overflow-hidden" style="max-width: 100%;">
+            <div class="overflow-auto max-h-48">
+              <table class="w-full text-sm text-left border-collapse min-w-[700px]">
+                <thead class="bg-gray-100 text-gray-700 sticky top-0 z-10">
+                  <tr>
+                    <th class="px-4 py-2 border">Order ID</th>
+                    <th class="px-4 py-2 border">Date</th>
+                    <th class="px-4 py-2 border">Products</th>
+                    <th class="px-4 py-2 border">Total Price</th>
+                    <th class="px-4 py-2 border">Payment Method</th>
+                    <th class="px-4 py-2 border">Status</th>
+                    <th class="px-4 py-2 border">Actions</th>
+                  </tr>
+                </thead>
 
-              <tbody v-if="orderHistory.length">
-                <tr
-                  v-for="order in orderHistory"
-                  :key="order.order_id"
-                  class="hover:bg-gray-50"
-                >
-                  <td class="px-4 py-2 border">{{ order.order_id }}</td>
-                  <td class="px-4 py-2 border">
-                  {{ new Date(order.pickup_datetime).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) }}
-                  </td>
-
-                  <td class="px-4 py-2 border">
-                    <div class="max-w-xs" :title="order.products">
-                      {{ order.products }}
-                    </div>
-                  </td>
-                  
-                  <td class="px-4 py-2 border text-right">₱{{ order.total_price }}</td>
-                  <td class="px-4 py-2 border capitalize">{{ order.payment_method }}</td>
-                  <td
-                    class="px-4 py-2 border font-medium"
-                    :class="{
-                      'text-yellow-600': order.status === 'pending',
-                      'text-green-600': order.status === 'completed',
-                      'text-red-600': order.status === 'cancelled'
-                    }"
+                <tbody v-if="orderHistory.length">
+                  <tr
+                    v-for="order in orderHistory"
+                    :key="order.order_id"
+                    class="hover:bg-gray-50"
                   >
-                    {{ order.status }}
-                  </td>
-                  <td
-                    class="px-4 py-2 border text-blue-600 underline cursor-pointer"
-                    @click="openOrderDetails(order)"
-                  >
-                    View Details
-                  </td>
-                </tr>
-              </tbody>
+                    <td class="px-4 py-2 border">{{ order.order_id }}</td>
+                    <td class="px-4 py-2 border">
+                    {{ new Date(order.pickup_datetime).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+                    </td>
 
-              <tbody v-else>
-                <tr>
-                  <td colspan="7" class="px-4 py-3 border text-center text-gray-500 italic">
-                    No orders found
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    <td class="px-4 py-2 border">
+                      <div class="max-w-xs" :title="order.products">
+                        {{ order.products }}
+                      </div>
+                    </td>
+                    
+                    <td class="px-4 py-2 border text-right">₱{{ order.total_price }}</td>
+                    <td class="px-4 py-2 border capitalize">{{ order.payment_method }}</td>
+                    <td
+                      class="px-4 py-2 border font-medium"
+                      :class="{
+                        'text-yellow-600': order.status === 'pending',
+                        'text-green-600': order.status === 'completed',
+                        'text-red-600': order.status === 'cancelled'
+                      }"
+                    >
+                      {{ order.status }}
+                    </td>
+                    <td
+                      class="px-4 py-2 border text-blue-600 underline cursor-pointer"
+                      @click="openOrderDetails(order)"
+                    >
+                      View Details
+                    </td>
+                  </tr>
+                </tbody>
+
+                <tbody v-else>
+                  <tr>
+                    <td colspan="7" class="px-4 py-3 border text-center text-gray-500 italic">
+                      No orders found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
