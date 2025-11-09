@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import { logout } from "@/utils/auth"
-import ConfirmModal from "@/components/ConfirmModal.vue" 
+import Modal from "@/components/Modal.vue"
 
 // ICONS
 import dashboardIcon from "@/assets/icons/dashboard.png"
@@ -132,20 +132,36 @@ async function confirmLogout() {
       </nav>
     </aside>
 
+    <!-- Backdrop (mobile only) -->
     <div
       v-if="isOpen"
       @click="isOpen = false"
       class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
     ></div>
 
-    <ConfirmModal
-      v-if="showConfirm"
+    <!-- Confirm Modal -->
+    <Modal
       :visible="showConfirm"
       title="Confirm Logout"
-      message="Are you sure you want to log out?"
-      @confirm="confirmLogout"
-      @cancel="showConfirm = false"
-    />
+      @close="showConfirm = false"
+    >
+      <p class="text-gray-600">Are you sure you want to log out?</p>
+      
+      <template #actions>
+        <button
+          @click="showConfirm = false"
+          class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
+        <button
+          @click="confirmLogout"
+          class="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
+        >
+          Logout
+        </button>
+      </template>
+    </Modal>
 
   </div>
 </template>
