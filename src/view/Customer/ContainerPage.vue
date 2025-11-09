@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue"
 import { useRouter } from "vue-router"
-import Swal from 'sweetalert2'
 import { useCartStore } from "@/stores/cart"
 import Sidebar from "@/components/CustomerSidebar.vue"
 import OrderModal from "@/components/OrderModal.vue"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 import Cart from "@/assets/icons/cart.png"
 import { getContainers } from "@/api/getContainer"
 import type { ModalProduct } from "@/types" 
@@ -28,6 +28,14 @@ const selectedProduct = ref<ModalProduct>({
 
 const productForImmediateOrder = ref<ModalProduct | null>(null)
 const isProcessingOrder = ref(false) 
+
+// Result modal states
+const showResultModal = ref(false)
+const resultModalConfig = ref({
+  title: '',
+  message: '',
+  type: 'success' as 'success' | 'error'
+})
 
 onMounted(async () => {
   containers.value = await getContainers()
@@ -63,36 +71,24 @@ async function handleAddMore(item: ModalProduct) {
     await cartStore.addToCart(item.id, item.qty)
 
     // Success
-    Swal.fire({
+    resultModalConfig.value = {
       title: 'Added to Cart!',
-      text: `${item.type} (${item.qty}x) has been successfully added to your cart.`,
-      icon: 'success',
-      confirmButtonColor: '#0097b2',
-      confirmButtonText: 'Okay',
-      background: '#ffffff',
-      color: '#333',
-      showClass: {
-        popup: 'animate__animated animate__fadeInDown'
-      },
-      hideClass: {
-        popup: 'animate__animated animate__fadeOutUp'
-      }
-    })
-
+      message: `${item.type} (${item.qty}x) has been successfully added to your cart.`,
+      type: 'success'
+    }
+    showResultModal.value = true
     showModal.value = false
 
   } catch (error) {
     console.error('Failed to add item to cart:', error)
 
     // Error
-    Swal.fire({
+    resultModalConfig.value = {
       title: 'Error',
-      text: 'Failed to add item to cart. Please try again.',
-      icon: 'error',
-      confirmButtonColor: '#e53e3e',
-      background: '#fff',
-      color: '#333'
-    })
+      message: 'Failed to add item to cart. Please try again.',
+      type: 'error'
+    }
+    showResultModal.value = true
   }
 }
 
@@ -164,6 +160,11 @@ function handleSummaryModalClose() {
   showSummaryModal.value = false
   productForImmediateOrder.value = null
   isProcessingOrder.value = false
+}
+
+// Close result modal
+function closeResultModal() {
+  showResultModal.value = false
 }
 </script>
 
@@ -243,5 +244,17 @@ function handleSummaryModalClose() {
     :products="productsForOrderSummary"
     @close="handleSummaryModalClose" 
     @place-order="handleOrderSuccess"
+  />
+
+  <!-- Result Modal (Success/Error) -->
+  <ConfirmModal
+    :visible="showResultModal"
+    :title="resultModalConfig.title"
+    :message="resultModalConfig.message"
+    :type="resultModalConfig.type"
+    :show-cancel="false"
+    confirm-text="OK"
+    @confirm="closeResultModal"
+    @close="closeResultModal"
   />
 </template>

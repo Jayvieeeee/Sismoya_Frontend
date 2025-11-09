@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import Swal from "sweetalert2"
 import { changePassword } from "@/utils/profileApi"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 
 // Import Heroicons
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline"
@@ -16,6 +16,14 @@ const showOld = ref(false)
 const showNew = ref(false)
 const showConfirm = ref(false)
 
+// Result modal states
+const showResultModal = ref(false)
+const resultModalConfig = ref({
+  title: '',
+  message: '',
+  type: 'success' as 'success' | 'error' | 'warning'
+})
+
 async function handleChangePassword() {
   loading.value = true
   try {
@@ -25,12 +33,12 @@ async function handleChangePassword() {
       confirmPassword.value
     )
 
-    Swal.fire({
-      icon: "success",
-      title: "Password Changed Successfully",
-      text: "Your password has been updated.",
-      confirmButtonColor: "#2563eb",
-    })
+    resultModalConfig.value = {
+      title: 'Password Changed Successfully',
+      message: 'Your password has been updated.',
+      type: 'success'
+    }
+    showResultModal.value = true
 
     oldPassword.value = ""
     newPassword.value = ""
@@ -39,28 +47,34 @@ async function handleChangePassword() {
     console.error("Full error:", error)
 
     if (error.response) {
-      Swal.fire({
-        icon: "error",
-        title: "Error Changing Password",
-        text: error.response.data.message || "Unknown error occurred.",
-        confirmButtonColor: "#ef4444",
-      })
+      resultModalConfig.value = {
+        title: 'Error Changing Password',
+        message: error.response.data.message || 'Unknown error occurred.',
+        type: 'error'
+      }
+      showResultModal.value = true
     } else if (error.request) {
-      Swal.fire({
-        icon: "warning",
-        title: "No Response from Server",
-        text: "Please try again later.",
-      })
+      resultModalConfig.value = {
+        title: 'No Response from Server',
+        message: 'Please try again later.',
+        type: 'warning'
+      }
+      showResultModal.value = true
     } else {
-      Swal.fire({
-        icon: "error",
-        title: "Unexpected Error",
-        text: error.message || "Something went wrong.",
-      })
+      resultModalConfig.value = {
+        title: 'Unexpected Error',
+        message: error.message || 'Something went wrong.',
+        type: 'error'
+      }
+      showResultModal.value = true
     }
   } finally {
     loading.value = false
   }
+}
+
+function closeResultModal() {
+  showResultModal.value = false
 }
 </script>
 
@@ -149,5 +163,17 @@ async function handleChangePassword() {
         </button>
       </div>
     </form>
+
+    <!-- Result Modal (Success/Error/Warning) -->
+    <ConfirmModal
+      :visible="showResultModal"
+      :title="resultModalConfig.title"
+      :message="resultModalConfig.message"
+      :type="resultModalConfig.type"
+      :show-cancel="false"
+      confirm-text="OK"
+      @confirm="closeResultModal"
+      @close="closeResultModal"
+    />
   </div>
 </template>

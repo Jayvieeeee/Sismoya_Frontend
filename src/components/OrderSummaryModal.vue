@@ -6,13 +6,13 @@ import AddressSelectionModal from "@/components/AddressSelectionModal.vue"
 import AddNewAddressModal from "@/components/AddNewAddressModal.vue"
 import DateTimeModal from "@/components/DateTimeModal.vue"
 import OrderPlacedModal from "@/components/OrderPlacedModal.vue"
-import ErrorModal from "@/components/ErrorModal.vue"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 import PayPalModal from "@/components/PaypalModal.vue"
 import { getProfile } from "@/utils/auth"
 import { getAddresses } from "@/utils/address"
 
 // -------------------- State --------------------
-const showError = ref(false);
+const showErrorModal = ref(false);
 const errorMessage = ref("");
 const showPayPalModal = ref(false);
 const pendingPayPalOrderId = ref<number | null>(null);
@@ -150,22 +150,22 @@ function getImageUrl(imageUrl: string | undefined | null): string {
 function validateOrder(): boolean {
   if (!selectedAddress.value) { 
     errorMessage.value = "Please select an address."; 
-    showError.value = true; 
+    showErrorModal.value = true; 
     return false 
   }
   if (!pickUpTime.value) { 
     errorMessage.value = "Please select a pickup time."; 
-    showError.value = true; 
+    showErrorModal.value = true; 
     return false 
   }
   if (!paymentMethod.value) { 
     errorMessage.value = "Please select a payment method."; 
-    showError.value = true; 
+    showErrorModal.value = true; 
     return false 
   }
   if (totalAmount.value <= 0) {
     errorMessage.value = "Order total must be greater than 0."; 
-    showError.value = true; 
+    showErrorModal.value = true; 
     return false 
   }
   return true
@@ -175,7 +175,7 @@ const handlePlaceOrder = async () => {
   
   if (!customer.value || !props.products.length) {
     errorMessage.value = "No customer or products found.";
-    showError.value = true;
+    showErrorModal.value = true;
     return;
   }
   
@@ -218,7 +218,7 @@ const payload = {
     }
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message || err.message || "Order failed. Please try again.";
-    showError.value = true;
+    showErrorModal.value = true;
   }
 };
 
@@ -232,7 +232,7 @@ const handlePayPalSuccess = (data: any) => {
 
 const handlePayPalError = (error: string) => {
   errorMessage.value = error;
-  showError.value = true;
+  showErrorModal.value = true;
   showPayPalModal.value = false;
   // Don't clear form on PayPal error - user might want to try again
 }
@@ -242,6 +242,11 @@ const handlePayPalClosed = () => {
   pendingPayPalOrderId.value = null;
   pendingPayPalAmount.value = 0;
   // Don't clear form when PayPal modal is closed without payment
+}
+
+// Close error modal handler
+const closeErrorModal = () => {
+  showErrorModal.value = false;
 }
 
 // Clear form when modal is closed
@@ -367,18 +372,24 @@ watch(() => props.isOpen, (newVal) => {
     @close="orderPlacedModal = false" />
 
   <!-- PayPal Modal -->
-<PayPalModal 
-  :isOpen="showPayPalModal"
-  :amount="pendingPayPalAmount"
-  :orderId="pendingPayPalOrderId"
-  @payment-success="handlePayPalSuccess"
-  @payment-error="handlePayPalError"
-  @closed="handlePayPalClosed"
-/>
+  <PayPalModal 
+    :isOpen="showPayPalModal"
+    :amount="pendingPayPalAmount"
+    :orderId="pendingPayPalOrderId"
+    @payment-success="handlePayPalSuccess"
+    @payment-error="handlePayPalError"
+    @closed="handlePayPalClosed"
+  />
 
-  <ErrorModal 
-    v-if="showError" 
-    :visible="showError" 
-    :message="errorMessage" 
-    @close="showError = false" />
+  <!-- Error Modal -->
+  <ConfirmModal 
+    :visible="showErrorModal" 
+    title="Error"
+    :message="errorMessage"
+    type="error"
+    :show-cancel="false"
+    confirm-text="OK"
+    @confirm="closeErrorModal"
+    @close="closeErrorModal"
+  />
 </template>

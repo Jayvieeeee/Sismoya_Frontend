@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getProfile, updateProfile } from '@/utils/profileApi'
-import Swal from 'sweetalert2'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 // ✅ Import Heroicons
 import { PencilSquareIcon } from '@heroicons/vue/24/outline'
@@ -15,6 +15,14 @@ const formData = ref({
   last_name: '',
   email: '',
   contact_no: ''
+})
+
+// Result modal states
+const showResultModal = ref(false)
+const resultModalConfig = ref({
+  title: '',
+  message: '',
+  type: 'success' as 'success' | 'error'
 })
 
 onMounted(async () => {
@@ -55,26 +63,34 @@ async function handleSave() {
     }
 
     await updateProfile(updateData)
-    await Swal.fire({
-      icon: 'success',
-      title: 'Profile Updated',
-      text: 'Your profile has been updated successfully!',
-      confirmButtonColor: '#3B82F6'
-    })
-
+    
     showModal.value = false
+    
+    resultModalConfig.value = {
+      title: 'Profile Updated',
+      message: 'Your profile has been updated successfully!',
+      type: 'success'
+    }
+    showResultModal.value = true
+
     const refreshed = await getProfile()
     user.value = refreshed
   } catch (err: any) {
-    Swal.fire({
-      icon: 'error',
+    showModal.value = false
+    
+    resultModalConfig.value = {
       title: 'Update Failed',
-      text: err.response?.data?.message || 'Something went wrong.',
-      confirmButtonColor: '#EF4444'
-    })
+      message: err.response?.data?.message || 'Something went wrong.',
+      type: 'error'
+    }
+    showResultModal.value = true
   } finally {
     loading.value = false
   }
+}
+
+function closeResultModal() {
+  showResultModal.value = false
 }
 </script>
 
@@ -141,7 +157,7 @@ async function handleSave() {
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Edit Modal -->
     <div
       v-if="showModal"
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
@@ -230,5 +246,17 @@ async function handleSave() {
         </form>
       </div>
     </div>
+
+    <!-- Result Modal (Success/Error) -->
+    <ConfirmModal
+      :visible="showResultModal"
+      :title="resultModalConfig.title"
+      :message="resultModalConfig.message"
+      :type="resultModalConfig.type"
+      :show-cancel="false"
+      confirm-text="OK"
+      @confirm="closeResultModal"
+      @close="closeResultModal"
+    />
   </div>
 </template>

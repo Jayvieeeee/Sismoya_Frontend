@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
-import Swal from "sweetalert2"
 import Cart from "@/assets/icons/cart.png"
 import plusIcon from "@/assets/icons/plus.png"
 import minusIcon from "@/assets/icons/minus.png"
 import CustomerLayout from "@/Layout/CustomerLayout.vue"
 import OrderSummary from "@/components/OrderSummaryModal.vue"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 import type { ModalProduct } from "@/types"
 import type { CartItem } from "@/api/cartApi"
 import {
@@ -30,6 +30,24 @@ const editingQuantity = ref<{ [key: number]: string }>({})
 const showOrderSummary = ref(false)
 const selectedProducts = ref<ModalProduct[]>([])
 
+// Confirm modals
+const showConfirmModal = ref(false)
+const showResultModal = ref(false)
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  type: 'warning' as 'warning' | 'success' | 'error',
+  showCancel: false
+})
+const resultModalConfig = ref({
+  title: '',
+  message: '',
+  type: 'success' as 'success' | 'error'
+})
+
+// Pending action state
+const pendingRemovalItem = ref<CartItem | null>(null)
+
 // --- Computed Properties ---
 const cartItems = computed(() => items.value)
 const selectedItems = computed(() => cartItems.value.filter((item) => item.selected))
@@ -50,12 +68,12 @@ const toggleSelect = (item: CartItem) => (item.selected = !item.selected)
 
 const openOrderSummary = () => {
   if (selectedItems.value.length === 0) {
-    Swal.fire({
-      icon: "info",
-      title: "No items selected",
-      text: "Please select at least one item to checkout.",
-      confirmButtonColor: "#3085d6"
-    })
+    resultModalConfig.value = {
+      title: 'No items selected',
+      message: 'Please select at least one item to checkout.',
+      type: 'error'
+    }
+    showResultModal.value = true
     return
   }
 
@@ -80,32 +98,42 @@ const handleOrderPlaced = async () => {
 
 const updateQuantity = async (item: CartItem, newQuantity: number) => {
   if (newQuantity <= 0) {
-    const result = await Swal.fire({
-      icon: "warning",
-      title: "Remove Item?",
-      text: `Do you want to remove ${item.name} from the cart?`,
-      showCancelButton: true,
-      confirmButtonText: "Yes, remove it",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6"
-    })
-
-    if (result.isConfirmed) {
-      await removeFromCartBackend([item.cart_item_id])
-      items.value = await getUserCart()
-      await Swal.fire({
-        icon: "success",
-        title: "Item Removed",
-        text: `${item.name} has been removed.`,
-        timer: 1500,
-        showConfirmButton: false
-      })
+    pendingRemovalItem.value = item
+    confirmModalConfig.value = {
+      title: 'Remove Item?',
+      message: `Do you want to remove ${item.name} from the cart?`,
+      type: 'warning',
+      showCancel: true
     }
+    showConfirmModal.value = true
     return
   }
 
   items.value = await updateCartItemBackend(item.cart_item_id, newQuantity)
+}
+
+const handleConfirmRemoval = async () => {
+  showConfirmModal.value = false
+  
+  if (!pendingRemovalItem.value) return
+
+  const item = pendingRemovalItem.value
+  await removeFromCartBackend([item.cart_item_id])
+  items.value = await getUserCart()
+  
+  resultModalConfig.value = {
+    title: 'Item Removed',
+    message: `${item.name} has been removed.`,
+    type: 'success'
+  }
+  showResultModal.value = true
+  
+  pendingRemovalItem.value = null
+}
+
+const handleCancelRemoval = () => {
+  showConfirmModal.value = false
+  pendingRemovalItem.value = null
 }
 
 const increaseQty = (item: CartItem) => updateQuantity(item, item.quantity + 1)
@@ -144,28 +172,14 @@ const saveQuantity = async (item: CartItem) => {
 
   if (newQuantity === 0) {
     // Handle removal if quantity is 0
-    const result = await Swal.fire({
-      icon: "warning",
-      title: "Remove Item?",
-      text: `Do you want to remove ${item.name} from the cart?`,
-      showCancelButton: true,
-      confirmButtonText: "Yes, remove it",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6"
-    });
-
-    if (result.isConfirmed) {
-      await removeFromCartBackend([item.cart_item_id]);
-      items.value = await getUserCart();
-      await Swal.fire({
-        icon: "success",
-        title: "Item Removed",
-        text: `${item.name} has been removed.`,
-        timer: 1500,
-        showConfirmButton: false
-      });
+    pendingRemovalItem.value = item
+    confirmModalConfig.value = {
+      title: 'Remove Item?',
+      message: `Do you want to remove ${item.name} from the cart?`,
+      type: 'warning',
+      showCancel: true
     }
+    showConfirmModal.value = true
   } else {
     // Update quantity
     await updateQuantity(item, newQuantity);
@@ -184,28 +198,18 @@ const handleQuantityKeypress = (event: KeyboardEvent, item: CartItem) => {
 }
 
 const removeItem = async (item: CartItem) => {
-  const result = await Swal.fire({
-    icon: "warning",
-    title: "Remove Item?",
-    text: `Do you want to remove ${item.name} from your cart?`,
-    showCancelButton: true,
-    confirmButtonText: "Yes, remove it",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6"
-  })
-
-  if (result.isConfirmed) {
-    await removeFromCartBackend([item.cart_item_id])
-    items.value = await getUserCart()
-    await Swal.fire({
-      icon: "success",
-      title: "Removed!",
-      text: `${item.name} has been removed from the cart.`,
-      timer: 1500,
-      showConfirmButton: false
-    })
+  pendingRemovalItem.value = item
+  confirmModalConfig.value = {
+    title: 'Remove Item?',
+    message: `Do you want to remove ${item.name} from your cart?`,
+    type: 'warning',
+    showCancel: true
   }
+  showConfirmModal.value = true
+}
+
+const closeResultModal = () => {
+  showResultModal.value = false
 }
 
 const getImageUrl = (item: CartItem): string => {
@@ -404,5 +408,31 @@ const getDisplayText = (value: any, fallback: string = "N/A"): string => value |
     :products="selectedProducts"
     @close="showOrderSummary = false"
     @place-order="handleOrderPlaced"
+  />
+
+  <!-- Confirm Removal Modal -->
+  <ConfirmModal
+    :visible="showConfirmModal"
+    :title="confirmModalConfig.title"
+    :message="confirmModalConfig.message"
+    :type="confirmModalConfig.type"
+    :show-cancel="true"
+    confirm-text="Yes, remove it"
+    cancel-text="Cancel"
+    @confirm="handleConfirmRemoval"
+    @cancel="handleCancelRemoval"
+    @close="handleCancelRemoval"
+  />
+
+  <!-- Result Modal (Success/Error) -->
+  <ConfirmModal
+    :visible="showResultModal"
+    :title="resultModalConfig.title"
+    :message="resultModalConfig.message"
+    :type="resultModalConfig.type"
+    :show-cancel="false"
+    confirm-text="OK"
+    @confirm="closeResultModal"
+    @close="closeResultModal"
   />
 </template>

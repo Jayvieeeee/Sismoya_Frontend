@@ -3,9 +3,9 @@ import { ref, onMounted, computed } from "vue";
 import axiosInstance from "@/utils/axios";
 import CustomerLayout from "@/Layout/CustomerLayout.vue";
 import OrderDetailsModal from "@/components/OrderDetailsModal.vue";
+import ConfirmModal from "@/components/ConfirmModal.vue";
 import { useRouter } from "vue-router";
 import { getProfile } from "@/utils/auth";
-import Swal from 'sweetalert2';
 
 const router = useRouter();
 const orders = ref<any[]>([]);
@@ -16,6 +16,19 @@ const cancelLoading = ref<string | null>(null);
 
 const isModalOpen = ref(false);
 const selectedOrder = ref<any>(null);
+
+// Modal states
+const showConfirmModal = ref(false);
+const showResultModal = ref(false);
+const modalConfig = ref({
+  title: '',
+  message: '',
+  type: 'warning' as 'warning' | 'success' | 'error',
+  showCancel: false,
+  confirmText: 'OK',
+  cancelText: 'Cancel'
+});
+const orderToCancel = ref<any>(null);
 
 function formatDate(datetime: string): string {
   if (!datetime) return "N/A";
@@ -55,13 +68,12 @@ function getAllProducts(order: any) {
   return [];
 }
 
-// UPDATED: Added Picked Up status
 function formatStatus(status: string) {
   const normalized = status?.toLowerCase() || "";
   switch (normalized) {
     case "pending": return "Pending";
     case "to_pickup": return "To Pick Up";
-    case "picked_up": return "Picked Up"; // Added Picked Up
+    case "picked_up": return "Picked Up";
     case "preparing": return "Preparing";
     case "to_deliver": return "To Deliver";
     case "delivered": return "Completed";
@@ -71,13 +83,12 @@ function formatStatus(status: string) {
   }
 }
 
-// UPDATED: Added Picked Up status
 function getStatusDisplay(status: string) {
   const normalized = status?.toLowerCase() || "";
   switch (normalized) {
     case "pending": return "Pending";
     case "to_pickup": return "To Pick Up";
-    case "picked_up": return "Picked Up"; // Added Picked Up
+    case "picked_up": return "Picked Up";
     case "preparing": return "Preparing";
     case "to_deliver": return "To Deliver";
     case "delivered": return "Completed";
@@ -87,13 +98,12 @@ function getStatusDisplay(status: string) {
   }
 }
 
-// UPDATED: Added Picked Up status color
 function getStatusColor(status: string) {
   const normalized = status?.toLowerCase() || "";
   switch (normalized) {
     case "pending": return "text-yellow-500";
     case "to_pickup": return "text-blue-600";
-    case "picked_up": return "text-green-500"; // Picked Up gets green color
+    case "picked_up": return "text-green-500";
     case "preparing": return "text-blue-600";
     case "to_deliver": return "text-blue-600";
     case "delivered": return "text-green-600";
@@ -103,7 +113,6 @@ function getStatusColor(status: string) {
   }
 }
 
-// FIXED: Proper payment method formatting with null check
 function formatPaymentMethod(paymentMethod: string | undefined | null): string {
   if (!paymentMethod) return "Unknown";
   return paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
@@ -114,22 +123,25 @@ function canCancelOrder(order: any) {
   return status === 'pending';
 }
 
-async function cancelOrder(order: any) {
-  const result = await Swal.fire({
+function cancelOrder(order: any) {
+  orderToCancel.value = order;
+  modalConfig.value = {
     title: 'Are you sure?',
-    text: `You want to cancel order #${order.order_id}.`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, cancel it!',
-    cancelButtonText: 'No, keep it'
-  });
+    message: `You want to cancel order ${order.order_id}.`,
+    type: 'warning',
+    showCancel: true,
+    confirmText: 'Yes, cancel it!',
+    cancelText: 'No, keep it'
+  };
+  showConfirmModal.value = true;
+}
 
-  if (!result.isConfirmed) {
-    return;
-  }
-
+async function handleConfirmCancel() {
+  showConfirmModal.value = false;
+  
+  if (!orderToCancel.value) return;
+  
+  const order = orderToCancel.value;
   cancelLoading.value = order.order_id;
 
   try {
@@ -142,41 +154,59 @@ async function cancelOrder(order: any) {
         orders.value[orderIndex].status = 'cancelled';
       }
       
-      await Swal.fire({
+      modalConfig.value = {
         title: 'Cancelled!',
-        text: `Order #${order.order_id} has been cancelled successfully.`,
-        icon: 'success',
-        confirmButtonColor: '#3085d6',
-      });
+        message: `Order ${order.order_id} has been cancelled successfully.`,
+        type: 'success',
+        showCancel: false,
+        confirmText: 'OK',
+        cancelText: ''
+      };
+      showResultModal.value = true;
     } else {
-      await Swal.fire({
+      modalConfig.value = {
         title: 'Error!',
-        text: `Failed to cancel Order #${order.order_id}: ${response.data.message || 'Unknown error'}`,
-        icon: 'error',
-        confirmButtonColor: '#3085d6',
-      });
+        message: `Failed to cancel Order ${order.order_id}: ${response.data.message || 'Unknown error'}`,
+        type: 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        cancelText: ''
+      };
+      showResultModal.value = true;
     }
   } catch (err: any) {
     console.error('Failed to cancel order:', err);
     const errorMessage = err.response?.data?.message || 'Failed to cancel order. Please try again.';
     
-    await Swal.fire({
+    modalConfig.value = {
       title: 'Error!',
-      text: `Failed to cancel Order #${order.order_id}: ${errorMessage}`,
-      icon: 'error',
-      confirmButtonColor: '#3085d6',
-    });
+      message: `Failed to cancel Order ${order.order_id}: ${errorMessage}`,
+      type: 'error',
+      showCancel: false,
+      confirmText: 'OK',
+      cancelText: ''
+    };
+    showResultModal.value = true;
   } finally {
     cancelLoading.value = null;
+    orderToCancel.value = null;
   }
 }
 
+function handleCancelCancel() {
+  showConfirmModal.value = false;
+  orderToCancel.value = null;
+}
+
+function closeResultModal() {
+  showResultModal.value = false;
+}
+
 function viewOrderDetails(order: any) {
-  // UPDATED: Added Picked Up status mapping
   const statusMap: Record<string, string> = {
     'pending': 'pending',
     'to_pickup': 'to_pick_up',
-    'picked_up': 'picked_up', // Added Picked Up mapping
+    'picked_up': 'picked_up',
     'preparing': 'preparing',
     'to_deliver': 'to_deliver',
     'delivered': 'completed',
@@ -396,7 +426,7 @@ const filteredOrders = computed(() => {
           class="bg-white shadow rounded-lg p-4 border border-gray-100"
         >
           <div class="flex justify-between items-center mb-2">
-            <h2 class="font-semibold text-blue-800">Order #{{ order.order_id }}</h2>
+            <h2 class="font-semibold text-blue-800">Order {{ order.order_id }}</h2>
             <span
               class="text-sm font-medium"
               :class="getStatusColor(order.status)"
@@ -430,7 +460,7 @@ const filteredOrders = computed(() => {
               v-if="canCancelOrder(order)"
               @click="cancelOrder(order)"
               :disabled="cancelLoading === order.order_id"
-              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 text-sm font-medium"
+              class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary text-sm font-medium"
             >
               {{ cancelLoading === order.order_id ? 'Cancelling...' : 'Cancel' }}
             </button>
@@ -445,6 +475,32 @@ const filteredOrders = computed(() => {
       :order="selectedOrder"
       :isOpen="isModalOpen"
       @close="closeModal"
+    />
+
+    <!-- Confirm Cancel Modal -->
+    <ConfirmModal
+      :visible="showConfirmModal"
+      :title="modalConfig.title"
+      :message="modalConfig.message"
+      :type="modalConfig.type"
+      :show-cancel="modalConfig.showCancel"
+      :confirm-text="modalConfig.confirmText"
+      :cancel-text="modalConfig.cancelText"
+      @confirm="handleConfirmCancel"
+      @cancel="handleCancelCancel"
+      @close="handleCancelCancel"
+    />
+
+    <!-- Result Modal (Success/Error) -->
+    <ConfirmModal
+      :visible="showResultModal"
+      :title="modalConfig.title"
+      :message="modalConfig.message"
+      :type="modalConfig.type"
+      :show-cancel="false"
+      :confirm-text="modalConfig.confirmText"
+      @confirm="closeResultModal"
+      @close="closeResultModal"
     />
   </CustomerLayout>
 </template>
