@@ -3,9 +3,9 @@ import { ref, onMounted, reactive } from 'vue'
 import { PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import AdminLayout from '@/Layout/AdminLayout.vue'
 import Modal from '@/components/Modal.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import axiosInstance from '@/utils/axios'
 import { handleLogout } from '@/utils/auth'
-import Swal from 'sweetalert2'
 
 const gallons = ref<any[]>([])
 const loading = ref(true)
@@ -21,6 +21,23 @@ const selectedGallon = reactive({
   size: '',
   price: ''
 })
+
+// Confirmation modals
+const showWarningModal = ref(false)
+const warningModalConfig = ref({
+  title: '',
+  message: ''
+})
+
+const showDeleteConfirm = ref(false)
+const deleteGallonId = ref<number | null>(null)
+const deleteGallonName = ref('')
+
+const showSuccessModal = ref(false)
+const successMessage = ref('')
+
+const showErrorModal = ref(false)
+const errorMessage = ref('')
 
 const IMAGE_BASE_URL = 'https://sismoya.bsit3b.site/api'
 const previewImage = ref<string | null>(null)
@@ -90,12 +107,17 @@ const handleImageUpload = async (e: Event) => {
 
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    Swal.fire('Invalid File', 'Please select a valid image file (JPEG, PNG, GIF, WebP).', 'warning')
+    warningModalConfig.value = {
+      title: 'Invalid File',
+      message: 'Please select a valid image file (JPEG, PNG, GIF, WebP).'
+    }
+    showWarningModal.value = true
     return
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    Swal.fire('File Too Large', 'Image size should be less than 5MB.', 'error')
+    errorMessage.value = 'Image size should be less than 5MB.'
+    showErrorModal.value = true
     return
   }
 
@@ -106,17 +128,26 @@ const handleImageUpload = async (e: Event) => {
 // Save Gallon
 const handleSave = async () => {
   if (!selectedGallon.name.trim()) {
-    Swal.fire('Missing Field', 'Please enter gallon name.', 'warning')
+    warningModalConfig.value = {
+      title: 'Missing Field',
+      message: 'Please enter gallon name.'
+    }
+    showWarningModal.value = true
     return
   }
   if (!selectedGallon.size.trim()) {
-    Swal.fire('Missing Field', 'Please enter gallon size.', 'warning')
+    warningModalConfig.value = {
+      title: 'Missing Field',
+      message: 'Please enter gallon size.'
+    }
+    showWarningModal.value = true
     return
   }
 
   const price = parseFloat(selectedGallon.price as string)
   if (!price || price <= 0 || isNaN(price)) {
-    Swal.fire('Invalid Price', 'Please enter a valid price.', 'error')
+    errorMessage.value = 'Please enter a valid price.'
+    showErrorModal.value = true
     return
   }
 
@@ -146,64 +177,74 @@ const handleSave = async () => {
     }
 
     if (result.data && result.data.success) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: `Gallon successfully ${isUpdate.value ? 'updated' : 'created'}!`,
-        timer: 1500,
-        showConfirmButton: false
-      })
+      successMessage.value = `Gallon successfully ${isUpdate.value ? 'updated' : 'created'}!`
+      showSuccessModal.value = true
 
       modalVisible.value = false
       selectedFile.value = null
       previewImage.value = null
-      await fetchGallons()
+      
+      setTimeout(async () => {
+        showSuccessModal.value = false
+        await fetchGallons()
+      }, 1500)
     } else {
-      Swal.fire('Error', result.data?.message || 'Operation failed. Please try again.', 'error')
+      errorMessage.value = result.data?.message || 'Operation failed. Please try again.'
+      showErrorModal.value = true
     }
 
   } catch (err: any) {
     console.error('Error saving gallon:', err)
     if (err.response?.data?.message) {
-      Swal.fire('Error', err.response.data.message, 'error')
+      errorMessage.value = err.response.data.message
     } else if (err.response?.status === 500) {
-      Swal.fire('Server Error', 'Please check backend logs.', 'error')
+      errorMessage.value = 'Server error. Please check backend logs.'
     } else {
-      Swal.fire('Error', 'Failed to save gallon. Please try again.', 'error')
+      errorMessage.value = 'Failed to save gallon. Please try again.'
     }
+    showErrorModal.value = true
   } finally {
     uploading.value = false
   }
 }
 
-// Delete Gallon
-const handleDelete = async (gallon_id: number) => {
+// Delete Gallon - Show Confirmation
+const confirmDelete = (gallon_id: number) => {
   const gallon = gallons.value.find(g => g.gallon_id === gallon_id)
   if (!gallon) return
 
-  const confirm = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Delete "${gallon.name}"? This action cannot be undone.`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, delete it!'
-  })
+  deleteGallonId.value = gallon_id
+  deleteGallonName.value = gallon.name
+  showDeleteConfirm.value = true
+}
 
-  if (!confirm.isConfirmed) return
+// Delete Gallon - Execute
+const handleDelete = async () => {
+  if (!deleteGallonId.value) return
+
+  showDeleteConfirm.value = false
 
   try {
-    const res = await axiosInstance.delete(`/gallons/${gallon_id}`)
+    const res = await axiosInstance.delete(`/gallons/${deleteGallonId.value}`)
     if (res.data.success) {
-      Swal.fire('Deleted!', `"${gallon.name}" has been deleted.`, 'success')
-      await fetchGallons()
+      successMessage.value = `"${deleteGallonName.value}" has been deleted.`
+      showSuccessModal.value = true
+      
+      setTimeout(async () => {
+        showSuccessModal.value = false
+        await fetchGallons()
+      }, 1500)
     } else {
-      Swal.fire('Error', res.data.message || 'Delete failed.', 'error')
+      errorMessage.value = res.data.message || 'Delete failed.'
+      showErrorModal.value = true
     }
   } catch (err: any) {
     console.error('Error deleting gallon:', err)
-    Swal.fire('Error', 'Failed to delete gallon. Please try again.', 'error')
+    errorMessage.value = 'Failed to delete gallon. Please try again.'
+    showErrorModal.value = true
+  } finally {
+    deleteGallonId.value = null
+    deleteGallonName.value = ''
   }
 }
 
@@ -293,7 +334,7 @@ const clearImage = () => {
                       </button>
 
                       <button
-                        @click="handleDelete(gallon.gallon_id)"
+                        @click="confirmDelete(gallon.gallon_id)"
                         class="p-2 rounded-lg hover:bg-red-50 transition"
                         :title="`Delete ${gallon.name}`"
                       >
@@ -404,5 +445,55 @@ const clearImage = () => {
         </button>
       </template>
     </Modal>
+
+    <!-- Warning Modal (for validation) -->
+    <ConfirmModal
+      :visible="showWarningModal"
+      :title="warningModalConfig.title"
+      :message="warningModalConfig.message"
+      type="warning"
+      :showCancel="false"
+      confirmText="OK"
+      @confirm="showWarningModal = false"
+      @close="showWarningModal = false"
+    />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :visible="showDeleteConfirm"
+      title="Are you sure?"
+      :message="`Delete &quot;${deleteGallonName}&quot;? This action cannot be undone.`"
+      type="error"
+      :showCancel="true"
+      confirmText="Yes, delete it!"
+      cancelText="Cancel"
+      @confirm="handleDelete"
+      @cancel="showDeleteConfirm = false"
+      @close="showDeleteConfirm = false"
+    />
+
+    <!-- Success Modal -->
+    <ConfirmModal
+      :visible="showSuccessModal"
+      title="Success!"
+      :message="successMessage"
+      type="success"
+      :showCancel="false"
+      confirmText="OK"
+      @confirm="showSuccessModal = false"
+      @close="showSuccessModal = false"
+    />
+
+    <!-- Error Modal -->
+    <ConfirmModal
+      :visible="showErrorModal"
+      title="Error"
+      :message="errorMessage"
+      type="error"
+      :showCancel="false"
+      confirmText="OK"
+      @confirm="showErrorModal = false"
+      @close="showErrorModal = false"
+    />
   </AdminLayout>
 </template>

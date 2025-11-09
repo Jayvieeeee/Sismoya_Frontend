@@ -126,19 +126,61 @@
       </form>
     </div>
   </div>
+
+  <!-- Validation Error Modal -->
+  <ConfirmModal
+    :visible="showValidationError"
+    title="Validation Error"
+    message="Please fix all validation errors before submitting."
+    type="warning"
+    :showCancel="false"
+    confirmText="OK"
+    @confirm="showValidationError = false"
+    @close="showValidationError = false"
+  />
+
+  <!-- Success Modal -->
+  <ConfirmModal
+    :visible="showSuccessModal"
+    title="Rider Added!"
+    :message="`${newRider.first_name} ${newRider.last_name} has been added successfully.`"
+    type="success"
+    :showCancel="false"
+    confirmText="OK"
+    @confirm="handleSuccessConfirm"
+    @close="handleSuccessConfirm"
+  />
+
+  <!-- Error Modal -->
+  <ConfirmModal
+    :visible="showErrorModal"
+    title="Error"
+    :message="errorMessage"
+    type="error"
+    :showCancel="false"
+    confirmText="OK"
+    @confirm="showErrorModal = false"
+    @close="showErrorModal = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, defineEmits, defineModel, computed } from "vue"
 import axiosInstance from "@/utils/axios"
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid"
-import Swal from "sweetalert2"
+import ConfirmModal from "@/components/ConfirmModal.vue"
 
 const emit = defineEmits(["rider-added"])
 const show = defineModel<boolean>({ required: true })
 
 const saving = ref(false)
 const showPassword = ref(false)
+
+// Modal states
+const showValidationError = ref(false)
+const showSuccessModal = ref(false)
+const showErrorModal = ref(false)
+const errorMessage = ref("")
 
 const newRider = ref({
   first_name: "",
@@ -327,14 +369,15 @@ function resetForm() {
   clearErrors()
 }
 
+function handleSuccessConfirm() {
+  showSuccessModal.value = false
+  emit("rider-added")
+  closeModal()
+}
+
 async function submitAddRider() {
   if (!validateAllFields()) {
-    Swal.fire({
-      title: "Validation Error",
-      text: "Please fix all validation errors before submitting.",
-      icon: "warning",
-      confirmButtonColor: "#f59e0b",
-    })
+    showValidationError.value = true
     return
   }
 
@@ -351,30 +394,14 @@ async function submitAddRider() {
     const { data } = await axiosInstance.post("/admin/add-rider", payload)
 
     if (!data.error) {
-      await Swal.fire({
-        title: "Rider Added!",
-        text: `${newRider.value.first_name} ${newRider.value.last_name} has been added successfully.`,
-        icon: "success",
-        confirmButtonColor: "#2563eb",
-      })
-
-      emit("rider-added")
-      closeModal()
+      showSuccessModal.value = true
     } else {
-      Swal.fire({
-        title: "Failed to Add Rider",
-        text: data.message || "An error occurred while adding the rider.",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      })
+      errorMessage.value = data.message || "An error occurred while adding the rider."
+      showErrorModal.value = true
     }
   } catch (error: any) {
-    Swal.fire({
-      title: "Error",
-      text: error.response?.data?.message || "Failed to add rider.",
-      icon: "error",
-      confirmButtonColor: "#ef4444",
-    })
+    errorMessage.value = error.response?.data?.message || "Failed to add rider."
+    showErrorModal.value = true
   } finally {
     saving.value = false
   }

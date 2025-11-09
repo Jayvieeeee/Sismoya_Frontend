@@ -4,7 +4,7 @@
     class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4 font-montserrat"
   >
     <div
-      class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto"
+      class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 sm:p-8 relative flex flex-col max-h-[90vh]"
     >
       <!-- Close Button -->
       <button
@@ -43,7 +43,7 @@
       </div>
 
       <!-- Delivery History -->
-      <div>
+      <div class="flex flex-col min-h-0">
         <h3 class="text-lg font-semibold text-primary mb-3">
           Delivery History
         </h3>
@@ -55,18 +55,18 @@
           No deliveries found.
         </div>
 
-        <div v-else class="overflow-x-auto border rounded-lg shadow-sm">
+        <div v-else class="overflow-auto border rounded-lg shadow-sm max-h-[300px]">
           <table class="min-w-full text-sm border-collapse">
-            <thead class="bg-gray-50 text-gray-700 border-b">
+            <thead class="bg-gray-50 text-gray-700 border-b sticky top-0">
               <tr>
-                <th class="px-4 py-2 text-left font-semibold">Order ID</th>
-                <th class="px-4 py-2 text-left font-semibold">Customer Name</th>
-                <th class="px-4 py-2 text-left font-semibold">
+                <th class="px-4 py-2 text-left font-semibold bg-gray-50">Order ID</th>
+                <th class="px-4 py-2 text-left font-semibold bg-gray-50">Customer Name</th>
+                <th class="px-4 py-2 text-left font-semibold bg-gray-50">
                   Delivery Address
                 </th>
-                <th class="px-4 py-2 text-left font-semibold">Delivery Date</th>
-                <th class="px-4 py-2 text-left font-semibold">Total Amount</th>
-                <th class="px-4 py-2 text-left font-semibold">Status</th>
+                <th class="px-4 py-2 text-left font-semibold bg-gray-50">Delivery Date</th>
+                <th class="px-4 py-2 text-left font-semibold bg-gray-50">Total Amount</th>
+                <th class="px-4 py-2 text-left font-semibold bg-gray-50">Status</th>
               </tr>
             </thead>
             <tbody>

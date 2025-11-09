@@ -74,7 +74,7 @@ function getProgressLineBottom(orderStatus: string) {
   
   if (currentIndex === -1) return '100%';
   
-  const progressPercentage = (currentIndex / (statusList.length - 1)) * 100;
+  const progressPercentage = (currentIndex / (statusList.length - 1)) * 90;
   
   return `${100 - progressPercentage}%`;
 }
@@ -154,7 +154,7 @@ const getPaymentStatusDisplay = (status: string | undefined): string => {
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-2"
     @click.self="closeModal"
   >
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative overflow-hidden">
@@ -170,22 +170,22 @@ const getPaymentStatusDisplay = (status: string | undefined): string => {
       <!-- Title -->
       <h2 class="text-2xl font-bold text-center text-primary pt-8 pb-6">Order Details</h2>
 
-      <div class="pb-8">
+      <div class="pb-6">
         <!-- Two Column Layout -->
         <div class="flex justify-center">
           <!-- Left Column - Status Tracker -->
-          <div class="flex-1 max-w-[200px]" v-if="selectedOrder">
-            <div class="relative flex flex-col space-y-4">
+          <div class="flex-1 max-w-[200px] flex items-start" v-if="selectedOrder">
+            <div class="relative flex flex-col justify-between min-h-[300px] w-full">
               <!-- Background Line - Only show if NOT cancelled -->
               <div 
                 v-if="!isCancelled(selectedOrder.status)"
-                class="absolute left-[10px] top-[20px] bottom-[90px] w-0.5 bg-gray-300"
+                class="absolute left-[10px] top-[30px] w-0.5 bg-gray-300"
               ></div>
               
               <!-- Filled Green Progress Line -->
               <div
                 v-if="!isCancelled(selectedOrder.status)"
-                class="absolute left-[10px] top-[20px] w-0.5 bg-green-500 transition-all duration-500"
+                class="absolute left-[10px] top-[30px] w-0.5 bg-green-500 transition-all duration-500"
                 :style="{ bottom: getProgressLineBottom(selectedOrder.status) }"
               ></div>
 
@@ -194,7 +194,7 @@ const getPaymentStatusDisplay = (status: string | undefined): string => {
                 <div
                   v-for="status in statusList"
                   :key="status"
-                  class="relative flex items-center gap-4"
+                  class="relative flex items-center gap-4 flex-1"
                 >
                   <!-- Status Checkmark Circle -->
                   <div
@@ -242,7 +242,7 @@ const getPaymentStatusDisplay = (status: string | undefined): string => {
           </div>
 
           <!-- Right Column - Order Details -->
-          <div class="flex-1 space-y-4 max-w-xs" v-if="selectedOrder">
+          <div class="flex-1 space-y-3.5 max-w-xs" v-if="selectedOrder">
             <!-- Order ID -->
             <div>
               <p class="text-sm font-medium text-gray-900">Order ID: {{ selectedOrder.order_id || selectedOrder.id }}</p>

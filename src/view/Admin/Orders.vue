@@ -3,13 +3,12 @@ import AdminLayout from "@/Layout/AdminLayout.vue"
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/vue/24/outline'
 import { useOrders } from "@/api/admin/useOrder"
 import AdminOrderDetails from "@/components/AdminOrderDetails.vue"
-import Swal from 'sweetalert2'
-import type { SweetAlertOptions } from 'sweetalert2'
+import ConfirmModal from "@/components/ConfirmModal.vue"
 import { ref, onMounted, watch, computed } from 'vue'
 
 const {
   searchQuery,
-  orders, // This is the ref that holds the original, fetched data
+  orders,
   isLoading,
   backendError: _backendError,
   selectedOrder,
@@ -30,11 +29,21 @@ const {
 
 const isFilterOpen = ref(false)
 const activeStatusFilter = ref('all')
-
-// Local copy of orders to allow sort changes in real time
 const localOrders = ref<any[]>([])
 
-// Sort orders newest → oldest based on updated_at, then created_at, then pickup_datetime
+// Confirmation modal state
+const showConfirmModal = ref(false)
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  type: 'warning' as 'warning' | 'success' | 'error',
+  orderId: '',
+  action: ''
+})
+
+// Success modal state
+const showSuccessModal = ref(false)
+
 const sortOrdersByUpdateDate = (ordersList: any[]) => {
   return [...ordersList].sort((a, b) => {
     const dateA = new Date(a.updated_at || a.created_at || a.pickup_datetime || 0).getTime()
@@ -43,7 +52,6 @@ const sortOrdersByUpdateDate = (ordersList: any[]) => {
   })
 }
 
-// Moves an order to the top by updating timestamp locally
 const updateOrderTimestamp = (orderId: string) => {
   const index = localOrders.value.findIndex(order =>
     order.order_id === orderId || order.id?.toString() === orderId
@@ -58,7 +66,6 @@ const updateOrderTimestamp = (orderId: string) => {
   }
 }
 
-// Updates order status AND moves it to the top
 const updateOrderStatusLocally = (orderId: string, newStatus: string) => {
   const index = localOrders.value.findIndex(order =>
     order.order_id === orderId || order.id?.toString() === orderId
@@ -73,7 +80,6 @@ const updateOrderStatusLocally = (orderId: string, newStatus: string) => {
   }
 }
 
-// Displayed orders based on filters and search
 const displayedOrders = computed(() => {
   const normalize = (v: string) => v?.toLowerCase().replace(/[-_\s]+/g, '_') || ''
   let filtered = [...localOrders.value]
@@ -103,42 +109,33 @@ const applyFilter = (status: string) => {
   activeStatusFilter.value = status
   isFilterOpen.value = false
 }
+
 const clearFilters = () => {
   activeStatusFilter.value = 'all'
   searchQuery.value = ''
 }
 
-const getSwalConfig = (action: string, orderId: string): SweetAlertOptions => {
-  const configs: Record<string, SweetAlertOptions> = {
+const getModalConfig = (action: string, orderId: string) => {
+  const configs: Record<string, any> = {
     approve: {
       title: 'Approve Order?',
-      text: `Are you sure you want to APPROVE Order #${orderId}?`,
-      icon: 'question',
-      confirmButtonText: 'Yes, Approve!',
-      confirmButtonColor: '#10B981',
-      showCancelButton: true
+      message: `Are you sure you want to APPROVE Order ${orderId}?`,
+      type: 'warning'
     },
     cancel: {
       title: 'Cancel Order?',
-      text: `This cannot be undone.`,
-      icon: 'warning',
-      confirmButtonText: 'Yes, Cancel!',
-      confirmButtonColor: '#EF4444',
-      showCancelButton: true
+      message: 'This cannot be undone.',
+      type: 'error'
     },
     mark_preparing: {
       title: 'Mark as Preparing?',
-      icon: 'info',
-      confirmButtonText: 'Mark as Preparing',
-      confirmButtonColor: '#3B82F6',
-      showCancelButton: true
+      message: `Update Order ${orderId} status to Preparing?`,
+      type: 'warning'
     },
     mark_to_deliver: {
       title: 'Mark for Delivery?',
-      icon: 'info',
-      confirmButtonText: 'Mark for Delivery',
-      confirmButtonColor: '#8B5CF6',
-      showCancelButton: true
+      message: `Update Order ${orderId} status to To Deliver?`,
+      type: 'warning'
     }
   }
   return configs[action]
@@ -154,34 +151,39 @@ const getExpectedStatusAfterAction = (action: string): string => {
   return map[action] || 'pending'
 }
 
-const handleActionWithSweetAlert = async (orderId: string, action: string) => {
-  const result = await Swal.fire(getSwalConfig(action, orderId))
-  if (!result.isConfirmed) return
+const handleActionWithConfirm = (orderId: string, action: string) => {
+  const config = getModalConfig(action, orderId)
+  confirmModalConfig.value = {
+    ...config,
+    orderId,
+    action
+  }
+  showConfirmModal.value = true
+}
+
+const confirmAction = async () => {
+  showConfirmModal.value = false
+  
+  const { orderId, action } = confirmModalConfig.value
 
   try {
     const newStatus = getExpectedStatusAfterAction(action)
 
-    // 1) Run backend update first
     await handleAction(orderId, action)
-
-    // 2) Fetch the fresh updated orders list
     await fetchOrders()
-
-    // 3) Update UI: move updated order to top (NOW SAFE)
+    
     updateOrderStatusLocally(orderId, newStatus)
     updateOrderTimestamp(orderId)
 
-    Swal.fire({
-      title: 'Success!',
-      icon: 'success',
-      timer: 1600,
-      showConfirmButton: false
-    })
+    // Show success modal
+    showSuccessModal.value = true
+    setTimeout(() => {
+      showSuccessModal.value = false
+    }, 1600)
   } catch (error) {
     console.error("Action failed:", error)
   }
 }
-
 
 const getDisplayProduct = (order: any) => {
   const name = getProductName(order)
@@ -194,7 +196,6 @@ const loadOrders = async () => await fetchOrders()
 
 onMounted(loadOrders)
 
-// Sync local list whenever backend orders change
 watch(orders, (newOrders) => {
   localOrders.value = sortOrdersByUpdateDate(newOrders)
 }, { immediate: true })
@@ -206,8 +207,6 @@ watch(orders, (newOrders) => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-primary">Orders</h1>
-          <!-- More specific sorting info -->
-          <p class="text-sm text-gray-600 mt-1">Orders are sorted by latest update - recent actions appear at top</p>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -340,7 +339,7 @@ watch(orders, (newOrders) => {
                       <button
                         v-for="action in getActionButtons(order.status)"
                         :key="action"
-                        @click="handleActionWithSweetAlert(order.order_id, action)"
+                        @click="handleActionWithConfirm(order.order_id, action)"
                         class="w-36 text-white font-medium py-1.5 rounded-lg transition"
                         :class="{
                           'bg-green-500 hover:bg-green-600': action === 'approve',
@@ -366,10 +365,37 @@ watch(orders, (newOrders) => {
       </div>
     </div>
 
+    <!-- Order Details Modal -->
     <AdminOrderDetails
       :isOpen="isModalOpen"
       :selectedOrder="selectedOrder"
       @close="closeModal"
+    />
+
+    <!-- Confirmation Modal -->
+    <ConfirmModal
+      :visible="showConfirmModal"
+      :title="confirmModalConfig.title"
+      :message="confirmModalConfig.message"
+      :type="confirmModalConfig.type"
+      :showCancel="true"
+      confirmText="Yes, Confirm"
+      cancelText="Cancel"
+      @confirm="confirmAction"
+      @cancel="showConfirmModal = false"
+      @close="showConfirmModal = false"
+    />
+
+    <!-- Success Modal -->
+    <ConfirmModal
+      :visible="showSuccessModal"
+      title="Success!"
+      message="Order has been updated successfully."
+      type="success"
+      :showCancel="false"
+      confirmText="OK"
+      @confirm="showSuccessModal = false"
+      @close="showSuccessModal = false"
     />
   </AdminLayout>
 </template>
