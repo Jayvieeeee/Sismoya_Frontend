@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { getProfile } from "@/utils/auth";
 import CustomerLayout from "@/Layout/CustomerLayout.vue";
 import axiosInstance from "@/utils/axios";
 import { useRouter } from "vue-router";
-import GallonImg from '@/assets/images/Dashboard_img.png'
 import OrderDetailsModal from "@/components/OrderDetailsModal.vue";
+import { CheckIcon } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 
@@ -57,12 +57,54 @@ const stats = ref<DashboardStats>({
 const latestOrders = ref<LatestOrder[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const emailVerificationLoading = ref(false);
-const emailVerificationSent = ref(false);
 
 // Modal state
 const isModalOpen = ref(false);
 const selectedOrder = ref<any>(null);
+
+// Upcoming order (next scheduled order)
+const upcomingOrder = ref<LatestOrder | null>(null);
+
+// Ongoing order (current order in progress)
+const ongoingOrder = ref<LatestOrder | null>(null);
+
+// Status tracking
+const statusList = ['Pending', 'To Pick Up', 'Preparing', 'To Deliver', 'Completed'];
+
+const statusMap: Record<string, string> = {
+  'pending': 'Pending',
+  'to_pickup': 'To Pick Up',
+  'to_pick_up': 'To Pick Up',
+  'picked_up': 'To Pick Up',
+  'picked up': 'To Pick Up',
+  'preparing': 'Preparing',
+  'to_deliver': 'To Deliver',
+  'delivered': 'Completed',
+  'completed': 'Completed',
+  'cancelled': 'Cancelled'
+};
+
+function getDisplayStatus(backendStatus: string): string {
+  return statusMap[backendStatus.toLowerCase()] || 'Pending';
+}
+
+function isActiveStatus(status: string, orderStatus: string) {
+  const displayOrderStatus = getDisplayStatus(orderStatus);
+  const statusIndex = statusList.indexOf(status);
+  const orderStatusIndex = statusList.indexOf(displayOrderStatus);
+  return statusIndex <= orderStatusIndex;
+}
+
+function getProgressLineBottom(orderStatus: string) {
+  const displayOrderStatus = getDisplayStatus(orderStatus);
+  const currentIndex = statusList.indexOf(displayOrderStatus);
+  
+  if (currentIndex === -1) return '100%';
+  
+  const progressPercentage = (currentIndex / (statusList.length - 1)) * 100;
+  
+  return `${100 - progressPercentage}%`;
+}
 
 // Helpers
 const formatDate = (dateString: string) => {
@@ -97,7 +139,7 @@ const getStatusColor = (status: string) => {
   return colors[status] || 'text-gray-500'
 }
 
-// Optional: Format the status text for display
+// Format the status text for display
 const formatStatus = (status: string) => {
   const formatted: { [key: string]: string } = {
     pending: "Pending",
@@ -114,7 +156,7 @@ const formatStatus = (status: string) => {
   return formatted[status.toLowerCase()] || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-// UPDATED: Better order items formatting
+// Better order items formatting
 const formatOrderItems = (order: LatestOrder) => {
   if (order.order_items) {
     return order.order_items;
@@ -260,68 +302,6 @@ const fallbackToLocalStats = async () => {
   }
 };
 
-// Fetch user profile to check verification status
-const fetchUserProfile = async () => {
-  try {
-    const profile = await getProfile();
-    user.value = profile;
-  } catch (err) {
-    console.error("Failed to fetch user profile:", err);
-  }
-};
-
-// Email verification function - FIXED with proper string quotes
-const sendEmailVerification = async () => {
-  try {
-    emailVerificationLoading.value = true;
-    emailVerificationSent.value = false;
-    
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    
-    // Make POST request to send verification email - FIXED: Added quotes around Bearer
-    const response = await axiosInstance.post("/send-verification-email", {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.data?.success) {
-      emailVerificationSent.value = true;
-      alert("Verification email sent! Please check your inbox and spam folder.");
-    } else {
-      alert(response.data?.message || "Failed to send verification email. Please try again.");
-    }
-  } catch (err: any) {
-    console.error("Email verification error:", err);
-    const errorMessage = err.response?.data?.message || "Failed to send verification email. Please try again.";
-    
-    if (err.response?.status === 400 && err.response?.data?.already_verified) {
-      // If already verified, show message and refresh user data
-      alert("Your email is already verified!");
-      await fetchUserProfile();
-    } else if (err.response?.status === 401) {
-      alert("Session expired. Please login again.");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      router.push("/login");
-    } else {
-      alert(errorMessage);
-    }
-  } finally {
-    emailVerificationLoading.value = false;
-  }
-};
-
-// Check if user needs email verification
-const needsEmailVerification = () => {
-  return user.value && !user.value.email_verified_at && !user.value.is_verified;
-};
-
 const fetchDashboardData = async () => {
   try {
     loading.value = true;
@@ -359,7 +339,7 @@ const fetchDashboardData = async () => {
     });
 
     if (latestResponse.data?.success && Array.isArray(latestResponse.data.data)) {
-      latestOrders.value = latestResponse.data.data.map((order: any) => ({
+      const orders = latestResponse.data.data.map((order: any) => ({
         id: order.order_id,
         total_amount: order.total_price,
         status: order.status,
@@ -369,8 +349,21 @@ const fetchDashboardData = async () => {
         payment_method: order.payment_method, 
         payment_status: order.payment_status
       }));
+      
+      latestOrders.value = orders;
+      
+      // Find ongoing order (not completed or cancelled)
+      ongoingOrder.value = orders.find((order: LatestOrder) => 
+        !['completed', 'delivered', 'cancelled'].includes(order.status.toLowerCase())
+      ) || null;
+      
+      // Find upcoming order (pending status, most recent)
+      upcomingOrder.value = orders.find((order: LatestOrder) => 
+        order.status.toLowerCase() === 'pending'
+      ) || null;
+      
     } else {
-      latestOrders.value = userOrders
+      const orders = userOrders
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 3)
         .map(order => ({
@@ -384,6 +377,16 @@ const fetchDashboardData = async () => {
             ).join(', ') : 'Round Gallon',
           items: order.items 
         }));
+      
+      latestOrders.value = orders;
+      
+      ongoingOrder.value = orders.find((order: LatestOrder) => 
+        !['completed', 'delivered', 'cancelled'].includes(order.status.toLowerCase())
+      ) || null;
+      
+      upcomingOrder.value = orders.find((order: LatestOrder) => 
+        order.status.toLowerCase() === 'pending'
+      ) || null;
     }
 
   } catch (err: any) {
@@ -424,7 +427,7 @@ onMounted(() => fetchDashboardData());
           </div>
 
           <div v-else>
-            <!-- Welcome and Email Verification Row -->
+            <!-- Welcome Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
               <p class="text-lg font-semibold">
                 Welcome,
@@ -434,37 +437,140 @@ onMounted(() => fetchDashboardData());
               </p>
             </div>
 
-            <div class="mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 shadow-lg">
-              <div class="flex justify-center items-center">
-                <img 
-                  :src="GallonImg" 
-                  alt="Sismoya Water Gallon" 
-                  class="max-w-[200px] md:max-w-[250px] transform hover:scale-105 transition duration-300">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-                <p class="text-xl font-bold text-yellow-600">{{ stats.pending }}</p>
+            <!-- Stats Cards - Made more compact -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+              <div class="bg-white shadow rounded-lg p-4 text-center hover:shadow-md transition">
+                <p class="text-lg font-bold text-yellow-600">{{ stats.pending }}</p>
                 <p class="text-gray-500 text-sm font-medium">Pending Orders</p>
               </div>
-              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-                <p class="text-xl font-bold text-green-600">{{ stats.delivered }}</p>
+              <div class="bg-white shadow rounded-lg p-4 text-center hover:shadow-md transition">
+                <p class="text-lg font-bold text-green-600">{{ stats.delivered }}</p>
                 <p class="text-gray-500 text-sm font-medium">Completed Orders</p>
               </div>
-              <div class="bg-white shadow rounded-xl p-6 text-center hover:shadow-lg transition">
-                <p class="text-xl font-bold text-blue-600">{{ stats.total }}</p>
+              <div class="bg-white shadow rounded-lg p-4 text-center hover:shadow-md transition">
+                <p class="text-lg font-bold text-blue-600">{{ stats.total }}</p>
                 <p class="text-gray-500 text-sm font-medium">Total Orders</p>
               </div>
             </div>
 
-            <!-- Recent Orders - Non-scrollable -->
-            <div class="bg-white shadow rounded-xl p-4">
-              <div class="flex justify-between items-center mb-3">
-                <h2 class="text-lg font-bold text-gray-800">Recent Orders</h2>
+            <!-- Two Column Layout: Upcoming Order + Order Status - Made more compact -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+              <!-- Left: Upcoming Order - Made more compact -->
+              <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-md font-bold text-gray-800 mb-3">Upcoming Order</h3>
+                
+                <div v-if="!upcomingOrder" class="text-center py-4 text-gray-500 text-sm">
+                  No upcoming orders
+                </div>
+                
+                <div v-else class="space-y-2">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Order ID:</span>
+                    <span class="font-semibold text-sm">{{ upcomingOrder.id }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Items:</span>
+                    <span class="font-medium text-sm truncate max-w-[150px]">{{ formatOrderItems(upcomingOrder) }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Total Amount:</span>
+                    <span class="font-semibold text-green-600 text-sm">{{ formatCurrency(upcomingOrder.total_amount) }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Scheduled:</span>
+                    <span class="text-sm">{{ formatDate(upcomingOrder.created_at) }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Status:</span>
+                    <span class="font-medium text-sm" :class="getStatusColor(upcomingOrder.status)">
+                      {{ formatStatus(upcomingOrder.status) }}
+                    </span>
+                  </div>
+                  <button
+                    @click="viewOrderDetails(upcomingOrder)"
+                    class="w-full mt-2 bg-primary text-white py-1.5 rounded text-sm hover:bg-secondary transition"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right: Order Status Tracker - Made more compact -->
+              <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-md font-bold text-gray-800 mb-3">Current Order Status</h3>
+                
+                <div v-if="!ongoingOrder" class="text-center py-4 text-gray-500 text-sm">
+                  No ongoing orders
+                </div>
+                
+                <div v-else class="space-y-3">
+                  <!-- Order Info - More compact -->
+                  <div class="rounded p-2 mb-2">
+                    <div class="flex justify-between items-center mb-1">
+                      <span class="text-sm ">Order #{{ ongoingOrder.id }}</span>
+                      <span class="text-sm font-semibold text-green-600">{{ formatCurrency(ongoingOrder.total_amount) }}</span>
+                    </div>
+                    <p class="text-sm truncate">{{ formatOrderItems(ongoingOrder) }}</p>
+                  </div>
+
+                  <!-- Horizontal Status Tracker - More compact -->
+                  <div class="relative flex flex-col items-center">
+                    <!-- Status Line (behind circles) -->
+                    <div class="absolute top-3 left-12 right-12 h-0.5 bg-gray-300 z-0"></div>
+
+                    <!-- Progress Line (behind circles) -->
+                    <div
+                      class="absolute top-3 left-12 right-12 h-0.5 bg-green-500 transition-all duration-500 z-0"
+                      :style="{ width: ((statusList.indexOf(getDisplayStatus(ongoingOrder.status)) / (statusList.length - 1)) * 100) + '%' }"
+                    ></div>
+
+                    <!-- Circles + Labels - More compact -->
+                    <div class="flex justify-between w-full px-2 relative z-10">
+                      <div
+                        v-for="status in statusList"
+                        :key="status"
+                        class="flex flex-col items-center text-center flex-1"
+                      >
+                        <!-- Circle -->
+                        <div
+                          :class="[
+                            'w-6 h-6 rounded-full flex items-center justify-center border-2 mb-1 transition-all shadow-sm',
+                            isActiveStatus(status, ongoingOrder.status)
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'bg-white border-gray-300 text-gray-400'
+                          ]"
+                        >
+                          <CheckIcon
+                            v-if="isActiveStatus(status, ongoingOrder.status)"
+                            class="w-3 h-3 stroke-[3]"
+                          />
+                        </div>
+
+                        <!-- Label -->
+                        <span
+                          :class="[
+                            'font-semibold text-[10px] whitespace-nowrap',
+                            isActiveStatus(status, ongoingOrder.status)
+                              ? 'text-gray-900'
+                              : 'text-gray-400'
+                          ]"
+                        >
+                          {{ status }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Orders Table - Made more compact -->
+            <div class="bg-white shadow rounded-lg p-1">
+              <div class="flex justify-between items-center mb-2">
+                <h2 class="text-md font-bold text-gray-800">Recent Orders</h2>
                 <button
                   @click="viewAllOrders"
-                  class="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
+                  class="text-blue-600 hover:text-blue-800 font-medium text-xs transition"
                 >
                   View All Orders →
                 </button>
@@ -472,39 +578,39 @@ onMounted(() => fetchDashboardData());
 
               <div
                 v-if="latestOrders.length === 0"
-                class="text-center py-8 text-gray-500"
+                class="text-center py-4 text-gray-500 text-base"
               >
                 No orders found.
               </div>
 
               <div v-else>
-                <table class="w-full text-left border-collapse text-sm">
+                <table class="w-full text-left border-collapse text-xs">
                   <thead class="bg-gray-50">
-                    <tr class="border-b">
-                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Order ID</th>
-                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Order Items</th>
-                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Total Amount</th>
-                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Date</th>
-                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Status</th>
-                      <th class="py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">Action</th>
+                    <tr class="border-b text-base">
+                      <th class="py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">Order ID</th>
+                      <th class="py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">Order Items</th>
+                      <th class="py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">Total Amount</th>
+                      <th class="py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">Date</th>
+                      <th class="py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">Status</th>
+                      <th class="py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr
                       v-for="order in latestOrders"
                       :key="order.id"
-                      class="border-b hover:bg-gray-50 transition"
+                      class="border-b hover:bg-gray-50 transition text-base"
                     >
-                      <td class="py-2 px-3 font-medium whitespace-nowrap">{{ order.id }}</td>
-                      <td class="py-2 px-3 whitespace-nowrap">{{ formatOrderItems(order) }}</td>
-                      <td class="py-2 px-3 font-medium whitespace-nowrap">
+                      <td class="py-2 px-2 font-medium whitespace-nowrap">{{ order.id }}</td>
+                      <td class="py-2 px-2 whitespace-nowrap truncate max-w-[120px]">{{ formatOrderItems(order) }}</td>
+                      <td class="py-2 px-2 font-medium whitespace-nowrap">
                         {{ formatCurrency(order.total_amount) }}
                       </td>
-                      <td class="py-2 px-3 whitespace-nowrap">{{ formatDate(order.created_at) }}</td>
-                      <td class="py-2 px-3 whitespace-nowrap" :class="getStatusColor(order.status)">
+                      <td class="py-2 px-2 whitespace-nowrap">{{ formatDate(order.created_at) }}</td>
+                      <td class="py-2 px-2 whitespace-nowrap" :class="getStatusColor(order.status)">
                         {{ formatStatus(order.status) }}
                       </td>
-                      <td class="py-2 px-3 whitespace-nowrap">  
+                      <td class="py-2 px-2 whitespace-nowrap">
                         <button
                           @click="viewOrderDetails(order)"
                           class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer transition"
