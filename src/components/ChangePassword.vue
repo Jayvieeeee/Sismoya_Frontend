@@ -158,19 +158,19 @@ function closeResultModal() {
       </div>
 
       <!-- Password Requirements -->
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class=" p-4">
         <p class="text-sm text-gray-700 font-medium mb-2">Password Requirements:</p>
         <ul class="text-xs sm:text-sm text-gray-600 space-y-1">
           <li class="flex items-start">
-            <span class="text-blue-500 mr-2">•</span>
+            <span class="mr-2">•</span>
             <span>At least 1 uppercase letter</span>
           </li>
           <li class="flex items-start">
-            <span class="text-blue-500 mr-2">•</span>
+            <span class="mr-2">•</span>
             <span>At least 1 special character (!@#$%^&*)</span>
           </li>
           <li class="flex items-start">
-            <span class="text-blue-500 mr-2">•</span>
+            <span class="mr-2">•</span>
             <span>At least 1 number</span>
           </li>
         </ul>
@@ -187,24 +187,6 @@ function closeResultModal() {
         </button>
       </div>
 
-
-      <div class="p-4 mt-6">
-        <p class="text-sm text-gray-700 font-medium mb-2">Password Requirements:</p>
-        <ul class="text-xs sm:text-sm text-gray-600 space-y-1">
-          <li class="flex items-start">
-            <span class="mr-2">•</span>
-            <span>At least 1 uppercase letter</span>
-          </li>
-          <li class="flex items-start">
-            <span class="mr-2">•</span>
-            <span>At least 1 special character (!@#$%^&*)</span>
-          </li>
-          <li class="flex items-start">
-            <span class="mr-2">•</span>
-            <span>At least 1 number</span>
-          </li>
-        </ul>
-      </div>
     </form>
 
     <!-- Result Modal (Success/Error/Warning) -->
