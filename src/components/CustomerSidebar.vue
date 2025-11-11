@@ -96,13 +96,13 @@ async function confirmLogout() {
 
       <!-- Menu Items -->
       <nav class="flex-1 flex flex-col justify-between py-6">
-        <div>
+        <div class="space-y-2">
           <button
             v-for="item in menuItems.filter(i => !i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
             :class="[
-              'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left transition',
+              'flex items-center space-x-3 px-6 py-3 text-sm w-[240px] text-left transition rounded-lg mx-2',
               router.currentRoute.value.path === item.route
                 ? 'bg-[#246589]'
                 : 'hover:bg-[#246589]'
@@ -113,12 +113,12 @@ async function confirmLogout() {
           </button>
         </div>
 
-        <div>
+        <div class="space-y-2">
           <button
             v-for="item in menuItems.filter(i => i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
-            class="flex items-center space-x-3 px-6 py-3 text-sm w-full text-left hover:bg-[#246589] transition"
+            class="flex items-center space-x-3 px-6 py-3 text-sm w-[240px] text-left hover:bg-[#246589] transition rounded-lg mx-2"
           >
             <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
             <span>{{ item.name }}</span>

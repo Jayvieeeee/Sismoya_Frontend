@@ -177,7 +177,7 @@ function closeResultModal() {
       </div>
 
       <!-- Submit Button -->
-      <div class="pt-8">
+      <div class="pt-2">
         <button
           type="submit"
           :disabled="loading"

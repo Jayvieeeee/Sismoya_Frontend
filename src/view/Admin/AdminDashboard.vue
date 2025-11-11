@@ -527,25 +527,25 @@ onMounted(() => {
         <!-- Bottom section -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div class="space-y-3">
-            <div class="bg-white rounded-xl p-4 shadow-sm">
+            <div class="bg-white rounded-xl p-6 shadow-sm">
               <div class="flex items-center justify-between">
                 <div>
-                  <div class="text-sm text-gray-600 mb-2">Orders To Pick Up</div>
+                  <div class="text-sm text-gray-600">Orders To Pick Up</div>
                   <div class="text-2xl font-bold text-gray-800">{{ ordersToPickUp }}</div>
                 </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
                   <img :src="OrdersToPickUp" alt="Orders to Pick Up" class="w-6 h-6" />
                 </div>
               </div>
             </div>
 
-            <div class="bg-white rounded-xl p-4 shadow-sm">
+            <div class="bg-white rounded-xl p-6 shadow-sm">
               <div class="flex items-center justify-between">
                 <div>
-                  <div class="text-sm text-gray-600 mb-2">Orders To Deliver</div>
+                  <div class="text-sm text-gray-600">Orders To Deliver</div>
                   <div class="text-2xl font-bold text-gray-800">{{ ordersToDeliver }}</div>
                 </div>
-                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-14 bg-green-100 rounded-xl flex items-center justify-center">
                   <img :src="OrdersToDeliver" alt="Orders to Deliver" class="w-6 h-6" />
                 </div>
               </div>

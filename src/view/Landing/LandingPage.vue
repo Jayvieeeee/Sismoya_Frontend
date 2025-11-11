@@ -25,7 +25,7 @@ function goToLogin() {
         </p>
         <button
           @click="goToLogin"
-          class="bg-button text-white text-xs md:text-sm px-6 py-3 rounded-3xl hover:bg-[#d54f14] hover:text-black mt-5">
+          class="bg-button text-white text-xs md:text-sm px-6 py-3 rounded-3xl hover:bg-[#d54f14] hover:text-white mt-5">
           Order Now
         </button>
       </div>

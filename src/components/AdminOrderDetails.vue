@@ -27,6 +27,7 @@ interface Order {
   contact_no?: string
   address?: string
   special_instructions?: string
+  delivered_at?: string // ADDED: delivered_at field
 }
 
 interface Props {
@@ -42,18 +43,18 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 // Status tracking
-const statusList = ['Pending', 'To Pick Up', 'Preparing', 'To Deliver', 'Completed'];
+const statusList = ['Pending', 'To Pick Up', 'Picked Up', 'Preparing', 'To Deliver', 'Delivered'];
 
 const statusMap: Record<string, string> = {
   'pending': 'Pending',
   'to_pickup': 'To Pick Up',
   'to_pick_up': 'To Pick Up',
-  'picked_up': 'To Pick Up', // Map picked_up to To Pick Up for consistency
-  'picked up': 'To Pick Up', // Map picked up to To Pick Up for consistency
+  'picked_up': 'Picked Up',
+  'picked up': 'Picked Up',
   'preparing': 'Preparing',
   'to_deliver': 'To Deliver',
-  'delivered': 'Completed',
-  'completed': 'Completed',
+  'delivered': 'Delivered',
+  'completed': 'Delivered',
   'cancelled': 'Cancelled'
 };
 
@@ -74,9 +75,13 @@ function getProgressLineBottom(orderStatus: string) {
   
   if (currentIndex === -1) return '100%';
   
-  const progressPercentage = (currentIndex / (statusList.length - 1)) * 90;
+  // Calculate progress but stop before the last status
+  const maxIndex = statusList.length - 1;
+  const progressPercentage = (currentIndex / maxIndex) * 100;
   
-  return `${100 - progressPercentage}%`;
+  // Add a small offset to prevent going over the last circle
+  const offset = 5; // percentage offset from bottom
+  return `${Math.max(offset, 100 - progressPercentage)}%`;
 }
 
 function isCancelled(orderStatus: string): boolean {
@@ -117,6 +122,31 @@ const formatDate = (dateString: string) => {
   }
 }
 
+// NEW: Format delivered date
+const formatDeliveredDate = (dateString: string | undefined) => {
+  if (!dateString) return 'Not yet delivered';
+  
+  if (dateString.match(/\d{2}-\d{2}-\d{4} \d{1,2}:\d{2}[AP]M/)) {
+    return dateString
+  }
+  
+  try {
+    const d = new Date(dateString)
+    if (isNaN(d.getTime())) return 'Invalid Date'
+    
+    return d.toLocaleString("en-PH", {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  } catch {
+    return dateString || 'Not yet delivered'
+  }
+}
+
 const getStatusColor = (status: string) => {
   const colors: { [key: string]: string } = {
     'pending': 'bg-orange-100 text-orange-800',
@@ -127,6 +157,7 @@ const getStatusColor = (status: string) => {
     'preparing': 'bg-purple-100 text-purple-800',
     'to_deliver': 'bg-indigo-100 text-indigo-800',
     'completed': 'bg-green-100 text-green-800',
+    'delivered': 'bg-green-100 text-green-800',
     'cancelled': 'bg-red-100 text-red-800'
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
@@ -179,7 +210,7 @@ const getPaymentStatusDisplay = (status: string | undefined): string => {
               <!-- Background Line - Only show if NOT cancelled -->
               <div 
                 v-if="!isCancelled(selectedOrder.status)"
-                class="absolute left-[10px] top-[30px] w-0.5 bg-gray-300"
+                class="absolute left-[10px] top-[30px] bottom-[30px] w-0.5 bg-gray-300"
               ></div>
               
               <!-- Filled Green Progress Line -->
@@ -279,19 +310,23 @@ const getPaymentStatusDisplay = (status: string | undefined): string => {
             </div>
 
             <!-- Payment Status -->
-           <div>
-            <p class="text-sm font-medium text-gray-900">Payment Status: {{ getPaymentStatusDisplay(selectedOrder.payment_status) }}</p>
-          </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900">Payment Status: {{ getPaymentStatusDisplay(selectedOrder.payment_status) }}</p>
+            </div>
 
             <!-- Payment Method --> 
             <div>
               <p class="text-sm font-medium text-gray-900">Payment Method: {{ ( selectedOrder.payment_method) }}</p>
             </div>
 
-            <!-- Special Instructions -->
-            <div v-if="selectedOrder.special_instructions">
-              <p class="text-sm font-medium text-gray-900">Special Instructions:</p>
-              <p class="text-sm text-gray-700">{{ selectedOrder.special_instructions }}</p>
+            <!-- ✅ ADDED: Delivered At -->
+            <div>
+              <p 
+                class="text-sm font-medium"
+                :class="selectedOrder.delivered_at ? 'text-gray-900' : 'text-gray-400'"
+              >
+                Delivered At: {{ formatDeliveredDate(selectedOrder.delivered_at) }}
+              </p>
             </div>
           </div>
         </div>

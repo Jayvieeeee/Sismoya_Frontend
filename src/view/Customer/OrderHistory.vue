@@ -222,6 +222,7 @@ function viewOrderDetails(order: any) {
     totalAmount: parseFloat(order.total_price ?? 0),
     paymentMethod: order.payment_method || 'Unknown',
     paymentStatus: order.payment_status || 'unknown',
+     deliveredAt: order.delivered_at || '',
     addressLabel: order.address_label || 'No label',
     fullAddress: order.full_address || 'No address'
   };

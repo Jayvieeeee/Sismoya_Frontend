@@ -7,7 +7,7 @@ import Modal from "@/components/Modal.vue"
 // ICONS
 import dashboardIcon from "@/assets/icons/dashboard.png"
 import customerIcon from "@/assets/icons/customer.png"
-import riderIcon from "@/assets/icons/rider.png"
+import riderIcon from "@/assets/icons/delivery-bike.png"
 import orderHistoryIcon from "@/assets/icons/orderHistory.png"
 import accountSettingsIcon from "@/assets/icons/accountSettings.png"
 import logoutIcon from "@/assets/icons/logout.png"
@@ -32,7 +32,7 @@ const menuItems: MenuItem[] = [
   { name: "Dashboard", icon: dashboardIcon, route: "/adminDashboard" },
   { name: "Orders", icon: orderHistoryIcon, route: "/adminOrders" },
   { name: "Customers", icon: customerIcon, route: "/customers" },
-  { name: "Riders", icon: riderIcon, route: "/riders" },
+  { name: "Delivery Boy", icon: riderIcon, route: "/riders" },
   { name: "Gallons", icon: siteIcon, route: "/siteSettings" },
   { name: "Account Settings", icon: accountSettingsIcon, route: "/adminAccountSettings" },
   { name: "Logout", icon: logoutIcon, route: null, bottom: true },
@@ -79,7 +79,7 @@ async function confirmLogout() {
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed md:static top-0 left-0 h-full w-64 bg-primary text-white flex flex-col transform transition-transform duration-300 z-40',
+        'fixed md:relative top-0 left-0 h-full w-64 bg-primary text-white flex flex-col transform transition-transform duration-300 z-40',
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       ]"
     >
@@ -101,13 +101,13 @@ async function confirmLogout() {
 
       <!-- Menu Items -->
       <nav class="flex-1 flex flex-col justify-between py-6">
-        <div>
+        <div class="space-y-2">
           <button
             v-for="item in menuItems.filter(i => !i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
             :class="[
-              'flex items-center space-x-3 px-6 py-3 text-sm w-full text-left transition',
+              'flex items-center space-x-3 px-6 py-3 text-sm w-[240px] text-left transition rounded-lg mx-2',
               router.currentRoute.value.path === item.route
                 ? 'bg-[#246589]'
                 : 'hover:bg-[#246589]'
@@ -118,12 +118,12 @@ async function confirmLogout() {
           </button>
         </div>
 
-        <div>
+        <div class="space-y-2">
           <button
             v-for="item in menuItems.filter(i => i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
-            class="flex items-center space-x-3 px-6 py-3 text-sm w-full text-left hover:bg-[#246589] transition"
+            class="flex items-center space-x-3 px-6 py-3 text-sm w-[240px] text-left hover:bg-[#246589] transition rounded-lg mx-2"
           >
             <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
             <span>{{ item.name }}</span>
