@@ -32,20 +32,28 @@ async function handleLogin() {
     const res = await loginUser(identifier.value, password.value);
 
     if (res.error) {
-      // Use backend error message if available, otherwise fallback
       errorMessage.value = res.message || "Invalid credentials.";
       return;
     }
 
-    // Save only the needed data
+    // Check if user is a rider and block access
+    if (res.user.role === "rider") {
+      errorMessage.value = "Rider access is not available on the web platform. Please use the mobile app to access your account.";
+      // Clear any sensitive data that might have been returned
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      return;
+    }
+
+    // Save only the needed data for non-rider users
     localStorage.setItem("token", res.token);
     localStorage.setItem("user", JSON.stringify(res.user));
 
-    // Redirect based on role
+    // Redirect based on role (excluding riders)
     if (res.user.role === "admin") {
-      router.push("/adminDashboard"); // admin route
+      router.push("/adminDashboard");
     } else if (res.user.role === "customer") {
-      router.push("/customerDashboard");// customer
+      router.push("/customerDashboard");
     } else {
       router.push("/");
     }
@@ -253,5 +261,3 @@ function goToForgotPass() {
     </section>
   </LandingPageLayout>
 </template>
-
-

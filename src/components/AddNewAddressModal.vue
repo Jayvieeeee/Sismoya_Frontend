@@ -23,6 +23,14 @@ const address = ref("");
 const isDefault = ref(false);
 const isLoading = ref(false);
 
+// Confirm modal state
+const showConfirmModal = ref(false);
+const confirmModalConfig = ref({
+  title: "",
+  message: "",
+  type: "success" as "warning" | "success" | "error"
+});
+
 watch(
   () => props.existingAddress,
   (val) => {
@@ -54,25 +62,32 @@ async function handleSave() {
       is_default: isDefault.value,
     };
 
-      if (props.mode === "edit" && props.existingAddress?.id) {
-        const response = await axiosInstance.put(
-          `/addresses/${props.existingAddress.id}`,
-          payload
-        );
-        if (response.data.success) {
-         emit("address-added")
-        emit("close");
-        window.location.reload();
-         emit("address-added") // tell parent to update list
-        emit("close"); // close modal
-        } else {
-          alert(response.data.message || "Failed to update address");
-        }
-      }else {
+    if (props.mode === "edit" && props.existingAddress?.id) {
+      const response = await axiosInstance.put(
+        `/addresses/${props.existingAddress.id}`,
+        payload
+      );
+      if (response.data.success) {
+        // Show success confirmation modal for edit
+        showConfirmModal.value = true;
+        confirmModalConfig.value = {
+          title: "Success!",
+          message: "Address has been updated successfully.",
+          type: "success"
+        };
+      } else {
+        alert(response.data.message || "Failed to update address");
+      }
+    } else {
       const response = await axiosInstance.post("/addresses", payload);
       if (response.data.success) {
-        emit("address-added");
-        emit("close");
+        // Show success confirmation modal for add
+        showConfirmModal.value = true;
+        confirmModalConfig.value = {
+          title: "Success!",
+          message: "Address has been added successfully.",
+          type: "success"
+        };
       } else {
         alert(response.data.message || "Failed to add address");
       }
@@ -83,9 +98,22 @@ async function handleSave() {
     isLoading.value = false;
   }
 }
+
+function handleConfirm() {
+  // Close both modals and reload the page
+  showConfirmModal.value = false;
+  emit("address-added");
+  emit("close");
+  window.location.reload();
+}
+
+function handleCloseConfirm() {
+  showConfirmModal.value = false;
+}
 </script>
 
 <template>
+  <!-- Address Modal -->
   <div
     v-if="isOpen"
     class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 font-montserrat"
@@ -156,6 +184,55 @@ async function handleSave() {
       >
         {{ isLoading ? "Saving..." : mode === "edit" ? "Update" : "Save" }}
       </button>
+    </div>
+  </div>
+
+  <!-- Success Confirmation Modal -->
+  <div
+    v-if="showConfirmModal"
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]"
+  >
+    <div
+      class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative"
+    >
+      <!-- Close Button -->
+      <button
+        @click="handleCloseConfirm"
+        class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-lg"
+      >
+        ✕
+      </button>
+
+      <!-- Icon -->
+      <div class="flex justify-center mb-4">
+        <div
+          class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center"
+        >
+          <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <h2 class="text-center text-gray-800 text-xl font-semibold mb-3">
+        {{ confirmModalConfig.title }}
+      </h2>
+
+      <!-- Message -->
+      <p class="text-center text-gray-600 mb-6">
+        {{ confirmModalConfig.message }}
+      </p>
+
+      <!-- Actions -->
+      <div class="flex justify-center gap-3">
+        <button
+          @click="handleConfirm"
+          class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors"
+        >
+          OK
+        </button>
+      </div>
     </div>
   </div>
 </template>

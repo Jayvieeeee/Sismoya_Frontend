@@ -191,7 +191,35 @@ const getDisplayProduct = (order: any) => {
   return name
 }
 
-const formatDateTime = (order: any) => formatDate(order.updated_at || order.pickup_datetime)
+// Updated date formatting function to show full month name
+const formatDateTime = (order: any) => {
+  const dateString = order.updated_at || order.pickup_datetime
+  if (!dateString) return 'N/A'
+  
+  const date = new Date(dateString)
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) return 'Invalid Date'
+  
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+  
+  const month = monthNames[date.getMonth()]
+  const day = date.getDate()
+  const year = date.getFullYear()
+  
+  // Format time
+  let hours = date.getHours()
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12
+  hours = hours ? hours : 12 // the hour '0' should be '12'
+  
+  return `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`
+}
+
 const loadOrders = async () => await fetchOrders()
 
 onMounted(loadOrders)
@@ -288,7 +316,7 @@ watch(orders, (newOrders) => {
                   <th class="py-3 px-4 font-normal whitespace-nowrap">Customer Name</th>
                   <th class="py-3 px-8 font-normal whitespace-nowrap">Product</th>
                   <th class="py-3 px-4 font-normal whitespace-nowrap">Total Amount</th>
-                  <th class="py-3 px-8 font-normal whitespace-nowrap">Last Updated</th>
+                  <th class="py-3 px-10 font-normal whitespace-nowrap">Last Updated</th>
                   <th class="py-3 px-8 font-normal whitespace-nowrap">Order Status</th>
                   <th class="py-3 px-8 font-normal whitespace-nowrap">View Details</th>
                   <th class="py-3 px-4 font-normal whitespace-nowrap">Action</th>
