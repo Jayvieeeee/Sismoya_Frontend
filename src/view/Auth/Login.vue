@@ -253,3 +253,5 @@ function goToForgotPass() {
     </section>
   </LandingPageLayout>
 </template>
+
+
