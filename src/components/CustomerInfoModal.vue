@@ -55,6 +55,24 @@ const fetchCustomerInfo = async (id: number) => {
   }
 }
 
+// ✅ Status color and background mapping
+const getStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    'pending': 'text-orange-600',
+    'preparing': 'text-blue-600',
+    'cancelled': 'text-red-600',
+    'to_pickup': 'text-purple-600',
+    'to_deliver': 'text-cyan-600',
+    'delivered': 'text-green-600',
+    'completed': 'text-green-600'
+  }
+  return colors[status] || 'text-gray-600'
+}
+
+const formatStatus = (status: string) => {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
 // ✅ Opens the Order Details Modal
 const openOrderDetails = (order: any) => {
   selectedOrder.value = order
@@ -158,7 +176,7 @@ const closeOrderDetails = () => {
                     <th class="px-4 py-2 border">Products</th>
                     <th class="px-4 py-2 border">Total Price</th>
                     <th class="px-4 py-2 border">Payment Method</th>
-                    <th class="px-4 py-2 border">Status</th>
+                    <th class="px-5 py-2 text-center border">Status</th>
                     <th class="px-4 py-2 border">Actions</th>
                   </tr>
                 </thead>
@@ -182,18 +200,18 @@ const closeOrderDetails = () => {
                     
                     <td class="px-4 py-2 border text-right">₱{{ order.total_price }}</td>
                     <td class="px-4 py-2 border capitalize">{{ order.payment_method }}</td>
-                    <td
-                      class="px-4 py-2 border font-medium"
-                      :class="{
-                        'text-yellow-600': order.status === 'pending',
-                        'text-green-600': order.status === 'completed',
-                        'text-red-600': order.status === 'cancelled'
-                      }"
-                    >
-                      {{ order.status }}
+                    <td class="px-4 py-2 border">
+                      <span 
+                        :class="[
+                          getStatusColor(order.status),
+                          'px-3 py-1 rounded-full text-xs font-semibold inline-block'
+                        ]"
+                      >
+                        {{ formatStatus(order.status) }}
+                      </span>
                     </td>
                     <td
-                      class="px-4 py-2 border text-blue-600 underline cursor-pointer"
+                      class="px-4 py-2 border text-blue-600 underline cursor-pointer hover:text-blue-800"
                       @click="openOrderDetails(order)"
                     >
                       View Details

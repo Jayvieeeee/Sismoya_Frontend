@@ -80,7 +80,12 @@ function closeResultModal() {
 
 <template>
   <div class="px-4 sm:px-6 md:px-8">
-    <h2 class="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Change Password</h2>
+    <div class="mb-6 sm:mb-8">
+      <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Change Password</h2>
+      <p class="text-sm sm:text-base text-gray-600 max-w-2xl">
+        Update your password to keep your account secure. Make sure your new password is strong and unique.
+      </p>
+    </div>
 
     <form
       @submit.prevent="handleChangePassword"
@@ -152,8 +157,27 @@ function closeResultModal() {
         </div>
       </div>
 
+      <!-- Password Requirements -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-sm text-gray-700 font-medium mb-2">Password Requirements:</p>
+        <ul class="text-xs sm:text-sm text-gray-600 space-y-1">
+          <li class="flex items-start">
+            <span class="text-blue-500 mr-2">•</span>
+            <span>At least 1 uppercase letter</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-blue-500 mr-2">•</span>
+            <span>At least 1 special character (!@#$%^&*)</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-blue-500 mr-2">•</span>
+            <span>At least 1 number</span>
+          </li>
+        </ul>
+      </div>
+
       <!-- Submit Button -->
-      <div class="pt-24">
+      <div class="pt-8">
         <button
           type="submit"
           :disabled="loading"
@@ -161,6 +185,25 @@ function closeResultModal() {
         >
           {{ loading ? "Updating..." : "Change Password" }}
         </button>
+      </div>
+
+
+      <div class="p-4 mt-6">
+        <p class="text-sm text-gray-700 font-medium mb-2">Password Requirements:</p>
+        <ul class="text-xs sm:text-sm text-gray-600 space-y-1">
+          <li class="flex items-start">
+            <span class="mr-2">•</span>
+            <span>At least 1 uppercase letter</span>
+          </li>
+          <li class="flex items-start">
+            <span class="mr-2">•</span>
+            <span>At least 1 special character (!@#$%^&*)</span>
+          </li>
+          <li class="flex items-start">
+            <span class="mr-2">•</span>
+            <span>At least 1 number</span>
+          </li>
+        </ul>
       </div>
     </form>
 

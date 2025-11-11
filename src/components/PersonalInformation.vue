@@ -96,7 +96,12 @@ function closeResultModal() {
 
 <template>
   <div class="px-4 sm:px-6 md:px-8">
-    <h2 class="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Personal Information</h2>
+    <div class="mb-6 sm:mb-8">
+      <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Personal Information</h2>
+      <p class="text-sm sm:text-base text-gray-600 max-w-2xl">
+        Manage your personal details and contact information. Click the edit icon next to any field to update your information.
+      </p>
+    </div>
 
     <div v-if="!loading && user" class="space-y-4 sm:space-y-6 max-w-full sm:max-w-md">
       <!-- Name -->
@@ -155,6 +160,11 @@ function closeResultModal() {
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-else-if="loading" class="flex items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
     </div>
 
     <!-- Edit Modal -->
