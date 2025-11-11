@@ -250,7 +250,7 @@ const currentPhilippineTime = computed(() => {
               </div>
             </div>
           </div>
-            <p class="text-xs mt-4 italic text-gray-500">Note: Each timeslot can accommodate up to 5 orders, and orders are processed based on route optimization (nearest to the store first).</p>
+            <p class="text-sm mt-4 italic">Note: Each timeslot can accommodate up to 5 orders, and orders are processed based on route optimization (nearest to the store first).</p>
         </div>
       </div>
 
