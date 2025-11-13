@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { changePassword } from "@/api/changePassApi";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
+import ConfirmModal from "@/components/ConfirmModal.vue"; // Adjust path as needed
 
 const props = defineProps<{
   email: string;
@@ -124,40 +125,14 @@ function handleSuccessConfirm() {
     </div>
 
     <!-- Success Confirmation Modal -->
-    <div
-      v-if="showSuccessModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]"
-    >
-      <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative">
-        <!-- Icon -->
-        <div class="flex justify-center mb-4">
-          <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-          </div>
-        </div>
-
-        <!-- Title -->
-        <h2 class="text-center text-gray-800 text-xl font-semibold mb-3">
-          Password Changed Successfully
-        </h2>
-
-        <!-- Message -->
-        <p class="text-center text-gray-600 mb-6">
-          Your password has been updated. You can now log in with your new password.
-        </p>
-
-        <!-- Action -->
-        <div class="flex justify-center">
-          <button
-            @click="handleSuccessConfirm"
-            class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors"
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      :visible="showSuccessModal"
+      type="success"
+      title="Password Changed Successfully"
+      message="Your password has been updated. You can now log in with your new password."
+      confirmText="Go to Login"
+      @confirm="handleSuccessConfirm"
+      @close="handleSuccessConfirm"
+    />
   </div>
 </template>
