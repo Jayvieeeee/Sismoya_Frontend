@@ -16,6 +16,7 @@ const error = ref("");
 const isSubmitting = ref(false);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+const showSuccessModal = ref(false);
 
 // validate and call API
 async function handleSubmit() {
@@ -30,19 +31,27 @@ async function handleSubmit() {
 
   isSubmitting.value = true;
   try {
-     const res = await changePassword(props.email, password.value, confirm_password.value, props.code);
+    const res = await changePassword(props.email, password.value, confirm_password.value, props.code);
     console.log("Password changed successfully:", res);
 
-    emit("success"); // let parent know it's done
     error.value = "";
     password.value = "";
     confirm_password.value = "";
+    
+    // Show success modal
+    showSuccessModal.value = true;
   } catch (err: any) {
     console.error("Change password error:", err.response?.data || err.message);
     error.value = "Failed to change password. Please try again.";
   } finally {
     isSubmitting.value = false;
   }
+}
+
+function handleSuccessConfirm() {
+  showSuccessModal.value = false;
+  emit("success"); // let parent know it's done
+  emit("close"); // close the change password modal
 }
 </script>
 
@@ -112,6 +121,43 @@ async function handleSubmit() {
       >
         {{ isSubmitting ? "Submitting..." : "Submit" }}
       </button>
+    </div>
+
+    <!-- Success Confirmation Modal -->
+    <div
+      v-if="showSuccessModal"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]"
+    >
+      <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative">
+        <!-- Icon -->
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <h2 class="text-center text-gray-800 text-xl font-semibold mb-3">
+          Password Changed Successfully
+        </h2>
+
+        <!-- Message -->
+        <p class="text-center text-gray-600 mb-6">
+          Your password has been updated. You can now log in with your new password.
+        </p>
+
+        <!-- Action -->
+        <div class="flex justify-center">
+          <button
+            @click="handleSuccessConfirm"
+            class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors"
+          >
+            OK
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
