@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { changePassword } from "@/api/changePassApi";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
 
 const props = defineProps<{
   email: string;
@@ -13,6 +14,8 @@ const password = ref("");
 const confirm_password = ref("");
 const error = ref("");
 const isSubmitting = ref(false);
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 // validate and call API
 async function handleSubmit() {
@@ -66,23 +69,39 @@ async function handleSubmit() {
       <p v-if="error" class="text-red-500 text-sm text-center mb-4">{{ error }}</p>
 
       <!-- New Password -->
-      <div class="mb-4">
+      <div class="mb-4 relative">
         <input
-          type="password"
+          :type="showPassword ? 'text' : 'password'"
           v-model="password"
           placeholder="New Password"
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+          class="w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-400"
         />
+        <button
+          type="button"
+          @click="showPassword = !showPassword"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+        >
+          <EyeIcon v-if="!showPassword" class="h-5 w-5" />
+          <EyeSlashIcon v-else class="h-5 w-5" />
+        </button>
       </div>
 
       <!-- Confirm Password -->
-      <div class="mb-6">
+      <div class="mb-6 relative">
         <input
-          type="password"
+          :type="showConfirmPassword ? 'text' : 'password'"
           v-model="confirm_password"
           placeholder="Confirm Password"
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+          class="w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-400"
         />
+        <button
+          type="button"
+          @click="showConfirmPassword = !showConfirmPassword"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+        >
+          <EyeIcon v-if="!showConfirmPassword" class="h-5 w-5" />
+          <EyeSlashIcon v-else class="h-5 w-5" />
+        </button>
       </div>
 
       <!-- Submit Button -->
