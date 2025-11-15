@@ -56,6 +56,14 @@ async function fetchAddresses() {
 
 // ------------------ Delete Address ------------------
 function openDeleteConfirm(addressId: number) {
+  const address = addresses.value.find(a => a.id === addressId)
+  
+  // Prevent deletion of default address
+  if (address?.isDefault) {
+    alert("Cannot delete default address. Please set another address as default first.")
+    return
+  }
+  
   addressToDelete.value = addressId
   showConfirmModal.value = true
 }
@@ -64,24 +72,35 @@ async function confirmDelete() {
   if (!addressToDelete.value) return
   
   try {
-    const result = await deleteAddress(addressToDelete.value)
+    console.log("Attempting to delete address ID:", addressToDelete.value)
     
-    if (result.success) {
-      await fetchAddresses() // Refresh the list
+    const result = await deleteAddress(addressToDelete.value)
+    console.log("Delete result:", result)
+    
+    if (result.success || result.status === 200 || result.ok) {
+      // Successfully deleted - refresh the list
+      await fetchAddresses()
     } else {
       console.error("Delete failed - backend response:", result)
+      alert("Failed to delete address. Please try again.")
     }
   } catch (error: any) {
+    console.error("Delete error details:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      addressId: addressToDelete.value
+    })
     
-    // Log detailed error information for debugging
+    // Show user-friendly error message
     if (error.response?.status === 404) {
-      console.error("Available addresses:", addresses.value.map(a => ({ 
-        id: a.id, 
-        label: a.label,
-        isDefault: a.isDefault 
-      })))
+      alert("Address not found. It may have already been deleted.")
+      // Refresh list to sync with backend
+      await fetchAddresses()
+    } else if (error.response?.status === 403) {
+      alert("You don't have permission to delete this address.")
     } else {
-      console.error("Delete error:", error.message)
+      alert("Failed to delete address. Please try again.")
     }
   } finally {
     showConfirmModal.value = false
@@ -150,8 +169,13 @@ onMounted(async () => {
           <!-- Delete Button -->
           <button
             @click="openDeleteConfirm(address.id)"
-            class="text-red-500 hover:text-red-700 transition-colors"
-            title="Delete address"
+            :class="[
+              'transition-colors',
+              address.isDefault 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-red-500 hover:text-red-700'
+            ]"
+            :title="address.isDefault ? 'Cannot delete default address' : 'Delete address'"
             :disabled="address.isDefault"
           >
             <TrashIcon class="w-5 h-5" />
@@ -175,7 +199,7 @@ onMounted(async () => {
     <!-- Add New Address Button -->
     <button
       @click="openAddModal"
-      class="w-full border border-gray-300 rounded-xl p-4 mt-4 text-center hover:bg-gray-50 transition font-medium"
+      class="w-full max-w-xl border border-gray-300 rounded-xl p-4 mt-4 text-center hover:bg-gray-50 transition font-medium"
     >
       + Add New Address
     </button>
@@ -193,7 +217,11 @@ onMounted(async () => {
     <ConfirmModal
       :visible="showConfirmModal"
       title="Confirm Delete"
-      message="Are you sure you want to delete this address?"
+      message="Are you sure you want to delete this address? This action cannot be undone."
+      type="warning"
+      :showCancel="true"
+      confirmText="Delete"
+      cancelText="Cancel"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
