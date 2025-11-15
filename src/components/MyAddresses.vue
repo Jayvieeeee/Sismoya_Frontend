@@ -56,14 +56,6 @@ async function fetchAddresses() {
 
 // ------------------ Delete Address ------------------
 function openDeleteConfirm(addressId: number) {
-  const address = addresses.value.find(a => a.id === addressId)
-  
-  // Prevent deletion of default address
-  if (address?.isDefault) {
-    alert("Cannot delete default address. Please set another address as default first.")
-    return
-  }
-  
   addressToDelete.value = addressId
   showConfirmModal.value = true
 }
