@@ -224,6 +224,7 @@ onMounted(async () => {
       cancelText="Cancel"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
+      @close="cancelDelete"
     />
   </div>
 </template>
