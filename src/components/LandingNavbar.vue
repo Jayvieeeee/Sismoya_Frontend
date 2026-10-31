@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
+import logo from "@/assets/images/new_logo.png"
 
 const router = useRouter()
 const isOpen = ref(false)
@@ -10,6 +11,7 @@ const navItems = [
   { name: "Home", route: "/#home" },
   { name: "Services", route: "/#services" },
   { name: "Contact Us", route: "/#contact" },
+  { name: "Download App", route: "/#download" },
   { name: "Login", route: "/login", isButton: true },
 ]
 
@@ -63,26 +65,35 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <nav class="fixed top-0 left-0 w-full z-50 font-montserrat bg-primary shadow-md px-8">
+  <nav class="fixed top-0 left-0 w-full z-50 font-montserrat bg-white border-b border-gray-100 shadow-sm px-8">
     <div class="flex justify-between items-center h-16">
       <!-- Logo -->
-      <div class="ml-4 flex items-center">
-        <img src="/images/Sismoya_Logo.png" alt="Sismoya Logo" class="h-12 w-auto" />
+      <div class="flex items-center gap-2">
+        <img :src="logo" alt="Sismoya Logo" class="h-7 w-auto" />
+        <span class="text-gray-900 font-semibold text-sm tracking-wide">SISMOYA</span>
       </div>
 
       <!-- Desktop Menu -->
-      <ul class="hidden md:flex space-x-8 text-white font-medium text-sm items-center pr-10">
-        <li v-for="item in navItems" :key="item.name">
+      <ul class="hidden md:flex space-x-8 text-gray-600 font-medium text-sm items-center">
+        <li v-for="item in navItems.filter(i => !i.isButton)" :key="item.name">
           <button
             @click="navigateTo(item.route)"
             :class="[
-              item.isButton
-                ? isActive(item)
-                  ? 'bg-white text-black font-semibold px-3 py-2 rounded-full'
-                  : 'border-2 border-white px-3 py-2 rounded-full hover:bg-white hover:text-black transition'
-                : isActive(item)
-                  ? 'bg-white text-black font-semibold px-3 py-2 rounded-full'
-                  : 'px-3 py-2 rounded-full hover:bg-white hover:text-black transition'
+              'transition-colors',
+              isActive(item) ? 'text-gray-900 font-semibold' : 'hover:text-gray-900'
+            ]"
+          >
+            {{ item.name }}
+          </button>
+        </li>
+        <li v-for="item in navItems.filter(i => i.isButton)" :key="item.name">
+          <button
+            @click="navigateTo(item.route)"
+            :class="[
+              'px-5 py-2 rounded-full text-sm font-medium border transition-colors',
+              isActive(item)
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'border-gray-300 text-gray-900 hover:bg-gray-900 hover:text-white hover:border-gray-900'
             ]"
           >
             {{ item.name }}
@@ -91,10 +102,10 @@ onUnmounted(() => {
       </ul>
 
       <!-- Mobile Hamburger -->
-      <button @click="isOpen = !isOpen" class="md:hidden text-white focus:outline-none pr-2">
+      <button @click="isOpen = !isOpen" class="md:hidden text-gray-900 focus:outline-none">
         <svg
           v-if="!isOpen"
-          class="w-8 h-8"
+          class="w-7 h-7"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -104,7 +115,7 @@ onUnmounted(() => {
         </svg>
         <svg
           v-else
-          class="w-8 h-8"
+          class="w-7 h-7"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -119,19 +130,27 @@ onUnmounted(() => {
     <transition name="slide-fade">
       <ul
         v-if="isOpen"
-        class="md:hidden flex flex-col bg-primary text-white font-medium text-sm p-4 space-y-4"
+        class="md:hidden flex flex-col bg-white border-t border-gray-100 text-gray-700 font-medium text-sm p-4 space-y-3"
       >
-        <li v-for="item in navItems" :key="item.name">
+        <li v-for="item in navItems.filter(i => !i.isButton)" :key="item.name">
           <button
             @click="navigateTo(item.route)"
             :class="[
-              item.isButton
-                ? isActive(item)
-                  ? 'bg-white text-black font-semibold w-full py-2 rounded-full'
-                  : 'border-2 border-white w-full py-2 rounded-full hover:bg-white hover:text-black transition'
-                : isActive(item)
-                  ? 'bg-white text-black font-semibold w-full py-2 rounded-full'
-                  : 'w-full py-2 rounded-full hover:bg-white hover:text-black transition'
+              'w-full text-left py-2',
+              isActive(item) ? 'text-gray-900 font-semibold' : 'hover:text-gray-900'
+            ]"
+          >
+            {{ item.name }}
+          </button>
+        </li>
+        <li v-for="item in navItems.filter(i => i.isButton)" :key="item.name">
+          <button
+            @click="navigateTo(item.route)"
+            :class="[
+              'w-full py-2 rounded-full text-sm font-medium border transition-colors',
+              isActive(item)
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'border-gray-300 text-gray-900 hover:bg-gray-900 hover:text-white hover:border-gray-900'
             ]"
           >
             {{ item.name }}

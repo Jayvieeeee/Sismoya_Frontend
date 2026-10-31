@@ -18,6 +18,7 @@ const showPayPalModal = ref(false);
 const pendingPayPalOrderId = ref<number | null>(null);
 const pendingPayPalAmount = ref<number>(0);
 const orderPlacedModal = ref(false);
+const isProcessing = ref(false); // prevents double clicks while placing the order / redirecting to Xendit
 
 // -------------------- Types --------------------
 interface Address {
@@ -131,7 +132,7 @@ async function handleAddressAdded(newAddress?: Address) {
 }
 
 // Payment map
-const paymentMethodMap = { Paypal: "Paypal", "Cash": "CASH" }
+const paymentMethodMap = { Paypal: "Paypal", Cash: "CASH", Xendit: "xendit" }
 const getBackendPaymentMethod = () => paymentMethodMap[paymentMethod.value as keyof typeof paymentMethodMap] || paymentMethod.value
 
 // Images
@@ -172,7 +173,8 @@ function validateOrder(): boolean {
 }
 
 const handlePlaceOrder = async () => {
-  
+  if (isProcessing.value) return;
+
   if (!customer.value || !props.products.length) {
     errorMessage.value = "No customer or products found.";
     showErrorModal.value = true;
@@ -187,15 +189,16 @@ const handlePlaceOrder = async () => {
     total_price: parseFloat((p.price * p.qty).toFixed(2))
   }));
   
-const payload = { 
-  userId: customer.value.user_id, 
-  pickup_datetime: pickUpTime.value, 
-  payment_method: getBackendPaymentMethod(), 
-  address_id: selectedAddress.value?.id || null, 
-  items,
-  total_amount: parseFloat(totalAmount.value.toFixed(2)) 
-};
+  const payload = { 
+    userId: customer.value.user_id, 
+    pickup_datetime: pickUpTime.value, 
+    payment_method: getBackendPaymentMethod(), 
+    address_id: selectedAddress.value?.id || null, 
+    items,
+    total_amount: parseFloat(totalAmount.value.toFixed(2)) 
+  };
 
+  isProcessing.value = true;
 
   try {
     const res = await axiosInstance.post("/orders", payload);
@@ -209,6 +212,22 @@ const payload = {
       showPayPalModal.value = true;
       // Don't clear form yet for PayPal - wait for payment completion
       emit('close'); // close order summary
+    } else if (paymentMethod.value === "Xendit") {
+      // Create the Xendit invoice for the order we just created
+      const invoiceRes = await axiosInstance.post("/payments/xendit/create", {
+        order_id: res.data.order_id
+      });
+
+      const invoiceUrl = invoiceRes.data?.xendit?.invoice_url;
+      if (!invoiceRes.data.success || !invoiceUrl) {
+        throw new Error(invoiceRes.data.message || "Could not create Xendit invoice");
+      }
+
+      // Go to Xendit's hosted checkout (GCash, Maya, card, etc.).
+      // Xendit sends the user back to /payment-success or /payment-cancel afterwards.
+      // Keep isProcessing true so the button stays disabled during the redirect.
+      window.location.href = invoiceUrl;
+      return;
     } else {
       // For Cash on Pickup, show success modal immediately and clear form
       orderPlacedModal.value = true;
@@ -220,6 +239,8 @@ const payload = {
     errorMessage.value = err.response?.data?.message || err.message || "Order failed. Please try again.";
     showErrorModal.value = true;
   }
+
+  isProcessing.value = false;
 };
 
 // -------------------- PayPal Handlers --------------------
@@ -260,6 +281,7 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     // Modal opened - ensure form is fresh
     clearForm();
+    isProcessing.value = false;
   }
 })
 
@@ -327,8 +349,9 @@ watch(() => props.isOpen, (newVal) => {
         <label class="font-semibold text-sm">Payment Method:</label>
         <div class="relative w-2/4">
           <select v-model="paymentMethod" class="w-full border border-black text-center text-sm rounded-lg px-3 py-1 appearance-none cursor-pointer">
-            <option>Cash</option>
-            <option>Paypal</option>
+            <option value="Cash">Cash</option>
+            <option value="Paypal">Paypal</option>
+            <option value="Xendit">Xendit (GCash, Maya, Card)</option>
           </select>
           <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">&#11167;</span>
         </div>
@@ -339,10 +362,10 @@ watch(() => props.isOpen, (newVal) => {
         <button @click="handleClose" class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-gray-400 transition-colors font-medium">Back</button>
         <button 
           @click="handlePlaceOrder" 
-          :disabled="totalAmount <= 0"
+          :disabled="totalAmount <= 0 || isProcessing"
           class="flex-1 bg-primary text-white py-2 rounded-full hover:bg-secondary transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          Place Order
+          {{ isProcessing ? "Processing..." : "Place Order" }}
         </button>
       </div>
     </div>

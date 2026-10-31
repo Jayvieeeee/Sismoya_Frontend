@@ -109,11 +109,11 @@ async function handleVerify() {
 </script>
 
 <template>
-  <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-      <h2 class="text-xl font-semibold text-center mb-6">Verify Code</h2>
-      <p class="text-sm text-gray-500 text-center mb-6">
-        Enter the 6-digit code sent to your email <b>{{ props.email }}</b>
+  <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 w-full max-w-md">
+      <h2 class="text-2xl font-semibold text-center text-gray-900 mb-2">Verify Code</h2>
+      <p class="text-sm text-gray-500 text-center mb-8">
+        Enter the 6-digit code sent to <span class="font-medium text-gray-700">{{ props.email }}</span>
       </p>
 
       <div class="flex justify-center gap-2 mb-6">
@@ -126,7 +126,7 @@ async function handleVerify() {
           inputmode="numeric"
           pattern="[0-9]*"
           maxlength="1"
-          class="w-12 h-12 text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none transition-colors"
+          class="w-12 h-12 text-center text-lg font-semibold bg-gray-50 border border-gray-200 rounded-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-colors"
           @input="handleInput(index, $event)"
           @keydown="handleKeydown(index, $event)"
           @paste="handlePaste"
@@ -135,16 +135,16 @@ async function handleVerify() {
 
       <p v-if="error" class="text-red-500 text-sm text-center mb-4">{{ error }}</p>
 
-      <div class="flex justify-between">
+      <div class="flex justify-between gap-3">
         <button 
           @click="$emit('close')" 
-          class="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+          class="flex-1 px-6 py-3 rounded-full border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
         >
           Back
         </button>
         <button 
           @click="handleVerify" 
-          class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+          class="flex-1 px-6 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
         >
           Verify
         </button>

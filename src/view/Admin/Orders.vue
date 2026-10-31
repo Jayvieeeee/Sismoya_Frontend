@@ -163,7 +163,7 @@ const handleActionWithConfirm = (orderId: string, action: string) => {
 
 const confirmAction = async () => {
   showConfirmModal.value = false
-  
+
   const { orderId, action } = confirmModalConfig.value
 
   try {
@@ -171,7 +171,7 @@ const confirmAction = async () => {
 
     await handleAction(orderId, action)
     await fetchOrders()
-    
+
     updateOrderStatusLocally(orderId, newStatus)
     updateOrderTimestamp(orderId)
 
@@ -195,28 +195,28 @@ const getDisplayProduct = (order: any) => {
 const formatDateTime = (order: any) => {
   const dateString = order.updated_at || order.pickup_datetime
   if (!dateString) return 'N/A'
-  
+
   const date = new Date(dateString)
-  
+
   // Check if date is valid
   if (isNaN(date.getTime())) return 'Invalid Date'
-  
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
-  
+
   const month = monthNames[date.getMonth()]
   const day = date.getDate()
   const year = date.getFullYear()
-  
+
   // Format time
   let hours = date.getHours()
   const minutes = date.getMinutes().toString().padStart(2, '0')
   const ampm = hours >= 12 ? 'PM' : 'AM'
   hours = hours % 12
   hours = hours ? hours : 12 // the hour '0' should be '12'
-  
+
   return `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`
 }
 
@@ -231,32 +231,33 @@ watch(orders, (newOrders) => {
 
 <template>
   <AdminLayout>
-    <div class="min-h-screen pb-16 font-rem">
+    <div class="min-h-screen pb-16 font-rem bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold text-primary">Orders</h1>
+        <div class="mb-6">
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Orders</h1>
+          <p class="text-sm text-gray-400 mt-1">Manage all customer orders</p>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div
             v-for="stat in stats"
             :key="stat.label"
-            class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
+            class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
             <div class="flex flex-col items-center justify-center text-center">
-              <p class="text-2xl text-primary font-bold mb-1">{{ stat.count }}</p>
-              <p class="text-sm font-medium text-gray-600">{{ stat.label }}</p>
+              <p class="text-2xl text-blue-600 font-bold mb-1">{{ stat.count }}</p>
+              <p class="text-xs font-medium text-gray-400">{{ stat.label }}</p>
             </div>
           </div>
         </div>
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6 my-4">
-          <div class="relative w-full sm:w-72">
-            <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-3" />
+          <div class="relative w-full sm:w-80">
+            <MagnifyingGlassIcon class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search orders..."
-              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              placeholder="Find Order"
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
 
@@ -264,10 +265,10 @@ watch(orders, (newOrders) => {
             <div class="relative">
               <button
                 @click="isFilterOpen = !isFilterOpen"
-                class="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-medium"
+                class="flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
               >
-                <FunnelIcon class="w-5 h-5" />
                 <span>Filter</span>
+                <FunnelIcon class="w-4 h-4" />
               </button>
 
               <transition name="fade">
@@ -276,7 +277,7 @@ watch(orders, (newOrders) => {
                   class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden"
                 >
                   <ul class="py-1 text-gray-700 text-sm">
-                    <li 
+                    <li
                       v-for="(option, index) in [
                         { label: 'All Orders', value: 'all' },
                         { label: 'Pending', value: 'pending' },
@@ -288,13 +289,13 @@ watch(orders, (newOrders) => {
                       ]"
                       :key="index"
                       @click="applyFilter(option.value)"
-                      class="flex items-center justify-between px-4 py-2 hover:bg-cyan-50 cursor-pointer transition"
+                      class="flex items-center justify-between px-4 py-2 hover:bg-blue-50 cursor-pointer transition"
                       :class="{
-                        'bg-cyan-50 text-cyan-700': activeStatusFilter === option.value
+                        'bg-blue-50 text-blue-700': activeStatusFilter === option.value
                       }"
                     >
                       <span>{{ option.label }}</span>
-                      <span v-if="activeStatusFilter === option.value" class="text-cyan-600">✓</span>
+                      <span v-if="activeStatusFilter === option.value" class="text-blue-600">✓</span>
                     </li>
                   </ul>
                 </div>
@@ -305,32 +306,31 @@ watch(orders, (newOrders) => {
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div v-if="isLoading" class="flex justify-center items-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
 
-          <div v-else class="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <div v-else class="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table class="w-full">
-              <thead class="bg-gray-50 border-b sticky top-0 z-10 text-sm">
-                <tr class="text-center">
-                  <th class="py-3 px-4 font-normal whitespace-nowrap">Order ID</th>
-                  <th class="py-3 px-4 font-normal whitespace-nowrap">Customer Name</th>
-                  <th class="py-3 px-8 font-normal whitespace-nowrap">Product</th>
-                  <th class="py-3 px-4 font-normal whitespace-nowrap">Total Amount</th>
-                  <th class="py-3 px-10 font-normal whitespace-nowrap">Last Updated</th>
-                  <th class="py-3 px-8 font-normal whitespace-nowrap">Order Status</th>
-                  <th class="py-3 px-8 font-normal whitespace-nowrap">View Details</th>
-                  <th class="py-3 px-4 font-normal whitespace-nowrap">Action</th>
+              <thead class="bg-gray-50 border-b border-gray-100 sticky top-0 z-10 text-xs">
+                <tr class="text-left text-gray-400">
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Order ID</th>
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Customer Name</th>
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Product</th>
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Amount</th>
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Date &amp; Time</th>
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Status</th>
+                  <th class="py-3 px-4 font-medium whitespace-nowrap">Action</th>
                 </tr>
               </thead>
 
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="bg-white divide-y divide-gray-100">
                 <tr v-if="displayedOrders.length === 0">
-                  <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                  <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                     <p class="font-medium text-lg">No orders found</p>
                     <p class="text-sm mt-1">
                       <span v-if="activeStatusFilter !== 'all' || searchQuery.trim()">
                         No orders match your current filters.
-                        <button @click="clearFilters" class="text-cyan-600 hover:text-cyan-800 font-medium ml-1">
+                        <button @click="clearFilters" class="text-blue-600 hover:text-blue-800 font-medium ml-1">
                           Clear filters
                         </button>
                         to show all orders.
@@ -343,32 +343,30 @@ watch(orders, (newOrders) => {
                 <tr
                   v-for="order in displayedOrders"
                   :key="order.order_id"
-                  class="hover:bg-gray-50 transition-colors text-center text-xs">
-                  <td class="table-cell">{{ order.order_id }}</td>
-                  <td class="table-cell">{{ getCustomerName(order) }}</td>
-                  <td class="table-cell">{{ getDisplayProduct(order) }}</td>
-                  <td class="table-cell">{{ formatPrice(order.total_price) }}</td>
-                  <td class="table-cell">{{ formatDateTime(order) }}</td>
-                  <td class="px-6 py-4">
-                    <span :class="[getStatusColor(order.status), 'px-3 py-1 rounded-full text-xs font-medium']">
+                  class="hover:bg-slate-50 transition-colors text-left text-xs">
+                  <td class="px-4 py-3.5 font-semibold text-gray-800 whitespace-nowrap">#{{ order.order_id }}</td>
+                  <td class="px-4 py-3.5 text-gray-700 whitespace-nowrap">{{ getCustomerName(order) }}</td>
+                  <td class="px-4 py-3.5 text-gray-700 whitespace-nowrap">{{ getDisplayProduct(order) }}</td>
+                  <td class="px-4 py-3.5 text-gray-800 font-medium whitespace-nowrap">{{ formatPrice(order.total_price) }}</td>
+                  <td class="px-4 py-3.5 text-gray-500 whitespace-nowrap">{{ formatDateTime(order) }}</td>
+                  <td class="px-4 py-3.5 whitespace-nowrap">
+                    <span :class="[getStatusColor(order.status), 'px-2.5 py-1 rounded-full text-[11px] font-semibold']">
                       {{ getDisplayStatus(order.status) }}
                     </span>
                   </td>
-                  <td class="px-3 py-4">
-                    <button
-                      @click="openOrderDetails(order)"
-                      class="px-4 py-1.5 text-sm underline font-medium transition"
-                    >
-                      View Details
-                    </button>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <div class="flex flex-col gap-1 items-center">
+                  <td class="px-4 py-3.5 whitespace-nowrap">
+                    <div class="flex flex-col gap-1.5 items-start">
+                      <button
+                        @click="openOrderDetails(order)"
+                        class="text-blue-600 hover:text-blue-800 text-xs font-semibold hover:underline"
+                      >
+                        View Details
+                      </button>
                       <button
                         v-for="action in getActionButtons(order.status)"
                         :key="action"
                         @click="handleActionWithConfirm(order.order_id, action)"
-                        class="w-36 text-white font-medium py-1.5 rounded-lg transition"
+                        class="w-32 text-white text-xs font-medium py-1.5 rounded-lg transition"
                         :class="{
                           'bg-green-500 hover:bg-green-600': action === 'approve',
                           'bg-red-500 hover:bg-red-600': action === 'cancel',

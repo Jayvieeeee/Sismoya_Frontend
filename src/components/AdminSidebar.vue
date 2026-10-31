@@ -67,65 +67,73 @@ async function confirmLogout() {
     <button
       v-if="!isOpen"
       @click="isOpen = true"
-      class="fixed top-4 left-4 z-50 bg-primary text-white p-2 rounded-md shadow-md md:hidden"
+      class="fixed top-4 left-4 z-50 bg-white text-gray-700 p-2 rounded-md shadow-md border border-gray-200 md:hidden"
     >
       <img
         src="https://www.svgrepo.com/show/506800/burger-menu.svg"
         alt="Menu"
-        class="w-6 h-6 invert"
+        class="w-5 h-5"
       />
     </button>
 
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed md:relative top-0 left-0 h-full w-64 bg-primary text-white flex flex-col transform transition-transform duration-300 z-40',
+        'fixed md:relative top-0 left-0 h-full w-64 bg-white text-gray-700 border-r border-gray-100 flex flex-col transform transition-transform duration-300 z-40',
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       ]"
     >
       <!-- Logo -->
-      <div class="relative flex items-center justify-center px-6 py-2">
+      <div class="relative flex items-center gap-2 px-6 py-5 border-b border-gray-100">
         <img
           src="/images/Sismoya_Logo.png"
           alt="Logo"
-          class="h-14 mx-auto my-6"
+          class="h-7 w-7 object-contain"
         />
+        <span class="text-sm font-bold tracking-wide text-gray-800">SISMOYA</span>
 
         <button
           @click="isOpen = false"
-          class="absolute right-6 text-2xl font-bold text-white hover:text-gray-300 md:hidden"
+          class="absolute right-6 text-2xl font-bold text-gray-400 hover:text-gray-600 md:hidden"
         >
           ×
         </button>
       </div>
 
       <!-- Menu Items -->
-      <nav class="flex-1 flex flex-col justify-between py-6">
-        <div class="space-y-2">
+      <nav class="flex-1 flex flex-col justify-between py-4 overflow-y-auto">
+        <div class="space-y-1 px-3">
           <button
             v-for="item in menuItems.filter(i => !i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
             :class="[
-              'flex items-center space-x-3 px-6 py-3 text-sm w-[240px] text-left transition rounded-lg mx-2',
+              'flex items-center space-x-3 px-4 py-2.5 text-sm w-full text-left transition rounded-lg',
               router.currentRoute.value.path === item.route
-                ? 'bg-[#246589]'
-                : 'hover:bg-[#246589]'
+                ? 'bg-blue-50 text-blue-600 font-semibold'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
             ]"
           >
-            <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
+            <img
+              :src="item.icon"
+              alt=""
+              :class="[
+                'h-5 w-5 object-contain transition icon-black',
+                router.currentRoute.value.path === item.route ? 'opacity-100' : 'opacity-50'
+              ]"
+            />
             <span>{{ item.name }}</span>
           </button>
         </div>
 
-        <div class="space-y-2">
+        <div class="px-3 pt-3 mt-3 border-t border-gray-100 space-y-1">
           <button
             v-for="item in menuItems.filter(i => i.bottom)"
             :key="item.name"
             @click="navigateTo(item)"
-            class="flex items-center space-x-3 px-6 py-3 text-sm w-[240px] text-left hover:bg-[#246589] transition rounded-lg mx-2"
+            class="flex items-center space-x-3 px-4 py-2.5 text-sm w-full text-left text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition rounded-lg"
           >
-            <img :src="item.icon" alt="" class="h-5 w-5 object-contain" />
+            <img :src="item.icon" alt="" class="h-5 w-5 object-contain icon-black opacity-50" />
             <span>{{ item.name }}</span>
           </button>
         </div>
@@ -146,7 +154,7 @@ async function confirmLogout() {
       @close="showConfirm = false"
     >
       <p class="text-gray-600">Are you sure you want to log out?</p>
-      
+
       <template #actions>
         <button
           @click="showConfirm = false"
@@ -169,5 +177,8 @@ async function confirmLogout() {
 <style scoped>
 body {
   overflow-x: hidden;
+}
+.icon-black {
+  filter: brightness(0);
 }
 </style>

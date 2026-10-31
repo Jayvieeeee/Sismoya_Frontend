@@ -27,6 +27,8 @@ import AdminDashboard from "@/view/Admin/AdminDashboard.vue";
     //Payment Routes
   { path: "/payment-success", name: "PaymentSuccess", component: PaymentSuccess },
   { path: "/payment-cancel",  name: "PaymentCancel",  component: PaymentCancel },
+  { path: "/xendit-success", name: "XenditSuccess", component: () => import("@/components/XenditSuccess.vue"), meta: { requiresAuth: true } },
+  { path: "/xendit-cancel",  name: "XenditCancel",  component: () => import("@/components/XenditCancel.vue"),  meta: { requiresAuth: true } },
     
   // Admin Routes 
     { path: "/adminDashboard", name: "adminDashboard", component: AdminDashboard, meta: { requiresAuth: true, role: "admin" },},

@@ -1,10 +1,8 @@
 import axios from "axios"
 import router from "@/router"
 
-
-
 const axiosInstance = axios.create({
-  baseURL: "https://sismoya.bsit3b.site/api",
+  baseURL: "http://192.168.1.14/api/sismoya/",
   timeout: 10000,
 })
 

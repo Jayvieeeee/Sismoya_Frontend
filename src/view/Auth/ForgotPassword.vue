@@ -7,9 +7,6 @@ import LandingPageLayout from '@/Layout/LandingPageLayout.vue'
 import VerifyCode from "./VerifyCode.vue";
 import ChangePass from "./ChangePass.vue";
 
-import gallonImg from "@/assets/images/gallon.png";
-
-
 const router = useRouter();
 const showVerifyModal = ref(false);
 const showChangePass = ref(false);
@@ -83,56 +80,42 @@ function clearError() {
 
 <template>
   <LandingPageLayout>
-    <section class="relative font-montserrat min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-10">
-      <!-- Left side: Text + Image -->
-      <div
-        class="flex-1 ml-24 mt-12 text-center md:text-left flex flex-col items-center md:items-start">
-        <h1 class="text-2xl md:text-4xl font-semibold text-primary mb-6">
-          WELCOME TO <br />
-          SISMOYA WATER!
+    <section class="min-h-screen bg-white flex items-center justify-center px-6 py-12">
+      <div class="w-full max-w-md text-center">
+        <h1 class="text-3xl font-semibold text-gray-900 mb-2">
+          Forgot Password
         </h1>
-        <img
-          :src="gallonImg"
-          alt="Water Jugs"
-          class="w-full max-w-xs sm:max-w-sm lg:max-w-md"
-        />
-      </div>
+        <p class="text-sm text-gray-500 mb-8">
+          Please provide your email address to reset your account password.
+        </p>
 
-      <!-- Right side: Forgot Password Form -->
-      <div class="flex-1 flex justify-center w-full">
-        <div class="bg-white shadow-lg rounded-xl p-8 sm:p-10 w-3/5 max-w-sm md:max-w-md">
-          <h2 class="text-2xl font-semibold text-center mb-8">
-            Forgot Password
-          </h2>
-
-          <div class="mb-4">
-            <div class="relative">
-              <input
-                v-model="email"
-                @input="clearError"
-                type="email"
-                placeholder="Email"
-                class="w-full pl-4 pr-4 py-3 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                :class="{ 'border-red-500': emailError }"
-              />
-            </div>
-            <!-- Error message -->
-            <p v-if="emailError" class="text-red-500 text-sm mt-2 ml-1">
-              {{ emailError }}
-            </p>
-          </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-8 text-left">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Email
+          </label>
+          <input
+            v-model="email"
+            @input="clearError"
+            type="email"
+            placeholder="Enter your email"
+            class="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            :class="{ 'border-red-500': emailError }"
+          />
+          <p v-if="emailError" class="text-red-500 text-sm mt-2">
+            {{ emailError }}
+          </p>
 
           <button
             @click="forgotPassword"
             :disabled="isSubmitting"
-            class="w-full mt-5 mb-4 py-3 rounded-lg font-medium transition text-white bg-primary hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full mt-5 py-2.5 rounded-full font-medium transition text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ isSubmitting ? "Sending..." : "Reset Password" }}
+            {{ isSubmitting ? "Sending..." : "Send Code" }}
           </button>
 
           <p
             @click="goToLogin"
-            class="text-center text-gray-500 mb-6 cursor-pointer hover:underline hover:text-black"
+            class="text-center text-gray-500 text-sm mt-6 cursor-pointer hover:underline hover:text-gray-700"
           >
             Back to Login
           </p>
@@ -158,4 +141,3 @@ function clearError() {
     </section>
   </LandingPageLayout>
 </template>
-

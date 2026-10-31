@@ -104,7 +104,7 @@ onMounted(fetchCustomers)
 
       <div v-else>
         <div class="bg-white shadow-md rounded-xl p-6 inline-block">
-          <div class="text-2xl text-center font-bold text-primary">
+          <div class="text-2xl text-center font-bold text-black">
             {{ totalCustomers }}
           </div>
           <div class="text-gray-600 text-sm">Total Customers</div>
