@@ -234,7 +234,7 @@ function goToLogin() {
         drinking water right at your fingertips.
       </p>
       
-      <a href="#" class="inline-block bg-primary text-white text-sm font-semibold px-6 py-3 rounded-full hover:bg-primary/90 transition duration-300">
+      <a href="/downloads/Sismoya.apk" download="Sismoya.apk" class="inline-block bg-primary text-white text-sm font-semibold px-6 py-3 rounded-full hover:bg-primary/90 transition duration-300">
         Download App
       </a>
     </div>
