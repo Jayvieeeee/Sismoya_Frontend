@@ -89,6 +89,7 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { API_BASE_URL } from '@/utils/axios'
 
 export default {
   name: 'PaymentSuccess',
@@ -112,7 +113,7 @@ export default {
       try {
         console.log(' Confirming payment with backend...')
         
-        const url = `https://sismoya.bsit3b.site/api/orders/paypal/confirm?token=${encodeURIComponent(token.value)}&PayerID=${encodeURIComponent(payer_id.value)}`
+        const url = `${API_BASE_URL}/orders/paypal/confirm?token=${encodeURIComponent(token.value)}&PayerID=${encodeURIComponent(payer_id.value)}`
         
         const response = await fetch(url)
         const data = await response.json()

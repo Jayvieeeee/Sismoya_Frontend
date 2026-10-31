@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import axiosInstance from "../utils/axios";
+import axiosInstance, { API_BASE_URL } from "../utils/axios";
 import { ref, onMounted, computed, watch } from "vue"
 import type { ModalProduct } from "@/types"
 import AddressSelectionModal from "@/components/AddressSelectionModal.vue"
@@ -143,8 +143,8 @@ const handleImageError = (event: Event) => {
 function getImageUrl(imageUrl: string | undefined | null): string {
   if (!imageUrl) return "/placeholder.png"
   if (imageUrl.startsWith("http")) return imageUrl
-  if (!imageUrl.startsWith("/")) return `https://sismoya.bsit3b.site/api/${imageUrl}`
-  return `https://sismoya.bsit3b.site/api${imageUrl}`
+  if (!imageUrl.startsWith("/")) return `${API_BASE_URL}/${imageUrl}`
+  return `${API_BASE_URL}${imageUrl}`
 }
 
 // Validation

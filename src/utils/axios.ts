@@ -1,8 +1,10 @@
 import axios from "axios"
 import router from "@/router"
 
+export const API_BASE_URL = "https://integbackend.vercel.app/api"
+
 const axiosInstance = axios.create({
-  baseURL: "http://192.168.1.14/api/sismoya/",
+  baseURL: `${API_BASE_URL}/`,
   timeout: 10000,
 })
 

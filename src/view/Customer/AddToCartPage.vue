@@ -8,6 +8,7 @@ import CustomerLayout from "@/Layout/CustomerLayout.vue"
 import OrderSummary from "@/components/OrderSummaryModal.vue"
 import ConfirmModal from "@/components/ConfirmModal.vue"
 import type { ModalProduct } from "@/types"
+import { API_BASE_URL } from "@/utils/axios"
 import type { CartItem } from "@/api/cartApi"
 import {
   getUserCart,
@@ -17,7 +18,6 @@ import {
 } from "@/api/cartApi"
 import { TrashIcon } from "@heroicons/vue/24/outline"
 
-const IMAGE_BASE_URL = "https://sismoya.bsit3b.site/api"
 const router = useRouter()
 
 // Cart data
@@ -214,7 +214,7 @@ const closeResultModal = () => {
 
 const getImageUrl = (item: CartItem): string => {
   if (!item.image_url) return ""
-  return `${IMAGE_BASE_URL}/${item.image_url}?t=${Date.now()}`
+  return `${API_BASE_URL}/${item.image_url}?t=${Date.now()}`
 }
 
 const hasImageError = (item: CartItem): boolean => imageErrors.value.has(item.cart_item_id)

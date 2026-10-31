@@ -9,6 +9,7 @@ import Cart from "@/assets/icons/cart.png"
 import { getContainers } from "@/api/getContainer"
 import type { ModalProduct } from "@/types" 
 import OrderSummaryModal from "@/components/OrderSummaryModal.vue"
+import { API_BASE_URL } from "@/utils/axios"
 
 const modalAction = ref<"cart" | "order">("cart")
 const router = useRouter()
@@ -197,7 +198,7 @@ function closeResultModal() {
           >
             <!-- Image -->
             <img
-              :src="`https://sismoya.bsit3b.site/api${container.image_url}`"
+              :src="`${API_BASE_URL}${container.image_url}`"
               :alt="container.type"
               class="w-32 h-32 sm:w-40 sm:h-40 object-contain mb-6"
             />

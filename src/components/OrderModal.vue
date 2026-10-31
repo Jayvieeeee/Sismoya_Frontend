@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue"
 import type { ModalProduct } from "@/types"
+import { API_BASE_URL } from "@/utils/axios"
 
 const props = defineProps<{
   isOpen: boolean
@@ -26,7 +27,7 @@ const imageUrl = computed(() => {
   // Ensure the URL is properly formatted
   if (url.startsWith('/')) {
     // If it's a relative path, construct full URL
-    url = `https://sismoya.bsit3b.site/api${url}`
+    url = `${API_BASE_URL}${url}`
   }
   
   // Add cache busting to avoid cached broken images

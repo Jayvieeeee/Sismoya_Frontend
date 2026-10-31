@@ -4,7 +4,7 @@ import { PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline
 import AdminLayout from '@/Layout/AdminLayout.vue'
 import Modal from '@/components/Modal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
-import axiosInstance from '@/utils/axios'
+import axiosInstance, { API_BASE_URL } from '@/utils/axios'
 import { handleLogout } from '@/utils/auth'
 
 const gallons = ref<any[]>([])
@@ -39,7 +39,6 @@ const successMessage = ref('')
 const showErrorModal = ref(false)
 const errorMessage = ref('')
 
-const IMAGE_BASE_URL = 'https://sismoya.bsit3b.site/api'
 const previewImage = ref<string | null>(null)
 const selectedFile = ref<File | null>(null)
 
@@ -96,8 +95,8 @@ const getImageUrl = (url: string) => {
   if (url.startsWith('http')) return url
   const cleanUrl = url.replace(/^\/+|\/+$/g, '')
   return cleanUrl.startsWith('images/')
-    ? `${IMAGE_BASE_URL}/${cleanUrl}`
-    : `${IMAGE_BASE_URL}/images/${cleanUrl}`
+    ? `${API_BASE_URL}/${cleanUrl}`
+    : `${API_BASE_URL}/images/${cleanUrl}`
 }
 
 // Upload Image
