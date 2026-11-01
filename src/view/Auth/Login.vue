@@ -255,15 +255,19 @@ function goToForgotPass() {
           <div class="flex-1 h-px bg-gray-200"></div>
         </div>
 
+<!--
         <p class="text-xs text-center text-gray-500">
           Don't have an account yet?
           <br />
           <span
             @click="goToRegister"
             class="text-blue-600 font-medium cursor-pointer hover:underline"
-            >Register here</span
           >
+            Register here
+          </span>
         </p>
+        </p>
+        -->
       </div>
     </section>
   </LandingPageLayout>
