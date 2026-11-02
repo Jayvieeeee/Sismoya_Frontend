@@ -351,7 +351,7 @@ watch(() => props.isOpen, (newVal) => {
           <select v-model="paymentMethod" class="w-full border border-black text-center text-sm rounded-lg px-3 py-1 appearance-none cursor-pointer">
             <option value="Cash">Cash</option>
             <option value="Paypal">Paypal</option>
-            <option value="Xendit">Xendit (GCash, Maya, Card)</option>
+            <option value="Xendit">Online payment</option>
           </select>
           <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">&#11167;</span>
         </div>
