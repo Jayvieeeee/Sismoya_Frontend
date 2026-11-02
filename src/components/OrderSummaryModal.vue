@@ -202,32 +202,62 @@ const handlePlaceOrder = async () => {
 
   try {
     const res = await axiosInstance.post("/orders", payload);
-    
-    if (!res.data.success) throw new Error(res.data.message || "Order failed");
+    const orderData = res.data?.data ?? res.data
+
+    if (res.data?.success === false || orderData?.success === false) {
+      throw new Error(res.data?.message || orderData?.message || "Order failed");
+    }
+
+    const orderId =
+      res.data?.order_id ??
+      orderData?.order_id ??
+      orderData?.orderId ??
+      orderData?.order?.order_id ??
+      orderData?.order?.id
 
     if (paymentMethod.value === "Paypal") {
       // Store both order ID and amount for PayPal
-      pendingPayPalOrderId.value = res.data.order_id;
+      if (orderId == null) throw new Error("Order was created but the response did not include its ID.");
+      pendingPayPalOrderId.value = orderId;
       pendingPayPalAmount.value = parseFloat(totalAmount.value.toFixed(2));
       showPayPalModal.value = true;
       // Don't clear form yet for PayPal - wait for payment completion
       emit('close'); // close order summary
     } else if (paymentMethod.value === "Xendit") {
-      // Create the Xendit invoice for the order we just created
-      const invoiceRes = await axiosInstance.post("/payments/xendit/create", {
-        order_id: res.data.order_id
-      });
-
-      const invoiceUrl = invoiceRes.data?.xendit?.invoice_url;
-      if (!invoiceRes.data.success || !invoiceUrl) {
-        throw new Error(invoiceRes.data.message || "Could not create Xendit invoice");
+      if (orderId == null) {
+        throw new Error("Order was created, but the server did not return an order ID. Contact support before trying again.");
       }
 
-      // Go to Xendit's hosted checkout (GCash, Maya, card, etc.).
-      // Xendit sends the user back to /payment-success or /payment-cancel afterwards.
-      // Keep isProcessing true so the button stays disabled during the redirect.
-      window.location.href = invoiceUrl;
-      return;
+      // Create the Xendit invoice for the order we just created
+      try {
+        const invoiceRes = await axiosInstance.post("/payments/xendit/create", {
+          order_id: orderId
+        });
+        const invoiceData = invoiceRes.data?.data ?? invoiceRes.data
+        const invoiceUrl =
+          invoiceData?.xendit?.invoice_url ??
+          invoiceData?.invoice_url ??
+          invoiceData?.invoiceUrl
+
+        if (invoiceRes.data?.success === false || invoiceData?.success === false || !invoiceUrl) {
+          throw new Error(
+            invoiceRes.data?.message ||
+            invoiceData?.message ||
+            "The order was created, but the payment service did not return a checkout link."
+          );
+        }
+
+        // Keep processing active during the redirect to the hosted checkout.
+        window.location.href = invoiceUrl;
+        return;
+      } catch (error: any) {
+        const message =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "The order was created, but online payment could not be started. Contact support before trying again."
+        throw new Error(`Order created, but payment setup failed: ${message}`);
+      }
     } else {
       // For Cash on Pickup, show success modal immediately and clear form
       orderPlacedModal.value = true;
