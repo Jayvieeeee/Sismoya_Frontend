@@ -23,6 +23,7 @@ import AdminDashboard from "@/view/Admin/AdminDashboard.vue";
     { path: "/login", name: "Login", component: Login },
     { path: "/register", name: "Register", component: Register },
     { path: "/forgotpass", name: "ForgotPass", component: ForgotPassword },
+    { path: "/customer", redirect: { name: "adminDashboard" } },
 
     //Payment Routes
   { path: "/payment-success", name: "PaymentSuccess", component: PaymentSuccess },
@@ -62,20 +63,14 @@ import AdminDashboard from "@/view/Admin/AdminDashboard.vue";
     const userData = localStorage.getItem("user");
     let user: { role?: string } | null = null;
 
-    if (userData) {
-      try {
-        const parsedUser: unknown = JSON.parse(userData);
-        if (typeof parsedUser === "object" && parsedUser !== null) {
-          user = parsedUser as { role?: string };
-        } else {
-          throw new Error("Stored user data is not an object");
-        }
-      } catch (error) {
-        console.error("Stored user data is invalid:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        return next("/login");
+    try {
+      const parsedUser: unknown = userData ? JSON.parse(userData) : null;
+      if (typeof parsedUser === "object" && parsedUser !== null) {
+        user = parsedUser as { role?: string };
       }
+    } catch (error) {
+      console.warn("Stored user data is invalid; validating session from the server.", error);
+      localStorage.removeItem("user");
     }
 
     // public routes
@@ -100,6 +95,15 @@ import AdminDashboard from "@/view/Admin/AdminDashboard.vue";
           localStorage.removeItem("user");
           return next("/login");
         }
+
+        const refreshedUser = localStorage.getItem("user");
+        user = refreshedUser ? JSON.parse(refreshedUser) : null;
+
+        if (!user || typeof user.role !== "string") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          return next("/login");
+        }
       } catch (err) {
         console.error("Token validation failed:", err);
         localStorage.removeItem("token");
@@ -110,13 +114,13 @@ import AdminDashboard from "@/view/Admin/AdminDashboard.vue";
 
     // roled-based access control
     if (authRequired && to.meta.role && user?.role !== to.meta.role) {
-      if (user?.role === "admin") return next("/customer");
+      if (user?.role === "admin") return next("/adminDashboard");
       if (user?.role === "customer") return next("/customerDashboard");
       return next("/login");
     }
 
     if (["/login", "/register", "/forgotpass"].includes(to.path) && token) {
-      if (user?.role === "admin") return next("/customer");
+      if (user?.role === "admin") return next("/adminDashboard");
       if (user?.role === "customer") return next("/customerDashboard");
       return next("/");
     }
