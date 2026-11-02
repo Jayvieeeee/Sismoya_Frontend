@@ -60,7 +60,23 @@ import AdminDashboard from "@/view/Admin/AdminDashboard.vue";
   router.beforeEach(async (to, from, next) => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
-    const user = userData ? JSON.parse(userData) : null;
+    let user: { role?: string } | null = null;
+
+    if (userData) {
+      try {
+        const parsedUser: unknown = JSON.parse(userData);
+        if (typeof parsedUser === "object" && parsedUser !== null) {
+          user = parsedUser as { role?: string };
+        } else {
+          throw new Error("Stored user data is not an object");
+        }
+      } catch (error) {
+        console.error("Stored user data is invalid:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        return next("/login");
+      }
+    }
 
     // public routes
     const publicPages = ["/", "/login", "/register", "/forgotpass"];
