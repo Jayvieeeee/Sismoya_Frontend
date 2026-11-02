@@ -244,8 +244,54 @@ function extractCustomerName(orderItems: string): string {
 }
 
 function exportReport() {
-  // hook up to your export endpoint / CSV generator here
-  console.log("Export report clicked")
+  const csvCell = (value: string | number | null | undefined) => {
+    let text = String(value ?? "")
+    if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`
+    return `"${text.replace(/"/g, '""')}"`
+  }
+  const rows: (string | number | null | undefined)[][] = [
+    ["Sismoya Dashboard Report"],
+    ["Generated at", new Date().toLocaleString()],
+    [],
+    ["Summary"],
+    ["Metric", "Value"],
+    ...stats.value.map(stat => [stat.label, stat.value]),
+    ["Orders to Pick Up", ordersToPickUp.value],
+    ["Orders to Deliver", ordersToDeliver.value],
+    [],
+    ["Orders by Status"],
+    ["Status", "Count"],
+    ...orderStatusList.value.map(status => [status.label, status.value]),
+    [],
+    ["Sales Revenue"],
+    ["Period", "Label", "Amount"],
+    ...[
+      { period: "Daily", labels: labels.value.daily, values: salesDaily.value },
+      { period: "Weekly", labels: labels.value.weekly, values: salesWeekly.value },
+      { period: "Monthly", labels: labels.value.monthly, values: salesMonthly.value },
+    ].flatMap(({ period, labels: periodLabels, values }) =>
+      periodLabels.map((label, index) => [period, label, values[index] ?? 0])
+    ),
+    [],
+    ["Recent Orders"],
+    ["Order ID", "Customer", "Date", "Status", "Amount"],
+    ...recentOrders.value.map(order => [
+      order.id,
+      order.name,
+      order.date,
+      formatStatus(order.status),
+      Number(order.amount ?? 0).toFixed(2),
+    ]),
+  ]
+  const csv = `\uFEFF${rows.map(row => row.map(csvCell).join(",")).join("\r\n")}`
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `sismoya-dashboard-report-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 async function fetchDashboardData() {
