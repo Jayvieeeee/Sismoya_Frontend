@@ -9,7 +9,14 @@ export async function validateToken(): Promise<boolean> {
 
   try {
     const res = await axiosInstance.get("/profile");
-    return !!res.data.user;
+    const user = res.data?.user;
+
+    if (!user || typeof user.role !== "string") {
+      return false;
+    }
+
+    localStorage.setItem("user", JSON.stringify(user));
+    return true;
   } catch (err: any) {
     console.log('🔐 Token validation error:', err.response?.status, err.response?.data?.message);
     

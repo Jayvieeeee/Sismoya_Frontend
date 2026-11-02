@@ -35,6 +35,13 @@ async function handleLogin() {
       return;
     }
 
+    if (!res.user || typeof res.user.role !== "string") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      errorMessage.value = "Login response is missing valid user information. Please try again.";
+      return;
+    }
+
     // Check if user is a rider and block access
     if (res.user.role === "rider") {
       errorMessage.value = "Rider access is not available on the web platform. Please use the mobile app to access your account.";
